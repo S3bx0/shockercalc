@@ -34,8 +34,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential git zip unzip openjdk-17-jdk \
             autoconf libtool pkg-config zlib1g-dev libncurses-dev \
-            libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
-            automake ccache
+            libncursesw5-dev cmake libffi-dev libssl-dev \
+            automake ccache python3-pip
 
       - name: Cache Buildozer global dir
         uses: actions/cache@v4
