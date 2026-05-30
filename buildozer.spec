@@ -38,6 +38,13 @@ android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 
+# Pin python-for-android do znanego dobrego release'u.
+# Nowsze p4a domyślnie buduje Python 3.14, pod którym Kivy 2.3.0 / reportlab
+# nie chcą się skompilować (deprecated CPython C-API).
+# Tag 2024.01.21 -> Python 3.11.6, Kivy 2.3.0 buduje czysto.
+p4a.fork = kivy
+p4a.branch = 2024.01.21
+
 # Ikona i splash
 icon.filename = %(source.dir)s/assets/icon.png
 presplash.filename = %(source.dir)s/assets/presplash.png
