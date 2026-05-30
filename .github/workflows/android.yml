@@ -87,7 +87,9 @@ jobs:
       - name: Build debug APK
         run: |
           set -eo pipefail
-          yes | buildozer android debug 2>&1 | tee buildozer.log
+          # `yes` ko\u0144czy si\u0119 SIGPIPE (141) gdy buildozer si\u0119 zamknie \u2014 nie jest to b\u0142\u0105d builda.
+          # Akceptujemy exit code 0 lub 141; reszta = realny b\u0142\u0105d.
+          ( yes || true ) | buildozer android debug 2>&1 | tee buildozer.log
 
       - name: Upload buildozer log (on failure)
         if: failure()
