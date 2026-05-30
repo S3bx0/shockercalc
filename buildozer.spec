@@ -38,12 +38,10 @@ android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 
-# Pin python-for-android do znanego dobrego release'u.
-# Nowsze p4a domyślnie buduje Python 3.14, pod którym Kivy 2.3.0 / reportlab
-# nie chcą się skompilować (deprecated CPython C-API).
-# Tag 2024.01.21 -> Python 3.11.6, Kivy 2.3.0 buduje czysto.
-p4a.fork = kivy
-p4a.branch = 2024.01.21
+# python-for-android jest pinowany do 2024.01.21 przez workflow CI
+# (pip install python-for-android==2024.1.21) — ten release domyślnie
+# buduje Python 3.11.6, pod którym Kivy 2.3.0 / reportlab kompilują się czysto.
+# Nowsze p4a defaultuje na Python 3.14 (brak wstecznej kompatybilności C-API).
 
 # Ikona i splash
 icon.filename = %(source.dir)s/assets/icon.png
