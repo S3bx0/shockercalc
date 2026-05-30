@@ -17,7 +17,10 @@ source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project
 version = 2.0.0
 
 # Zależności (uwaga: kivymd musi być w wersji kompatybilnej z kivy)
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,reportlab,pypdf
+# UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
+# pod Python 3.14 wybierany przez najnowszego python-for-android.
+# PDF jest dostępny w wersji desktop. Na Androidzie pokażemy komunikat informacyjny.
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow
 
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main

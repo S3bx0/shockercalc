@@ -372,7 +372,13 @@ def main() -> None:
                 self._show_error("Najpierw wykonaj obliczenia.")
                 return
             try:
-                from tpof.core.pdf_report import build_pdf, save_pdf
+                try:
+                    from tpof.core.pdf_report import build_pdf, save_pdf
+                except ImportError:
+                    self._show_error(
+                        "Eksport PDF niedostępny w wersji mobilnej. Użyj wersji desktopowej."
+                    )
+                    return
 
                 img_path = _safe_image_path(self._last_results.produkt.nazwa)
                 pdf_bytes = build_pdf(
