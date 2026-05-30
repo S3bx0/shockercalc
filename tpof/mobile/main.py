@@ -33,7 +33,6 @@ from tpof.core import (
     list_products,
     load_products,
 )
-from tpof.core.pdf_report import build_pdf, save_pdf
 from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
 
 log = logging.getLogger(__name__)
@@ -373,6 +372,8 @@ def main() -> None:
                 self._show_error("Najpierw wykonaj obliczenia.")
                 return
             try:
+                from tpof.core.pdf_report import build_pdf, save_pdf
+
                 img_path = _safe_image_path(self._last_results.produkt.nazwa)
                 pdf_bytes = build_pdf(
                     self._last_results,
