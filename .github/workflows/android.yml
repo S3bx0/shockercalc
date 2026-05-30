@@ -67,8 +67,17 @@ jobs:
 
       - name: Build debug APK
         run: |
-          set -e
+          set -eo pipefail
           buildozer android debug 2>&1 | tee buildozer.log
+
+      - name: Upload buildozer log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-log
+          path: buildozer.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload APK artifact
         if: always()
