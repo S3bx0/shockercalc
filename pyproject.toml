@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shocker-calc"
+version = "2.0.0"
+description = "Shocker Calc — kalkulator zapotrzebowania chłodu dla procesu zamrażania (desktop + mobile)."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Sebastian Milczarek", email = "" },
+]
+license = { text = "Proprietary" }
+keywords = ["chłodnictwo", "zamrażanie", "kalkulator", "HVAC", "refrigeration"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "Pillow>=10.0",
+  "reportlab>=4.0",
+  "pypdf>=4.0",
+]
+
+[project.optional-dependencies]
+desktop = ["ttkbootstrap>=1.10"]
+mobile = ["kivy>=2.3", "kivymd>=1.2"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0"]
+
+[project.scripts]
+shocker-calc = "tpof.desktop.app:main"
+
+[tool.setuptools.packages.find]
+include = ["tpof*"]
+exclude = ["tests*", "archive*"]
+
+[tool.setuptools.package-data]
+tpof = ["../assets/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

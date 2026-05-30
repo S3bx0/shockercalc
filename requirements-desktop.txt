@@ -1,0 +1,3 @@
+# Zależności wyłącznie warstwy desktop (Tkinter)
+-r requirements.txt
+ttkbootstrap>=1.10

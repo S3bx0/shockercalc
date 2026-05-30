@@ -1,0 +1,1 @@
+"""Warstwa desktopowa (Tkinter + ttkbootstrap)."""
