@@ -65,10 +65,20 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-dev.txt
           python -m pytest tests/ -q
 
+      - name: Pre-accept Android SDK licenses
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          # Hashe licencji Android SDK (oficjalne, publiczne)
+          echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          echo -e "\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+          echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" > ~/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
+          echo -e "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a" > ~/.buildozer/android/platform/android-sdk/licenses/google-android-sdk-arm-dbt-license
+
       - name: Build debug APK
         run: |
           set -eo pipefail
-          buildozer android debug 2>&1 | tee buildozer.log
+          yes | buildozer android debug 2>&1 | tee buildozer.log
 
       - name: Upload buildozer log (on failure)
         if: failure()
