@@ -59,10 +59,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install buildozer==1.5.0 cython==0.29.36
-          # Pinujemy python-for-android do 2024.01.21 (Python 3.11.6).
-          # Nowsze p4a buduje Python 3.14, pod którym Kivy 2.3.0 i reportlab
-          # nie chcą się skompilować (deprecated CPython C-API).
-          python -m pip install "python-for-android==2024.1.21"
+
+      - name: Purge stale python-for-android cache
+        # Buildozer 1.5.0 ignoruje pip-instalowane p4a i klonuje własną kopię.
+        # Jeśli z poprzedniego runu została wersja master (Python 3.14),
+        # usuwamy ją — buildozer sklonuje teraz tag z buildozer.spec (v2024.01.21).
+        run: |
+          rm -rf ~/.buildozer/android/platform/python-for-android* || true
+          rm -rf .buildozer/android/platform/python-for-android* || true
+          rm -rf .buildozer/android/platform/build-* || true
 
       - name: Run unit tests (core)
         run: |
