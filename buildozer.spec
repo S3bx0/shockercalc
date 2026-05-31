@@ -42,11 +42,11 @@ android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 
-# AdMob / Google Mobile Ads SDK
+# AdMob / Google Mobile Ads SDK + Google Play Billing (PRO: no ads)
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.mdpuch.shockercalc.ShockerCalcActivity
 android.entrypoint = pl.mdpuch.shockercalc.ShockerCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Pin python-for-android do znanego dobrego release'u.
