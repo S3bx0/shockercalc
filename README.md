@@ -46,6 +46,15 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
 
+## Android / AdMob
+
+Build mobilny używa natywnego banera AdMob przez `ShockerCalcActivity`.
+W `debug` ładowany jest testowy baner Google, a w `release` właściwy unit:
+`ca-app-pub-7481054652344026/5599859341`.
+
+Przed publikacją w Google Play trzeba jeszcze dodać ekran zgody prywatności
+Google UMP dla użytkowników z EEA/UK oraz uzupełnić deklaracje danych w Play Console.
+
 ## Plany rozwoju
 
 - **Etap 4**: warstwa mobilna (KivyMD) + szablon `buildozer.spec` do publikacji w Google Play.

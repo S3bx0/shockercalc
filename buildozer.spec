@@ -18,7 +18,7 @@ version = 2.0.0
 
 # Autor / metadane (komentarz; widoczne w stopce aplikacji oraz w meta-data AndroidManifest)
 # author: Sebastian Milczarek
-android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek
+android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek,com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-7481054652344026~2716191071
 
 # Zależności (uwaga: kivymd musi być w wersji kompatybilnej z kivy)
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
@@ -34,13 +34,20 @@ orientation = portrait
 fullscreen = 0
 
 # Uprawnienia Android
-android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+android.permissions = INTERNET, ACCESS_NETWORK_STATE, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 
-# Min / target API (Google Play wymaga targetSdk >= 34 w 2026)
-android.api = 34
+# Min / target API (AdMob SDK 25.x wymaga compileSdk 35+)
+android.api = 35
 android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
+
+# AdMob / Google Mobile Ads SDK
+android.add_src = %(source.dir)s/android/src
+android.activity_class_name = pl.mdpuch.shockercalc.ShockerCalcActivity
+android.entrypoint = pl.mdpuch.shockercalc.ShockerCalcActivity
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0
+android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Pin python-for-android do znanego dobrego release'u.
 # Najnowszy p4a domyślnie buduje Python 3.14, pod którym Kivy 2.3.0 i reportlab

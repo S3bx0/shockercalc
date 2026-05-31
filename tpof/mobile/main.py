@@ -38,11 +38,21 @@ from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
 log = logging.getLogger(__name__)
 
 STAGE_COLORS = {
-    "schladzanie": (0.16, 0.50, 0.73, 1),
-    "zamrozenie": (0.61, 0.35, 0.71, 1),
-    "domrozenie": (0.20, 0.60, 0.86, 1),
-    "total": (0.18, 0.80, 0.44, 1),
+    "schladzanie": (0.10, 0.48, 0.71, 1),
+    "zamrozenie": (0.42, 0.37, 0.86, 1),
+    "domrozenie": (0.00, 0.67, 0.74, 1),
+    "total": (0.05, 0.62, 0.42, 1),
 }
+
+ADMOB_APP_ID = "ca-app-pub-7481054652344026~2716191071"
+ADMOB_BANNER_AD_UNIT_ID = "ca-app-pub-7481054652344026/5599859341"
+ADMOB_TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
+
+IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
+CARD_BG_DARK = (0.09, 0.13, 0.17, 1)
+CARD_BG_LIGHT = (0.96, 0.98, 1.0, 1)
+SURFACE_DARK = (0.05, 0.08, 0.11, 1)
+SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
 
 
 def _safe_image_path(nazwa: str) -> Optional[str]:
@@ -70,6 +80,7 @@ def _pdf_output_dir() -> Path:
 def main() -> None:
     """Punkt wejścia mobilnej aplikacji."""
     try:
+        from kivy.core.window import Window
         from kivy.metrics import dp
         from kivy.uix.image import AsyncImage
         from kivymd.app import MDApp
@@ -77,7 +88,7 @@ def main() -> None:
         from kivymd.uix.button import MDFlatButton, MDRaisedButton
         from kivymd.uix.card import MDCard
         from kivymd.uix.gridlayout import MDGridLayout
-        from kivymd.uix.label import MDLabel
+        from kivymd.uix.label import MDIcon, MDLabel
         from kivymd.uix.menu import MDDropdownMenu
         from kivymd.uix.progressbar import MDProgressBar
         from kivymd.uix.scrollview import MDScrollView
@@ -109,8 +120,14 @@ def main() -> None:
         def build(self):
             self.title = "Shocker Calc"
             self.theme_cls.primary_palette = "Blue"
-            self.theme_cls.accent_palette = "Teal"
+            self.theme_cls.primary_hue = "600"
+            self.theme_cls.accent_palette = "Cyan"
             self.theme_cls.theme_style = "Dark"
+            try:
+                self.theme_cls.material_style = "M3"
+            except Exception:  # pragma: no cover - starsze KivyMD
+                pass
+            Window.clearcolor = SURFACE_DARK
 
             self._selected_category: Optional[str] = None
             self._selected_product: Optional[str] = None
@@ -118,12 +135,14 @@ def main() -> None:
             self._cat_menu: Optional[MDDropdownMenu] = None
             self._prod_menu: Optional[MDDropdownMenu] = None
             self._last_results = None
+            self._themed_cards = []
 
-            root = MDBoxLayout(orientation="vertical")
+            self.root_layout = MDBoxLayout(orientation="vertical", md_bg_color=SURFACE_DARK)
+            root = self.root_layout
 
             self.toolbar = MDTopAppBar(
                 title="Shocker Calc",
-                elevation=4,
+                elevation=3,
                 left_action_items=[["snowflake", lambda *_: None]],
                 right_action_items=[["weather-night", lambda *_: self._toggle_theme()]],
             )
@@ -132,53 +151,81 @@ def main() -> None:
             self.scroll = MDScrollView()
             content = MDBoxLayout(
                 orientation="vertical",
-                padding=dp(12),
-                spacing=dp(16),
+                padding=[dp(16), dp(14), dp(16), dp(10)],
+                spacing=dp(14),
                 size_hint_y=None,
             )
             content.bind(minimum_height=content.setter("height"))
 
-            content.add_widget(self._build_product_card(dp, MDCard, MDLabel, MDRaisedButton, AsyncImage))
+            content.add_widget(
+                self._build_product_card(dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage)
+            )
             content.add_widget(self._build_params_card(dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDSwitch))
             content.add_widget(self._build_action_button(dp, MDBoxLayout, MDRaisedButton, MDFlatButton))
             self.results_card = self._build_results_card(
-                dp, MDCard, MDBoxLayout, MDLabel, MDProgressBar, MDGridLayout
+                dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout
             )
             content.add_widget(self.results_card)
 
-            # Stopka z informacj\u0105 o autorze i wersji \u2014 widoczna na dole ekranu.
+            # Stopka ma być dyskretna, żeby nie konkurowała z wynikiem.
             from tpof import __version__ as _app_version
 
             footer = MDLabel(
-                text=f"Shocker Calc v{_app_version}  \u2022  autor: Sebastian Milczarek",
+                text=f"Shocker Calc v{_app_version}  |  Sebastian Milczarek",
                 halign="center",
                 theme_text_color="Hint",
                 size_hint_y=None,
-                height=dp(28),
+                height=dp(22),
                 font_style="Caption",
             )
             content.add_widget(footer)
 
             self.scroll.add_widget(content)
             root.add_widget(self.scroll)
+            root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
             return root
 
         # --- karty -------------------------------------------------------
-        def _build_product_card(self, dp, MDCard, MDLabel, MDRaisedButton, AsyncImage):
+        def _card_bg(self):
+            return CARD_BG_DARK if self.theme_cls.theme_style == "Dark" else CARD_BG_LIGHT
+
+        def _surface_bg(self):
+            return SURFACE_DARK if self.theme_cls.theme_style == "Dark" else SURFACE_LIGHT
+
+        def _sync_theme_surfaces(self):
+            surface = self._surface_bg()
+            Window.clearcolor = surface
+            self.root_layout.md_bg_color = surface
+            for card in self._themed_cards:
+                card.md_bg_color = self._card_bg()
+            ad_slot = getattr(self, "ad_slot", None)
+            if ad_slot is not None:
+                ad_slot.md_bg_color = (
+                    (0.02, 0.04, 0.06, 0.92)
+                    if self.theme_cls.theme_style == "Dark"
+                    else (0.86, 0.91, 0.95, 0.96)
+                )
+
+        def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
             card = MDCard(
                 orientation="vertical",
-                padding=dp(12),
-                spacing=dp(8),
+                padding=dp(14),
+                spacing=dp(10),
                 size_hint_y=None,
-                height=dp(220),
-                radius=[12, 12, 12, 12],
-                elevation=2,
+                height=dp(264),
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
             )
-            card.add_widget(MDLabel(text="Produkt", font_style="H6", size_hint_y=None, height=dp(28)))
+            self._themed_cards.append(card)
+            card.add_widget(MDLabel(text="Produkt", font_style="H6", size_hint_y=None, height=dp(30)))
 
             self.btn_category = MDRaisedButton(
                 text="Wybierz kategorię",
                 size_hint_x=1,
+                size_hint_y=None,
+                height=dp(48),
+                font_size="15sp",
                 on_release=lambda btn: self._open_category_menu(btn),
             )
             card.add_widget(self.btn_category)
@@ -186,36 +233,67 @@ def main() -> None:
             self.btn_product = MDRaisedButton(
                 text="Wybierz produkt",
                 size_hint_x=1,
+                size_hint_y=None,
+                height=dp(48),
+                font_size="15sp",
                 disabled=True,
                 on_release=lambda btn: self._open_product_menu(btn),
             )
             card.add_widget(self.btn_product)
 
+            self.image_box = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(92))
+            self.image_placeholder = MDBoxLayout(
+                orientation="vertical",
+                spacing=dp(2),
+                padding=[0, dp(8), 0, dp(4)],
+            )
+            self.image_placeholder.add_widget(
+                MDIcon(
+                    icon="image",
+                    halign="center",
+                    font_size="34sp",
+                    theme_text_color="Hint",
+                )
+            )
+            self.image_placeholder.add_widget(
+                MDLabel(
+                    text="Zdjęcie produktu pojawi się po wyborze",
+                    halign="center",
+                    font_style="Caption",
+                    theme_text_color="Hint",
+                )
+            )
             self.product_image = AsyncImage(
                 source="",
-                size_hint_y=None,
-                height=dp(80),
                 allow_stretch=True,
                 keep_ratio=True,
                 opacity=0,
             )
-            card.add_widget(self.product_image)
+            self.image_box.add_widget(self.image_placeholder)
+            card.add_widget(self.image_box)
             return card
 
         def _build_params_card(self, dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDSwitch):
             card = MDCard(
                 orientation="vertical",
-                padding=dp(12),
-                spacing=dp(6),
+                padding=dp(14),
+                spacing=dp(8),
                 size_hint_y=None,
-                height=dp(360),
-                radius=[12, 12, 12, 12],
-                elevation=2,
+                height=dp(338),
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
             )
-            card.add_widget(MDLabel(text="Parametry", font_style="H6", size_hint_y=None, height=dp(28)))
+            self._themed_cards.append(card)
+            card.add_widget(MDLabel(text="Parametry", font_style="H6", size_hint_y=None, height=dp(30)))
 
-            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(60))
-            self.in_m = MDTextField(hint_text="Masa", input_filter="float", size_hint_x=0.7)
+            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(62))
+            self.in_m = MDTextField(
+                hint_text="Masa",
+                input_filter="float",
+                mode="rectangle",
+                size_hint_x=0.66,
+            )
             self.lbl_unit = MDLabel(text="kg", halign="center", size_hint_x=0.15)
             self.switch_unit = MDSwitch(active=False, size_hint_x=0.15)
             self.switch_unit.bind(active=self._on_unit_switch)
@@ -224,10 +302,16 @@ def main() -> None:
             row_mass.add_widget(self.switch_unit)
             card.add_widget(row_mass)
 
-            self.in_T1 = MDTextField(hint_text="Temperatura początkowa [°C]", input_filter="float")
-            self.in_T2 = MDTextField(hint_text="Temperatura końcowa [°C]", input_filter="float")
-            self.in_t = MDTextField(hint_text="Czas pracy [h]", input_filter="float")
+            self.in_T1 = MDTextField(
+                hint_text="Temperatura początkowa [°C]", input_filter="float", mode="rectangle"
+            )
+            self.in_T2 = MDTextField(
+                hint_text="Temperatura końcowa [°C]", input_filter="float", mode="rectangle"
+            )
+            self.in_t = MDTextField(hint_text="Czas pracy [h]", input_filter="float", mode="rectangle")
             for w in (self.in_T1, self.in_T2, self.in_t):
+                w.size_hint_y = None
+                w.height = dp(58)
                 card.add_widget(w)
             return card
 
@@ -235,15 +319,18 @@ def main() -> None:
             wrapper = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(64),
-                spacing=dp(8),
-                padding=[0, dp(4), 0, dp(4)],
+                height=dp(66),
+                spacing=dp(10),
+                padding=[0, dp(5), 0, dp(5)],
             )
             wrapper.add_widget(
                 MDRaisedButton(
                     text="Oblicz",
                     icon="calculator-variant",
                     size_hint_x=0.5,
+                    size_hint_y=None,
+                    height=dp(52),
+                    font_size="15sp",
                     on_release=lambda *_: self._calculate(),
                 )
             )
@@ -252,13 +339,18 @@ def main() -> None:
                     text="PDF",
                     icon="file-pdf-box",
                     size_hint_x=0.25,
+                    size_hint_y=None,
+                    height=dp(52),
+                    font_size="15sp",
                     on_release=lambda *_: self._export_pdf(),
                 )
             )
-            # "Wyczyść" w wyróżnionym kolorze, żeby nie wyglądało jak goly tekst.
             btn_clear = MDFlatButton(
                 text="Wyczyść",
                 size_hint_x=0.25,
+                size_hint_y=None,
+                height=dp(52),
+                font_size="15sp",
                 on_release=lambda *_: self._reset_inputs(),
                 theme_text_color="Custom",
                 text_color=(0.85, 0.40, 0.40, 1),
@@ -266,37 +358,52 @@ def main() -> None:
             wrapper.add_widget(btn_clear)
             return wrapper
 
-        def _build_results_card(self, dp, MDCard, MDBoxLayout, MDLabel, MDProgressBar, MDGridLayout):
+        def _build_results_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout):
             card = MDCard(
                 orientation="vertical",
-                padding=dp(12),
-                spacing=dp(8),
+                padding=dp(14),
+                spacing=dp(9),
                 size_hint_y=None,
-                height=dp(440),
-                radius=[12, 12, 12, 12],
-                elevation=2,
+                height=dp(430),
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
             )
-            card.add_widget(MDLabel(text="Wynik", font_style="H6", size_hint_y=None, height=dp(28)))
+            self._themed_cards.append(card)
+            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(30), spacing=dp(8))
+            title_row.add_widget(
+                MDIcon(
+                    icon="chart-donut",
+                    size_hint_x=None,
+                    width=dp(30),
+                    halign="center",
+                    theme_text_color="Custom",
+                    text_color=STAGE_COLORS["total"],
+                )
+            )
+            title_row.add_widget(MDLabel(text="Wynik", font_style="H6"))
+            card.add_widget(title_row)
 
             self.lbl_total = MDLabel(
                 text="Suma mocy: — kW",
                 font_style="H5",
                 halign="center",
                 size_hint_y=None,
-                height=dp(40),
-                theme_text_color="Primary",
+                height=dp(44),
+                theme_text_color="Custom",
+                text_color=STAGE_COLORS["total"],
             )
             card.add_widget(self.lbl_total)
 
             self.bars: Dict[str, Dict] = {}
-            # Bez emoji — kolor paska jednoznacznie identyfikuje etap.
-            # (Font Roboto z KivyMD nie ma glifów dla 🧊 itp.)
-            for key, label in [
-                ("schladzanie", "Schładzanie"),
-                ("zamrozenie", "Zamrożenie"),
-                ("domrozenie", "Domrażanie"),
+            for key, label, icon in [
+                ("schladzanie", "Schładzanie", "thermometer"),
+                ("zamrozenie", "Zamrożenie", "snowflake"),
+                ("domrozenie", "Domrażanie", "thermometer"),
             ]:
-                self.bars[key] = self._add_stage_row(card, key, label, dp, MDBoxLayout, MDLabel, MDProgressBar)
+                self.bars[key] = self._add_stage_row(
+                    card, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar
+                )
 
             card.add_widget(
                 MDLabel(
@@ -309,18 +416,28 @@ def main() -> None:
             self.props_grid = MDGridLayout(
                 cols=2,
                 size_hint_y=None,
-                spacing=dp(4),
-                row_default_height=dp(22),
+                spacing=dp(5),
+                row_default_height=dp(24),
                 row_force_default=True,
             )
             self.props_grid.bind(minimum_height=self.props_grid.setter("height"))
             card.add_widget(self.props_grid)
             return card
 
-        def _add_stage_row(self, parent, key, label, dp, MDBoxLayout, MDLabel, MDProgressBar):
-            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(54), spacing=dp(2))
-            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(22))
-            lbl_name = MDLabel(text=label, size_hint_x=0.6)
+        def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
+            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
+            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(26), spacing=dp(6))
+            head.add_widget(
+                MDIcon(
+                    icon=icon,
+                    size_hint_x=None,
+                    width=dp(28),
+                    halign="center",
+                    theme_text_color="Custom",
+                    text_color=STAGE_COLORS[key],
+                )
+            )
+            lbl_name = MDLabel(text=label, size_hint_x=0.52)
             lbl_val = MDLabel(text="—", halign="right", size_hint_x=0.4)
             head.add_widget(lbl_name)
             head.add_widget(lbl_val)
@@ -329,6 +446,40 @@ def main() -> None:
             row.add_widget(bar)
             parent.add_widget(row)
             return {"bar": bar, "value_label": lbl_val}
+
+        def _build_ad_slot(self, dp, MDBoxLayout, MDIcon, MDLabel):
+            slot = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(90),
+                padding=[dp(16), dp(6), dp(16), dp(6)],
+                spacing=dp(8),
+                md_bg_color=(0.02, 0.04, 0.06, 0.92),
+            )
+            self.ad_slot = slot
+            slot.add_widget(
+                MDIcon(
+                    icon="bullhorn",
+                    size_hint_x=None,
+                    width=dp(28),
+                    halign="center",
+                    theme_text_color="Hint",
+                )
+            )
+            text = "Reklama" if IS_ANDROID else "Miejsce na baner AdMob"
+            slot.add_widget(MDLabel(text=text, halign="center", font_style="Caption", theme_text_color="Hint"))
+            return slot
+
+        def _show_product_image(self, img_path: Optional[str]) -> None:
+            self.image_box.clear_widgets()
+            if img_path:
+                self.product_image.source = img_path
+                self.product_image.opacity = 1
+                self.image_box.add_widget(self.product_image)
+                return
+            self.product_image.source = ""
+            self.product_image.opacity = 0
+            self.image_box.add_widget(self.image_placeholder)
 
         # --- menu --------------------------------------------------------
         def _open_category_menu(self, caller):
@@ -352,8 +503,7 @@ def main() -> None:
             self.btn_category.text = category
             self.btn_product.text = "Wybierz produkt"
             self.btn_product.disabled = False
-            self.product_image.source = ""
-            self.product_image.opacity = 0
+            self._show_product_image(None)
             if self._cat_menu:
                 self._cat_menu.dismiss()
 
@@ -378,9 +528,7 @@ def main() -> None:
             self._selected_product = name
             self.btn_product.text = name
             img = _safe_image_path(name)
-            self.product_image.source = img or ""
-            # Ukryj kontroler obrazu gdy brak pliku — unikamy białego placeholder'a.
-            self.product_image.opacity = 1 if img else 0
+            self._show_product_image(img)
             if self._prod_menu:
                 self._prod_menu.dismiss()
 
@@ -392,9 +540,11 @@ def main() -> None:
         def _toggle_theme(self):
             is_dark = self.theme_cls.theme_style == "Dark"
             self.theme_cls.theme_style = "Light" if is_dark else "Dark"
+            self._sync_theme_surfaces()
+            is_now_dark = self.theme_cls.theme_style == "Dark"
             self.toolbar.right_action_items = [
                 [
-                    "weather-sunny" if not is_dark else "weather-night",
+                    "weather-night" if is_now_dark else "weather-sunny",
                     lambda *_: self._toggle_theme(),
                 ]
             ]
