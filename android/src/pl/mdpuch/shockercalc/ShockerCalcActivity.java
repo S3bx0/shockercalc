@@ -1,5 +1,6 @@
 package pl.mdpuch.shockercalc;
 
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -79,11 +80,15 @@ public class ShockerCalcActivity extends PythonActivity {
         root.addView(container, containerParams);
 
         bannerAdView.loadAd(new AdRequest.Builder().build());
-        Log.i(TAG, "AdMob banner requested. Debug test ads: " + BuildConfig.DEBUG);
+        Log.i(TAG, "AdMob banner requested. Debug test ads: " + isDebugBuild());
     }
 
     private String getBannerAdUnitId() {
-        return BuildConfig.DEBUG ? TEST_BANNER_AD_UNIT_ID : LIVE_BANNER_AD_UNIT_ID;
+        return isDebugBuild() ? TEST_BANNER_AD_UNIT_ID : LIVE_BANNER_AD_UNIT_ID;
+    }
+
+    private boolean isDebugBuild() {
+        return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 
     private AdSize getAdSize() {
