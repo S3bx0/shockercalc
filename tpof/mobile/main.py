@@ -85,7 +85,7 @@ def main() -> None:
         from kivy.uix.image import AsyncImage
         from kivymd.app import MDApp
         from kivymd.uix.boxlayout import MDBoxLayout
-        from kivymd.uix.button import MDFlatButton, MDRaisedButton
+        from kivymd.uix.button import MDRaisedButton
         from kivymd.uix.card import MDCard
         from kivymd.uix.gridlayout import MDGridLayout
         from kivymd.uix.label import MDIcon, MDLabel
@@ -151,7 +151,7 @@ def main() -> None:
             self.scroll = MDScrollView()
             content = MDBoxLayout(
                 orientation="vertical",
-                padding=[dp(16), dp(14), dp(16), dp(10)],
+                padding=[dp(16), dp(14), dp(16), dp(18)],
                 spacing=dp(14),
                 size_hint_y=None,
             )
@@ -161,27 +161,15 @@ def main() -> None:
                 self._build_product_card(dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage)
             )
             content.add_widget(self._build_params_card(dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDSwitch))
-            content.add_widget(self._build_action_button(dp, MDBoxLayout, MDRaisedButton, MDFlatButton))
+            content.add_widget(self._build_action_button(dp, MDBoxLayout, MDRaisedButton))
             self.results_card = self._build_results_card(
                 dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout
             )
             content.add_widget(self.results_card)
 
-            # Stopka ma być dyskretna, żeby nie konkurowała z wynikiem.
-            from tpof import __version__ as _app_version
-
-            footer = MDLabel(
-                text=f"Shocker Calc v{_app_version}  |  Sebastian Milczarek",
-                halign="center",
-                theme_text_color="Hint",
-                size_hint_y=None,
-                height=dp(22),
-                font_style="Caption",
-            )
-            content.add_widget(footer)
-
             self.scroll.add_widget(content)
             root.add_widget(self.scroll)
+            root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
             return root
 
@@ -204,6 +192,13 @@ def main() -> None:
                     (0.02, 0.04, 0.06, 0.92)
                     if self.theme_cls.theme_style == "Dark"
                     else (0.86, 0.91, 0.95, 0.96)
+                )
+            footer_bar = getattr(self, "footer_bar", None)
+            if footer_bar is not None:
+                footer_bar.md_bg_color = (
+                    (0.04, 0.07, 0.10, 1)
+                    if self.theme_cls.theme_style == "Dark"
+                    else (0.90, 0.94, 0.97, 1)
                 )
 
         def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
@@ -277,9 +272,9 @@ def main() -> None:
             card = MDCard(
                 orientation="vertical",
                 padding=dp(14),
-                spacing=dp(8),
+                spacing=dp(10),
                 size_hint_y=None,
-                height=dp(338),
+                height=dp(360),
                 radius=[16, 16, 16, 16],
                 elevation=3,
                 md_bg_color=self._card_bg(),
@@ -287,15 +282,22 @@ def main() -> None:
             self._themed_cards.append(card)
             card.add_widget(MDLabel(text="Parametry", font_style="H6", size_hint_y=None, height=dp(30)))
 
-            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(62))
+            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(68))
             self.in_m = MDTextField(
                 hint_text="Masa",
                 input_filter="float",
-                mode="rectangle",
-                size_hint_x=0.66,
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(60),
             )
-            self.lbl_unit = MDLabel(text="kg", halign="center", size_hint_x=0.15)
-            self.switch_unit = MDSwitch(active=False, size_hint_x=0.15)
+            self.lbl_unit = MDLabel(
+                text="kg",
+                halign="center",
+                size_hint_x=None,
+                width=dp(34),
+                font_style="Subtitle1",
+            )
+            self.switch_unit = MDSwitch(active=False, size_hint_x=None, width=dp(72))
             self.switch_unit.bind(active=self._on_unit_switch)
             row_mass.add_widget(self.in_m)
             row_mass.add_widget(self.lbl_unit)
@@ -303,33 +305,33 @@ def main() -> None:
             card.add_widget(row_mass)
 
             self.in_T1 = MDTextField(
-                hint_text="Temperatura początkowa [°C]", input_filter="float", mode="rectangle"
+                hint_text="Temperatura początkowa [°C]", input_filter="float"
             )
             self.in_T2 = MDTextField(
-                hint_text="Temperatura końcowa [°C]", input_filter="float", mode="rectangle"
+                hint_text="Temperatura końcowa [°C]", input_filter="float"
             )
-            self.in_t = MDTextField(hint_text="Czas pracy [h]", input_filter="float", mode="rectangle")
+            self.in_t = MDTextField(hint_text="Czas pracy [h]", input_filter="float")
             for w in (self.in_T1, self.in_T2, self.in_t):
                 w.size_hint_y = None
-                w.height = dp(58)
+                w.height = dp(60)
                 card.add_widget(w)
             return card
 
-        def _build_action_button(self, dp, MDBoxLayout, MDRaisedButton, MDFlatButton):
+        def _build_action_button(self, dp, MDBoxLayout, MDRaisedButton):
             wrapper = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(66),
+                height=dp(72),
                 spacing=dp(10),
-                padding=[0, dp(5), 0, dp(5)],
+                padding=[0, dp(8), 0, dp(8)],
             )
             wrapper.add_widget(
                 MDRaisedButton(
                     text="Oblicz",
                     icon="calculator-variant",
-                    size_hint_x=0.5,
+                    size_hint_x=0.40,
                     size_hint_y=None,
-                    height=dp(52),
+                    height=dp(50),
                     font_size="15sp",
                     on_release=lambda *_: self._calculate(),
                 )
@@ -338,45 +340,49 @@ def main() -> None:
                 MDRaisedButton(
                     text="PDF",
                     icon="file-pdf-box",
-                    size_hint_x=0.25,
+                    size_hint_x=0.27,
                     size_hint_y=None,
-                    height=dp(52),
+                    height=dp(50),
                     font_size="15sp",
                     on_release=lambda *_: self._export_pdf(),
                 )
             )
-            btn_clear = MDFlatButton(
-                text="Wyczyść",
-                size_hint_x=0.25,
-                size_hint_y=None,
-                height=dp(52),
-                font_size="15sp",
-                on_release=lambda *_: self._reset_inputs(),
-                theme_text_color="Custom",
-                text_color=(0.85, 0.40, 0.40, 1),
+            wrapper.add_widget(
+                MDRaisedButton(
+                    text="Wyczyść",
+                    icon="broom",
+                    size_hint_x=0.33,
+                    size_hint_y=None,
+                    height=dp(50),
+                    font_size="15sp",
+                    md_bg_color=(0.16, 0.19, 0.23, 1),
+                    on_release=lambda *_: self._reset_inputs(),
+                    theme_text_color="Custom",
+                    text_color=(1.0, 0.55, 0.55, 1),
+                )
             )
-            wrapper.add_widget(btn_clear)
             return wrapper
 
         def _build_results_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout):
             card = MDCard(
                 orientation="vertical",
                 padding=dp(14),
-                spacing=dp(9),
+                spacing=dp(10),
                 size_hint_y=None,
-                height=dp(430),
+                height=dp(456),
                 radius=[16, 16, 16, 16],
                 elevation=3,
                 md_bg_color=self._card_bg(),
             )
             self._themed_cards.append(card)
-            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(30), spacing=dp(8))
+            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(34), spacing=dp(8))
             title_row.add_widget(
                 MDIcon(
-                    icon="chart-donut",
+                    icon="calculator",
                     size_hint_x=None,
-                    width=dp(30),
+                    width=dp(28),
                     halign="center",
+                    font_size="24sp",
                     theme_text_color="Custom",
                     text_color=STAGE_COLORS["total"],
                 )
@@ -386,10 +392,10 @@ def main() -> None:
 
             self.lbl_total = MDLabel(
                 text="Suma mocy: — kW",
-                font_style="H5",
+                font_style="H6",
                 halign="center",
                 size_hint_y=None,
-                height=dp(44),
+                height=dp(50),
                 theme_text_color="Custom",
                 text_color=STAGE_COLORS["total"],
             )
@@ -425,8 +431,8 @@ def main() -> None:
             return card
 
         def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
-            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
-            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(26), spacing=dp(6))
+            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(62), spacing=dp(4))
+            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(28), spacing=dp(8))
             head.add_widget(
                 MDIcon(
                     icon=icon,
@@ -447,11 +453,32 @@ def main() -> None:
             parent.add_widget(row)
             return {"bar": bar, "value_label": lbl_val}
 
+        def _build_footer(self, dp, MDBoxLayout, MDLabel):
+            from tpof import __version__ as _app_version
+
+            footer = MDBoxLayout(
+                orientation="vertical",
+                size_hint_y=None,
+                height=dp(34),
+                padding=[dp(12), dp(4), dp(12), dp(4)],
+                md_bg_color=(0.04, 0.07, 0.10, 1),
+            )
+            self.footer_bar = footer
+            footer.add_widget(
+                MDLabel(
+                    text=f"Shocker Calc v{_app_version}  |  Sebastian Milczarek",
+                    halign="center",
+                    theme_text_color="Hint",
+                    font_style="Caption",
+                )
+            )
+            return footer
+
         def _build_ad_slot(self, dp, MDBoxLayout, MDIcon, MDLabel):
             slot = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(90),
+                height=dp(96),
                 padding=[dp(16), dp(6), dp(16), dp(6)],
                 spacing=dp(8),
                 md_bg_color=(0.02, 0.04, 0.06, 0.92),
