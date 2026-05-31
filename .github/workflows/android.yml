@@ -104,7 +104,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shockercalc-debug-apk
+          name: refrigerationcalc-debug-apk
           path: bin/*.apk
           if-no-files-found: warn
           retention-days: 30

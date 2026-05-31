@@ -1,4 +1,4 @@
-"""Aplikacja desktopowa Shocker Calc (Tkinter + ttkbootstrap).
+"""Aplikacja desktopowa Refrigeration Calc (Tkinter + ttkbootstrap).
 
 Cała logika domenowa jest delegowana do `tpof.core` — ta warstwa odpowiada
 wyłącznie za prezentację, walidację formularza i interakcję z systemem plików.
@@ -44,7 +44,7 @@ from .paths import (
 
 log = logging.getLogger(__name__)
 
-APP_TITLE = "Shocker Calc"
+APP_TITLE = "Refrigeration Calc"
 APP_SUBTITLE = "Kalkulator zapotrzebowania chłodu dla procesu zamrażania"
 AUTHOR_TEXT = "Autor: Sebastian Milczarek — MD-Puch Sp. z o.o."
 PDF_AUTHOR_TEXT = "Autor:\nSebastian Milczarek\nMD-Puch Sp. z o.o."

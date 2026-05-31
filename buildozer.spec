@@ -1,7 +1,7 @@
 [app]
 
 # Nazwa aplikacji widoczna na ekranie urządzenia
-title = Shocker Calc
+title = Refrigeration Calc
 
 # Nazwa pakietu (musi być unikalna w Google Play)
 package.name = shockercalc

@@ -1,4 +1,4 @@
-# Shocker Calc
+# Refrigeration Calc
 
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych.
 
