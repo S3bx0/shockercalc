@@ -91,6 +91,17 @@ def main() -> None:
             "    python -m pip install -r requirements-mobile.txt"
         ) from exc
 
+    # Rejestracja fontu DejaVuSans (pełen Unicode — subscripty, symbole)
+    # — działa zarówno na desktopie jak i na Androidzie (font jest w assets/).
+    try:
+        from kivy.core.text import LabelBase
+
+        if FONT_PATH.exists():
+            LabelBase.register(name="DejaVuSans", fn_regular=str(FONT_PATH))
+            log.info("Zarejestrowano font DejaVuSans z %s", FONT_PATH)
+    except Exception:  # pragma: no cover
+        log.exception("Nie udało się zarejestrować fontu DejaVuSans")
+
     catalog: Dict[str, List[Product]] = load_products(DATA_PATH)
     categories = list_categories(catalog)
 
@@ -118,11 +129,11 @@ def main() -> None:
             )
             root.add_widget(self.toolbar)
 
-            scroll = MDScrollView()
+            self.scroll = MDScrollView()
             content = MDBoxLayout(
                 orientation="vertical",
                 padding=dp(12),
-                spacing=dp(12),
+                spacing=dp(16),
                 size_hint_y=None,
             )
             content.bind(minimum_height=content.setter("height"))
@@ -135,8 +146,21 @@ def main() -> None:
             )
             content.add_widget(self.results_card)
 
-            scroll.add_widget(content)
-            root.add_widget(scroll)
+            # Stopka z informacj\u0105 o autorze i wersji \u2014 widoczna na dole ekranu.
+            from tpof import __version__ as _app_version
+
+            footer = MDLabel(
+                text=f"Shocker Calc v{_app_version}  \u2022  autor: Sebastian Milczarek",
+                halign="center",
+                theme_text_color="Hint",
+                size_hint_y=None,
+                height=dp(28),
+                font_style="Caption",
+            )
+            content.add_widget(footer)
+
+            self.scroll.add_widget(content)
+            root.add_widget(self.scroll)
             return root
 
         # --- karty -------------------------------------------------------
@@ -168,7 +192,12 @@ def main() -> None:
             card.add_widget(self.btn_product)
 
             self.product_image = AsyncImage(
-                source="", size_hint_y=None, height=dp(80), allow_stretch=True, keep_ratio=True
+                source="",
+                size_hint_y=None,
+                height=dp(80),
+                allow_stretch=True,
+                keep_ratio=True,
+                opacity=0,
             )
             card.add_widget(self.product_image)
             return card
@@ -203,7 +232,13 @@ def main() -> None:
             return card
 
         def _build_action_button(self, dp, MDBoxLayout, MDRaisedButton, MDFlatButton):
-            wrapper = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(56), spacing=dp(8))
+            wrapper = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(64),
+                spacing=dp(8),
+                padding=[0, dp(4), 0, dp(4)],
+            )
             wrapper.add_widget(
                 MDRaisedButton(
                     text="Oblicz",
@@ -220,13 +255,15 @@ def main() -> None:
                     on_release=lambda *_: self._export_pdf(),
                 )
             )
-            wrapper.add_widget(
-                MDFlatButton(
-                    text="Wyczyść",
-                    size_hint_x=0.25,
-                    on_release=lambda *_: self._reset_inputs(),
-                )
+            # "Wyczyść" w wyróżnionym kolorze, żeby nie wyglądało jak goly tekst.
+            btn_clear = MDFlatButton(
+                text="Wyczyść",
+                size_hint_x=0.25,
+                on_release=lambda *_: self._reset_inputs(),
+                theme_text_color="Custom",
+                text_color=(0.85, 0.40, 0.40, 1),
             )
+            wrapper.add_widget(btn_clear)
             return wrapper
 
         def _build_results_card(self, dp, MDCard, MDBoxLayout, MDLabel, MDProgressBar, MDGridLayout):
@@ -252,10 +289,12 @@ def main() -> None:
             card.add_widget(self.lbl_total)
 
             self.bars: Dict[str, Dict] = {}
+            # Bez emoji — kolor paska jednoznacznie identyfikuje etap.
+            # (Font Roboto z KivyMD nie ma glifów dla 🧊 itp.)
             for key, label in [
-                ("schladzanie", "❄ Schładzanie"),
-                ("zamrozenie", "🧊 Zamrożenie"),
-                ("domrozenie", "⛄ Domrażanie"),
+                ("schladzanie", "Schładzanie"),
+                ("zamrozenie", "Zamrożenie"),
+                ("domrozenie", "Domrażanie"),
             ]:
                 self.bars[key] = self._add_stage_row(card, key, label, dp, MDBoxLayout, MDLabel, MDProgressBar)
 
@@ -314,6 +353,7 @@ def main() -> None:
             self.btn_product.text = "Wybierz produkt"
             self.btn_product.disabled = False
             self.product_image.source = ""
+            self.product_image.opacity = 0
             if self._cat_menu:
                 self._cat_menu.dismiss()
 
@@ -339,6 +379,8 @@ def main() -> None:
             self.btn_product.text = name
             img = _safe_image_path(name)
             self.product_image.source = img or ""
+            # Ukryj kontroler obrazu gdy brak pliku — unikamy białego placeholder'a.
+            self.product_image.opacity = 1 if img else 0
             if self._prod_menu:
                 self._prod_menu.dismiss()
 
@@ -458,17 +500,26 @@ def main() -> None:
             self.props_grid.clear_widgets()
             p = results.produkt
             warn = "  (szacowane)" if results.T_zam_szacunkowy else ""
+            # Subscripty przez Kivy markup (Roboto nie ma ₁₂).
             rows = [
                 ("Kategoria:", p.kategoria or "—"),
-                ("c₁ [kJ/kg·K]:", f"{p.c1:.2f}" if p.c1 is not None else "—"),
-                ("c₂ [kJ/kg·K]:", f"{p.c2:.2f}" if p.c2 is not None else "—"),
-                ("L₁ [kJ/kg]:", f"{p.L1:.0f}" if p.L1 is not None else "—"),
+                ("c[sub]1[/sub] [kJ/kg·K]:", f"{p.c1:.2f}" if p.c1 is not None else "—"),
+                ("c[sub]2[/sub] [kJ/kg·K]:", f"{p.c2:.2f}" if p.c2 is not None else "—"),
+                ("L[sub]1[/sub] [kJ/kg]:", f"{p.L1:.0f}" if p.L1 is not None else "—"),
                 ("Woda [%]:", f"{p.wodaprocent:.1f}" if p.wodaprocent is not None else "—"),
-                ("T_zam [°C]:", f"{results.T_zam_uzyte_C:.2f}{warn}"),
+                ("T[sub]zam[/sub] [°C]:", f"{results.T_zam_uzyte_C:.2f}{warn}"),
             ]
             for label, value in rows:
-                self.props_grid.add_widget(MDLabel(text=label, theme_text_color="Secondary"))
+                self.props_grid.add_widget(
+                    MDLabel(text=label, theme_text_color="Secondary", markup=True)
+                )
                 self.props_grid.add_widget(MDLabel(text=value))
+
+            # Auto-scroll do wyników po obliczeniu — żeby nie chowały się pod akcjami.
+            try:
+                self.scroll.scroll_to(self.results_card, padding=dp(12), animate=True)
+            except Exception:  # pragma: no cover
+                pass
 
     ShockerCalcApp().run()
 

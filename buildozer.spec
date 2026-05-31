@@ -16,6 +16,10 @@ source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project
 # Wersja aplikacji
 version = 2.0.0
 
+# Autor / metadane (komentarz; widoczne w stopce aplikacji oraz w meta-data AndroidManifest)
+# author: Sebastian Milczarek
+android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek
+
 # Zależności (uwaga: kivymd musi być w wersji kompatybilnej z kivy)
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
 # pod Python 3.14 wybierany przez najnowszego python-for-android.
