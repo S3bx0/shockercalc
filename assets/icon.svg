@@ -1,48 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Shocker Calc icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Shocker Calc snowflake icon">
   <defs>
-    <linearGradient id="bg" x1="72" y1="36" x2="438" y2="480" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0b315c"/>
-      <stop offset="0.52" stop-color="#0f7fa7"/>
-      <stop offset="1" stop-color="#25c4c9"/>
+    <linearGradient id="bg" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#234575"/>
+      <stop offset="1" stop-color="#36a8df"/>
     </linearGradient>
-    <linearGradient id="panel" x1="160" y1="160" x2="356" y2="394" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
-      <stop offset="1" stop-color="#d8f5ff" stop-opacity="0.94"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#03142a" flood-opacity="0.36"/>
-    </filter>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <g opacity="0.18" stroke="#ffffff" stroke-width="18" stroke-linecap="round">
-    <path d="M256 82v168"/>
-    <path d="M256 82l-34 55"/>
-    <path d="M256 82l34 55"/>
-    <path d="M110 166l146 84"/>
-    <path d="M110 166l64-3"/>
-    <path d="M110 166l35 54"/>
-    <path d="M402 166l-146 84"/>
-    <path d="M402 166l-64-3"/>
-    <path d="M402 166l-35 54"/>
-  </g>
-  <g filter="url(#shadow)">
-    <rect x="158" y="152" width="196" height="244" rx="34" fill="url(#panel)"/>
-    <rect x="190" y="190" width="132" height="50" rx="14" fill="#0b4a6f" opacity="0.94"/>
-    <g fill="#0b6f8e">
-      <rect x="194" y="270" width="42" height="42" rx="12"/>
-      <rect x="256" y="270" width="42" height="42" rx="12"/>
-      <rect x="194" y="332" width="42" height="42" rx="12"/>
-      <rect x="256" y="332" width="42" height="42" rx="12"/>
-    </g>
-    <path d="M322 270v104" stroke="#079f9f" stroke-width="18" stroke-linecap="round"/>
-    <path d="M298 322h48" stroke="#079f9f" stroke-width="18" stroke-linecap="round"/>
-  </g>
-  <g stroke="#ffffff" stroke-width="13" stroke-linecap="round" opacity="0.96">
-    <path d="M256 104v92"/>
-    <path d="M216 128l80 46"/>
-    <path d="M296 128l-80 46"/>
-    <path d="M238 116l18 26 18-26"/>
-    <path d="M207 156l32-2-14-28"/>
-    <path d="M305 156l-32-2 14-28"/>
+  <g fill="none" stroke="#eaf6ff" stroke-linecap="square" stroke-width="14">
+    <path d="M86 256h341"/>
+    <path d="M170 108l171 296"/>
+    <path d="M341 108 170 404"/>
+
+    <path d="m143 231 36 25-36 25"/>
+    <path d="m369 231-36 25 36 25"/>
+
+    <path d="m176 168 41 18-5-39"/>
+    <path d="m336 168-41 18 5-39"/>
+    <path d="m176 344 41-18-5 39"/>
+    <path d="m336 344-41-18 5 39"/>
   </g>
 </svg>
