@@ -1,4 +1,4 @@
-package pl.mdpuch.shockercalc;
+package pl.smilczarek.refrigerationcalc;
 
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -48,8 +48,8 @@ import org.kivy.android.PythonActivity;
 import java.util.Collections;
 import java.util.List;
 
-public class ShockerCalcActivity extends PythonActivity implements PurchasesUpdatedListener {
-    private static final String TAG = "ShockerCalc";
+public class RefrigerationCalcActivity extends PythonActivity implements PurchasesUpdatedListener {
+    private static final String TAG = "RefrigerationCalc";
     private static final String LIVE_BANNER_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/5599859341";
     private static final String TEST_BANNER_AD_UNIT_ID =
@@ -113,7 +113,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
                     @Override
                     public void onConsentInfoUpdateSuccess() {
                         UserMessagingPlatform.loadAndShowConsentFormIfRequired(
-                                ShockerCalcActivity.this,
+                                RefrigerationCalcActivity.this,
                                 new ConsentForm.OnConsentFormDismissedListener() {
                                     @Override
                                     public void onConsentFormDismissed(FormError formError) {
@@ -158,7 +158,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
             @Override
             public void run() {
                 UserMessagingPlatform.showPrivacyOptionsForm(
-                        ShockerCalcActivity.this,
+                        RefrigerationCalcActivity.this,
                         new ConsentForm.OnConsentFormDismissedListener() {
                             @Override
                             public void onConsentFormDismissed(FormError formError) {
@@ -180,7 +180,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
             @Override
             public void run() {
                 MobileAds.initialize(
-                        ShockerCalcActivity.this,
+                        RefrigerationCalcActivity.this,
                         new OnInitializationCompleteListener() {
                             @Override
                             public void onInitializationComplete(
@@ -312,7 +312,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
                         loadRewardedAd();
                     }
                 });
-                ad.show(ShockerCalcActivity.this, new OnUserEarnedRewardListener() {
+                ad.show(RefrigerationCalcActivity.this, new OnUserEarnedRewardListener() {
                     @Override
                     public void onUserEarnedReward(RewardItem rewardItem) {
                         grantRewardToken();
@@ -396,7 +396,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
                         .setProductDetailsParamsList(Collections.singletonList(productParams))
                         .build();
                 BillingResult result = billingClient.launchBillingFlow(
-                        ShockerCalcActivity.this,
+                        RefrigerationCalcActivity.this,
                         flowParams
                 );
                 if (result.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {

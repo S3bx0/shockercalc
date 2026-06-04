@@ -52,7 +52,7 @@ python -m pytest
 
 ## Android / AdMob / PRO
 
-Build mobilny używa natywnego banera AdMob przez `ShockerCalcActivity`.
+Build mobilny używa natywnego banera AdMob przez `RefrigerationCalcActivity`.
 W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki:
 
 - baner: `ca-app-pub-7481054652344026/5599859341`

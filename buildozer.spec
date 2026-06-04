@@ -4,8 +4,8 @@
 title = Refrigeration Calc
 
 # Nazwa pakietu (musi być unikalna w Google Play)
-package.name = shockercalc
-package.domain = pl.mdpuch
+package.name = refrigerationcalc
+package.domain = pl.smilczarek
 
 # Katalogi źródłowe
 source.dir = .
@@ -51,8 +51,8 @@ android.archs = arm64-v8a, armeabi-v7a
 
 # AdMob / Google Mobile Ads SDK + Google Play Billing (PRO: no ads)
 android.add_src = %(source.dir)s/android/src
-android.activity_class_name = pl.mdpuch.shockercalc.ShockerCalcActivity
-android.entrypoint = pl.mdpuch.shockercalc.ShockerCalcActivity
+android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
+android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0
 android.add_gradle_repositories = "google()", "mavenCentral()"
 

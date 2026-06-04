@@ -1,6 +1,6 @@
 # Changelog
 
-Wszystkie istotne zmiany w projekcie **Shocker Calc** (`pl.mdpuch.shockercalc`).
+Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refrigerationcalc`).
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
@@ -165,7 +165,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - **`requirements.txt`** + **`requirements-dev.txt`** — rozdzielenie zależności runtime/dev (pytest, pytest-cov).
 - **`pyproject.toml`** — `pytest` skonfigurowany (`testpaths`, `rootdir`).
 - **`.gitignore`** — Python build artifacts, venv, IDE.
-- **`buildozer.spec`** — szkielet dla `pl.mdpuch.shockercalc` (Android).
+- **`buildozer.spec`** — szkielet dla `pl.smilczarek.refrigerationcalc` (Android).
 
 ---
 
