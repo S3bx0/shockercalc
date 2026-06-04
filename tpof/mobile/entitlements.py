@@ -17,8 +17,10 @@ Model uprawnień ma trzy warstwy:
    Google Play Billing i nadawanymi przez :meth:`Entitlements.grant_module`.
 
 Zakup PRO (``pro_no_ads``) usuwa reklamy oraz odblokowuje pełną listę
-produktów. Dostęp do płatnych modułów funkcyjnych jest niezależny od
-``pro_no_ads`` — chyba że dany moduł zostanie jawnie nadany lub trwa trial.
+produktów W KARCIE RDZENIOWEJ (zamrażanie). PRO świadomie **nie** odblokowuje
+płatnych kart funkcyjnych — każda nowa karta jest kupowana niezależnie
+(osobny produkt w Google Play Billing). Trial daje czasowy podgląd wszystkich
+kart; po jego wygaśnięciu każdą płatną kartę trzeba kupić osobno.
 
 Stan trwały trzymany jest w pliku JSON w prywatnym katalogu aplikacji
 (Android: ``ANDROID_PRIVATE``; desktop: ``%APPDATA%``/``~/.config``).
@@ -171,10 +173,18 @@ class Entitlements:
     def has_module(self, module_id: str, pro: bool = False) -> bool:
         """Czy moduł (karta) jest dostępny.
 
-        Dostępny gdy: moduł darmowy, trwa trial, został kupiony, lub PRO.
+        Każda płatna karta jest kupowana NIEZALEŻNIE — zakup PRO (``pro_no_ads``)
+        NIE odblokowuje płatnych kart. ``pro`` jest przyjmowany tylko dla
+        zgodności sygnatury i celowo nie wpływa na dostęp do płatnych modułów.
+
+        Moduł jest dostępny gdy:
+          • należy do darmowych (``FREE_MODULES``, np. rdzeń zamrażania), lub
+          • trwa trial (czasowy podgląd wszystkich kart), lub
+          • został kupiony (``grant_module``).
         """
+        del pro  # świadomie ignorowane: PRO nie odblokowuje płatnych kart
         if module_id in FREE_MODULES:
             return True
-        if self.is_trial_active() or bool(pro):
+        if self.is_trial_active():
             return True
         return module_id in self._modules
