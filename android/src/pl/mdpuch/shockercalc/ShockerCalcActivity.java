@@ -142,7 +142,14 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
         if (adWidth <= 0) {
             adWidth = 360;
         }
-        return AdSize.getLargeAnchoredAdaptiveBannerAdSize(this, adWidth);
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
+    }
+
+    public int getBannerHeightDp() {
+        if (bannerAdView == null || bannerAdView.getAdSize() == null) {
+            return 0;
+        }
+        return bannerAdView.getAdSize().getHeight();
     }
 
     public boolean isProNoAdsActive() {

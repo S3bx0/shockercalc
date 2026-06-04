@@ -244,6 +244,7 @@ def main() -> None:
             self._last_results = None
             self._themed_cards = []
             self._language = "pl"
+            self._native_ad_height_dp = 0
             self._pro_no_ads = False
 
             self.root_layout = MDBoxLayout(orientation="vertical", md_bg_color=SURFACE_DARK)
@@ -279,6 +280,9 @@ def main() -> None:
             self._apply_responsive_layout()
             Clock.schedule_once(lambda *_: self._refresh_pro_status(), 0.8)
             Clock.schedule_once(lambda *_: self._refresh_pro_status(), 3.0)
+            Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 1.2)
+            Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 3.5)
+            Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
             return root
 
         # --- tekst / stan aplikacji -------------------------------------
@@ -318,10 +322,12 @@ def main() -> None:
             content_pad = 10 if narrow else 14 if compact else 16
             stage_row_h = 56 if compact or short else 62
             props_row_h = 22 if compact or short else 24
-            action_h = 58 if compact else 64
-            title_h = 30 if compact else 34
-            total_h = 42 if compact else 46
+            action_h = 60 if compact else 66
+            title_h = 38 if compact else 44
+            total_h = 44 if compact else 50
             result_space = 6 if compact or short else 8
+            native_ad_h = getattr(self, "_native_ad_height_dp", 0)
+            reserved_ad_h = max(92 if compact else 100, native_ad_h + 18 if native_ad_h else 0)
             result_h = (
                 (card_pad * 2)
                 + title_h
@@ -397,7 +403,7 @@ def main() -> None:
                 "footer_sp": int(11 * text_scale),
                 "pro_w": dp(72 if compact else 82),
                 "pro_h": dp(26 if compact else 28),
-                "ad_h": dp(90 if compact else 96),
+                "ad_h": dp(reserved_ad_h),
             }
 
         def _apply_responsive_layout(self, *_):
@@ -922,20 +928,13 @@ def main() -> None:
             )
             self.results_card = card
             self._themed_cards.append(card)
-            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(34), spacing=dp(8))
+            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(44), spacing=0)
             self.results_title_row = title_row
-            title_row.add_widget(
-                MDIcon(
-                    icon="calculator",
-                    size_hint_x=None,
-                    width=dp(28),
-                    halign="center",
-                    font_size="24sp",
-                    theme_text_color="Custom",
-                    text_color=STAGE_COLORS["total"],
-                )
+            self.lbl_results_title = MDLabel(
+                text=self._t("result"),
+                font_style="H6",
+                valign="middle",
             )
-            self.lbl_results_title = MDLabel(text=self._t("result"), font_style="H6")
             title_row.add_widget(self.lbl_results_title)
             card.add_widget(title_row)
             card.add_widget(self._build_action_button(dp, MDBoxLayout, MDRaisedButton))
@@ -1096,8 +1095,22 @@ def main() -> None:
             try:
                 activity = self._android_activity()
                 self._set_pro_status(bool(activity.isProNoAdsActive()))
+                self._refresh_ad_slot_height()
             except Exception:  # pragma: no cover - Android only
                 log.debug("Nie udało się odczytać statusu PRO", exc_info=True)
+
+        def _refresh_ad_slot_height(self):
+            if not IS_ANDROID or self._pro_no_ads:
+                return
+            try:
+                height_dp = int(self._android_activity().getBannerHeightDp())
+            except Exception:  # pragma: no cover - Android only
+                log.debug("Nie udało się odczytać wysokości banera", exc_info=True)
+                return
+            if height_dp <= 0 or height_dp == self._native_ad_height_dp:
+                return
+            self._native_ad_height_dp = height_dp
+            self._apply_responsive_layout()
 
         def _set_pro_status(self, active: bool):
             from kivy.metrics import dp
