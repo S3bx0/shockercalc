@@ -16,6 +16,13 @@ source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project
 # Wersja aplikacji
 version = 2.0.0
 
+# Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
+# CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
+android.numeric_version = 1
+
+# Format artefaktu wydania dla Google Play (App Bundle).
+android.release_artifact = aab
+
 # Autor / metadane (komentarz; widoczne w stopce aplikacji oraz w meta-data AndroidManifest)
 # author: Sebastian Milczarek
 android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek,com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-7481054652344026~2716191071
