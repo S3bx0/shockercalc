@@ -9,6 +9,9 @@ from pathlib import Path
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
     TRIAL_DAYS,
+    CORE_MODULE,
+    MODULE_VALVES,
+    MODULE_INSULATION,
     Entitlements,
 )
 
@@ -134,3 +137,99 @@ def test_uszkodzony_plik_stanu_nie_wywraca(tmp_path):
 def test_freemium_limit_to_jeden(tmp_path):
     # Strażnik: zakładamy 1 darmowy produkt na liste.
     assert FREE_PRODUCTS_PER_CATEGORY == 1
+
+
+# --- moduły funkcyjne (karty) -------------------------------------------
+def test_modul_rdzeniowy_zawsze_dostepny(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 30)
+    # Rdzeń (zamrażanie) jest darmowy nawet po wygaśnięciu triala bez PRO.
+    assert ent.has_module(CORE_MODULE, pro=False)
+
+
+def test_modul_platny_dostepny_w_trialu(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    # W trakcie triala wszystkie moduły są dostępne.
+    assert ent.has_module(MODULE_VALVES, pro=False)
+
+
+def test_modul_platny_zablokowany_po_trialu(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    assert not ent.has_module(MODULE_VALVES, pro=False)
+
+
+def test_grant_module_odblokowuje_po_trialu(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    assert not ent.has_module(MODULE_VALVES, pro=False)
+    ent.grant_module(MODULE_VALVES)
+    assert ent.has_module(MODULE_VALVES, pro=False)
+    # Inny moduł nadal zablokowany.
+    assert not ent.has_module(MODULE_INSULATION, pro=False)
+
+
+def test_pro_nie_odblokowuje_platnych_modulow_automatycznie_ale_has_module_tak(tmp_path):
+    # Uwaga projektowa: has_module(pro=True) traktuje PRO jako pełny dostęp.
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    assert ent.has_module(MODULE_VALVES, pro=True)
+
+
+def test_modul_jest_trwaly(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    ent.grant_module(MODULE_VALVES)
+    # Nowa instancja czyta moduł z pliku.
+    ent2 = _make(tmp_path, clock)
+    assert ent2.has_module(MODULE_VALVES, pro=False)
+    assert MODULE_VALVES in ent2.owned_modules()
+
+
+def test_revoke_module(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    ent.grant_module(MODULE_VALVES)
+    assert ent.has_module(MODULE_VALVES, pro=False)
+    ent.revoke_module(MODULE_VALVES)
+    assert not ent.has_module(MODULE_VALVES, pro=False)
+
+
+def test_sync_modules_ustawia_komplet(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    ent.sync_modules([MODULE_VALVES, MODULE_INSULATION])
+    assert ent.has_module(MODULE_VALVES, pro=False)
+    assert ent.has_module(MODULE_INSULATION, pro=False)
+    # Synchronizacja z węższą listą usuwa nieobecne.
+    ent.sync_modules([MODULE_VALVES])
+    assert ent.has_module(MODULE_VALVES, pro=False)
+    assert not ent.has_module(MODULE_INSULATION, pro=False)
+
+
+def test_stary_plik_bez_modulow_dziala(tmp_path):
+    # Wsteczna zgodność: plik zapisany przed wprowadzeniem modułów.
+    path = tmp_path / "entitlement.json"
+    path.write_text('{"first_launch_ts": 1000000.0}', encoding="utf-8")
+    clock = _Clock()
+    ent = Entitlements(state_path=path, clock=clock)
+    assert ent.trial_start_ts() == 1000000.0
+    assert ent.owned_modules() == frozenset()
+    assert ent.has_module(CORE_MODULE)
+
