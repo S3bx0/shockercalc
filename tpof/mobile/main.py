@@ -253,12 +253,13 @@ def main() -> None:
             root.add_widget(self.toolbar)
 
             self.scroll = MDScrollView()
-            content = MDBoxLayout(
+            self.content = MDBoxLayout(
                 orientation="vertical",
                 padding=[dp(16), dp(14), dp(16), dp(18)],
                 spacing=dp(14),
                 size_hint_y=None,
             )
+            content = self.content
             content.bind(minimum_height=content.setter("height"))
 
             content.add_widget(
@@ -274,6 +275,8 @@ def main() -> None:
             root.add_widget(self.scroll)
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
+            Window.bind(size=self._apply_responsive_layout)
+            self._apply_responsive_layout()
             Clock.schedule_once(lambda *_: self._refresh_pro_status(), 0.8)
             Clock.schedule_once(lambda *_: self._refresh_pro_status(), 3.0)
             return root
@@ -295,6 +298,246 @@ def main() -> None:
             if self._pro_no_ads:
                 return self._t("pro_ads_off")
             return self._t("ad") if IS_ANDROID else self._t("ad_placeholder")
+
+        def _screen_dp(self, dp):
+            unit = max(float(dp(1)), 1.0)
+            return Window.width / unit, Window.height / unit
+
+        def _clamp(self, value: float, min_value: float, max_value: float) -> float:
+            return max(min_value, min(max_value, value))
+
+        def _layout_metrics(self, dp):
+            width_dp, height_dp = self._screen_dp(dp)
+            narrow = width_dp < 360
+            compact = width_dp < 400
+            short = height_dp < 720
+            text_scale = self._clamp(width_dp / 412.0, 0.88, 1.06)
+            product_horizontal = width_dp >= 370
+
+            card_pad = 10 if narrow else 12 if compact else 14
+            content_pad = 10 if narrow else 14 if compact else 16
+            stage_row_h = 56 if compact or short else 62
+            props_row_h = 22 if compact or short else 24
+            action_h = 58 if compact else 64
+            title_h = 30 if compact else 34
+            total_h = 42 if compact else 46
+            result_space = 6 if compact or short else 8
+            result_h = (
+                (card_pad * 2)
+                + title_h
+                + action_h
+                + total_h
+                + (stage_row_h * 3)
+                + 24
+                + (props_row_h * 6)
+                + (result_space * 7)
+            )
+
+            if product_horizontal:
+                product_body_h = 180 if compact else 202
+                product_card_h = product_body_h + title_h + (card_pad * 2) + 12
+                product_controls_h = product_body_h
+                product_image_h = product_body_h
+            else:
+                product_controls_h = 116
+                product_image_h = 162
+                product_body_h = product_controls_h + product_image_h + 12
+                product_card_h = product_body_h + title_h + (card_pad * 2) + 12
+
+            return {
+                "width_dp": width_dp,
+                "height_dp": height_dp,
+                "narrow": narrow,
+                "compact": compact,
+                "short": short,
+                "text_scale": text_scale,
+                "product_horizontal": product_horizontal,
+                "content_pad": dp(content_pad),
+                "content_top": dp(12 if compact else 14),
+                "content_bottom": dp(14 if compact else 18),
+                "content_spacing": dp(10 if compact or short else 14),
+                "card_pad": dp(card_pad),
+                "card_spacing": dp(8 if compact else 10),
+                "toolbar_h": dp(62 if narrow else 66 if compact else 72),
+                "toolbar_icon_w": dp(36 if narrow else 40 if compact else 44),
+                "toolbar_btn_w": dp(42 if narrow else 46 if compact else 48),
+                "toolbar_icon_sp": 26 if compact else 30,
+                "toolbar_btn_sp": 24 if compact else 28,
+                "toolbar_title_sp": int(18 * text_scale) if narrow else int(20 * text_scale) if compact else 22,
+                "title_h": dp(title_h),
+                "title_sp": int(20 * text_scale),
+                "body_sp": int(15 * text_scale),
+                "caption_sp": int(12 * text_scale),
+                "button_h": dp(46 if compact else 52),
+                "button_sp": int(14 * text_scale),
+                "field_h": dp(54 if compact or short else 60),
+                "params_h": dp(330 if compact or short else 360),
+                "product_card_h": dp(product_card_h),
+                "product_body_h": dp(product_body_h),
+                "product_controls_h": dp(product_controls_h),
+                "product_image_h": dp(product_image_h),
+                "product_body_spacing": dp(12 if compact else 14),
+                "placeholder_top": dp(32 if compact else 44),
+                "placeholder_bottom": dp(20 if compact else 28),
+                "placeholder_icon_sp": 36 if compact else 42,
+                "action_h": dp(action_h),
+                "action_button_h": dp(44 if compact else 48),
+                "action_sp": int(13 * text_scale) if compact else int(14 * text_scale),
+                "results_h": dp(result_h),
+                "results_spacing": dp(result_space),
+                "total_h": dp(total_h),
+                "total_sp": int(20 * text_scale),
+                "stage_row_h": dp(stage_row_h),
+                "stage_head_h": dp(26 if compact else 28),
+                "stage_icon_w": dp(24 if compact else 28),
+                "stage_icon_sp": 24 if compact else 28,
+                "props_title_h": dp(22 if compact else 24),
+                "props_row_h": dp(props_row_h),
+                "footer_h": dp(30 if compact else 34),
+                "footer_sp": int(11 * text_scale),
+                "pro_w": dp(72 if compact else 82),
+                "pro_h": dp(26 if compact else 28),
+                "ad_h": dp(90 if compact else 96),
+            }
+
+        def _apply_responsive_layout(self, *_):
+            from kivy.metrics import dp
+
+            m = self._layout_metrics(dp)
+            if hasattr(self, "content"):
+                self.content.padding = [
+                    m["content_pad"],
+                    m["content_top"],
+                    m["content_pad"],
+                    m["content_bottom"],
+                ]
+                self.content.spacing = m["content_spacing"]
+
+            if hasattr(self, "toolbar"):
+                self.toolbar.height = m["toolbar_h"]
+                self.toolbar.padding = [m["content_pad"], 0, dp(6 if m["compact"] else 8), 0]
+            if hasattr(self, "toolbar_snowflake"):
+                self.toolbar_snowflake.width = m["toolbar_icon_w"]
+                self.toolbar_snowflake.font_size = f'{m["toolbar_icon_sp"]}sp'
+            if hasattr(self, "lbl_toolbar_title"):
+                self.lbl_toolbar_title.font_size = f'{m["toolbar_title_sp"]}sp'
+            for btn in (getattr(self, "btn_lang", None), getattr(self, "btn_theme", None)):
+                if btn is not None:
+                    btn.width = m["toolbar_btn_w"]
+                    btn.icon_size = f'{m["toolbar_btn_sp"]}sp'
+
+            if hasattr(self, "product_card"):
+                self.product_card.padding = m["card_pad"]
+                self.product_card.spacing = dp(10 if m["compact"] else 12)
+                self.product_card.height = m["product_card_h"]
+            if hasattr(self, "lbl_product_title"):
+                self.lbl_product_title.height = m["title_h"]
+                self.lbl_product_title.font_size = f'{m["title_sp"]}sp'
+            if hasattr(self, "product_body"):
+                self.product_body.orientation = "horizontal" if m["product_horizontal"] else "vertical"
+                self.product_body.height = m["product_body_h"]
+                self.product_body.spacing = m["product_body_spacing"]
+            if hasattr(self, "product_controls"):
+                self.product_controls.spacing = dp(10 if m["compact"] else 12)
+                self.product_controls.size_hint_x = 0.46 if m["product_horizontal"] else 1
+                self.product_controls.size_hint_y = 1 if m["product_horizontal"] else None
+                self.product_controls.height = m["product_controls_h"]
+                self.product_controls.padding = [0, dp(6 if m["compact"] else 8), 0, dp(6 if m["compact"] else 8)]
+            if hasattr(self, "image_box"):
+                self.image_box.size_hint_x = 0.54 if m["product_horizontal"] else 1
+                self.image_box.size_hint_y = 1 if m["product_horizontal"] else None
+                self.image_box.height = m["product_image_h"]
+            if hasattr(self, "image_placeholder"):
+                self.image_placeholder.padding = [
+                    0,
+                    m["placeholder_top"],
+                    0,
+                    m["placeholder_bottom"],
+                ]
+            if hasattr(self, "image_placeholder_icon"):
+                self.image_placeholder_icon.font_size = f'{m["placeholder_icon_sp"]}sp'
+            if hasattr(self, "image_placeholder_label"):
+                self.image_placeholder_label.font_size = f'{m["caption_sp"]}sp'
+
+            for btn in (getattr(self, "btn_category", None), getattr(self, "btn_product", None)):
+                if btn is not None:
+                    btn.height = m["button_h"]
+                    btn.font_size = f'{m["button_sp"]}sp'
+
+            if hasattr(self, "params_card"):
+                self.params_card.padding = m["card_pad"]
+                self.params_card.spacing = m["card_spacing"]
+                self.params_card.height = m["params_h"]
+            if hasattr(self, "lbl_params_title"):
+                self.lbl_params_title.height = m["title_h"]
+                self.lbl_params_title.font_size = f'{m["title_sp"]}sp'
+            if hasattr(self, "row_mass"):
+                self.row_mass.height = m["field_h"] + dp(8)
+                self.row_mass.spacing = dp(8 if m["compact"] else 10)
+            if hasattr(self, "lbl_unit"):
+                self.lbl_unit.width = dp(30 if m["compact"] else 34)
+            if hasattr(self, "switch_unit"):
+                self.switch_unit.width = dp(64 if m["compact"] else 72)
+            for field_ in [
+                getattr(self, "in_m", None),
+                getattr(self, "in_T1", None),
+                getattr(self, "in_T2", None),
+                getattr(self, "in_t", None),
+            ]:
+                if field_ is not None:
+                    field_.height = m["field_h"]
+                    field_.font_size = f'{m["body_sp"]}sp'
+
+            if hasattr(self, "results_card"):
+                self.results_card.padding = m["card_pad"]
+                self.results_card.spacing = m["results_spacing"]
+                self.results_card.height = m["results_h"]
+            if hasattr(self, "results_title_row"):
+                self.results_title_row.height = m["title_h"]
+            if hasattr(self, "lbl_results_title"):
+                self.lbl_results_title.font_size = f'{m["title_sp"]}sp'
+            if hasattr(self, "action_row"):
+                self.action_row.height = m["action_h"]
+                self.action_row.spacing = dp(6 if m["compact"] else 8)
+                self.action_row.padding = [0, dp(5 if m["compact"] else 6), 0, dp(5 if m["compact"] else 6)]
+            for btn in [
+                getattr(self, "btn_calc", None),
+                getattr(self, "btn_pdf", None),
+                getattr(self, "btn_clear", None),
+            ]:
+                if btn is not None:
+                    btn.height = m["action_button_h"]
+                    btn.font_size = f'{m["action_sp"]}sp'
+            if hasattr(self, "lbl_total"):
+                self.lbl_total.height = m["total_h"]
+                self.lbl_total.font_size = f'{m["total_sp"]}sp'
+            for entry in getattr(self, "bars", {}).values():
+                entry["row"].height = m["stage_row_h"]
+                entry["head"].height = m["stage_head_h"]
+                entry["icon"].width = m["stage_icon_w"]
+                entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
+                entry["name_label"].font_size = f'{m["body_sp"]}sp'
+                entry["value_label"].font_size = f'{m["body_sp"]}sp'
+            if hasattr(self, "lbl_props_title"):
+                self.lbl_props_title.height = m["props_title_h"]
+                self.lbl_props_title.font_size = f'{m["body_sp"]}sp'
+            if hasattr(self, "props_grid"):
+                self.props_grid.row_default_height = m["props_row_h"]
+
+            if hasattr(self, "footer_bar"):
+                self.footer_bar.height = m["footer_h"]
+                self.footer_bar.padding = [m["content_pad"], dp(3), m["content_pad"], dp(3)]
+            if hasattr(self, "footer_label"):
+                self.footer_label.font_size = f'{m["footer_sp"]}sp'
+                self.footer_label.shorten = True
+            if hasattr(self, "btn_pro"):
+                self.btn_pro.width = m["pro_w"]
+                self.btn_pro.height = m["pro_h"]
+                self.btn_pro.font_size = f'{m["caption_sp"]}sp'
+            if hasattr(self, "ad_slot") and not self._pro_no_ads:
+                self.ad_slot.height = m["ad_h"]
+            if hasattr(self, "ad_label"):
+                self.ad_label.font_size = f'{m["caption_sp"]}sp'
 
         def _refresh_texts(self):
             if hasattr(self, "lbl_toolbar_title"):
@@ -363,6 +606,10 @@ def main() -> None:
             )
 
         def _menu(self, caller, items, width_mult, max_height, dp, MDDropdownMenu):
+            width_dp, height_dp = self._screen_dp(dp)
+            desired_width = min(width_mult * 56.0, max(180.0, width_dp - 32.0))
+            width_mult = self._clamp(desired_width / 56.0, 2.8, 5.0)
+            max_height = min(max_height, dp(max(220.0, height_dp * 0.58)))
             menu = MDDropdownMenu(
                 caller=caller,
                 items=items,
@@ -394,17 +641,16 @@ def main() -> None:
                 spacing=dp(2),
                 md_bg_color=(0.12, 0.55, 0.86, 1),
             )
-            bar.add_widget(
-                MDIcon(
-                    icon="snowflake",
-                    size_hint_x=None,
-                    width=dp(44),
-                    halign="center",
-                    font_size="30sp",
-                    theme_text_color="Custom",
-                    text_color=(1, 1, 1, 1),
-                )
+            self.toolbar_snowflake = MDIcon(
+                icon="snowflake",
+                size_hint_x=None,
+                width=dp(44),
+                halign="center",
+                font_size="30sp",
+                theme_text_color="Custom",
+                text_color=(1, 1, 1, 1),
             )
+            bar.add_widget(self.toolbar_snowflake)
             self.lbl_toolbar_title = MDLabel(
                 text=APP_NAME,
                 halign="center",
@@ -478,6 +724,7 @@ def main() -> None:
                 elevation=3,
                 md_bg_color=self._card_bg(),
             )
+            self.product_card = card
             self._themed_cards.append(card)
             self.lbl_product_title = MDLabel(
                 text=self._t("product"),
@@ -493,12 +740,14 @@ def main() -> None:
                 size_hint_y=None,
                 height=dp(202),
             )
+            self.product_body = body
             controls = MDBoxLayout(
                 orientation="vertical",
                 spacing=dp(12),
                 size_hint_x=0.46,
                 padding=[0, dp(8), 0, dp(8)],
             )
+            self.product_controls = controls
             self.btn_category = MDRaisedButton(
                 text=self._t("choose_category"),
                 size_hint_x=1,
@@ -531,14 +780,13 @@ def main() -> None:
                 spacing=dp(2),
                 padding=[0, dp(44), 0, dp(28)],
             )
-            self.image_placeholder.add_widget(
-                MDIcon(
-                    icon="image",
-                    halign="center",
-                    font_size="42sp",
-                    theme_text_color="Hint",
-                )
+            self.image_placeholder_icon = MDIcon(
+                icon="image",
+                halign="center",
+                font_size="42sp",
+                theme_text_color="Hint",
             )
+            self.image_placeholder.add_widget(self.image_placeholder_icon)
             self.image_placeholder_label = MDLabel(
                 text=self._t("image_placeholder"),
                 halign="center",
@@ -568,6 +816,7 @@ def main() -> None:
                 elevation=3,
                 md_bg_color=self._card_bg(),
             )
+            self.params_card = card
             self._themed_cards.append(card)
             self.lbl_params_title = MDLabel(
                 text=self._t("params"),
@@ -578,6 +827,7 @@ def main() -> None:
             card.add_widget(self.lbl_params_title)
 
             row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(68))
+            self.row_mass = row_mass
             self.in_m = MDTextField(
                 hint_text=self._t("mass"),
                 input_filter="float",
@@ -620,6 +870,7 @@ def main() -> None:
                 spacing=dp(8),
                 padding=[0, dp(6), 0, dp(6)],
             )
+            self.action_row = wrapper
             self.btn_calc = MDRaisedButton(
                 text=self._t("calculate"),
                 icon="calculator-variant",
@@ -669,8 +920,10 @@ def main() -> None:
                 elevation=3,
                 md_bg_color=self._card_bg(),
             )
+            self.results_card = card
             self._themed_cards.append(card)
             title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(34), spacing=dp(8))
+            self.results_title_row = title_row
             title_row.add_widget(
                 MDIcon(
                     icon="calculator",
@@ -734,16 +987,15 @@ def main() -> None:
         def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
             row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(62), spacing=dp(4))
             head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(28), spacing=dp(8))
-            head.add_widget(
-                MDIcon(
-                    icon=icon,
-                    size_hint_x=None,
-                    width=dp(28),
-                    halign="center",
-                    theme_text_color="Custom",
-                    text_color=STAGE_COLORS[key],
-                )
+            icon_widget = MDIcon(
+                icon=icon,
+                size_hint_x=None,
+                width=dp(28),
+                halign="center",
+                theme_text_color="Custom",
+                text_color=STAGE_COLORS[key],
             )
+            head.add_widget(icon_widget)
             lbl_name = MDLabel(text=label, size_hint_x=0.52)
             lbl_val = MDLabel(text="—", halign="right", size_hint_x=0.4)
             head.add_widget(lbl_name)
@@ -752,7 +1004,14 @@ def main() -> None:
             row.add_widget(head)
             row.add_widget(bar)
             parent.add_widget(row)
-            return {"bar": bar, "name_label": lbl_name, "value_label": lbl_val}
+            return {
+                "bar": bar,
+                "head": head,
+                "icon": icon_widget,
+                "name_label": lbl_name,
+                "row": row,
+                "value_label": lbl_val,
+            }
 
         def _build_footer(self, dp, MDBoxLayout, MDLabel, MDRaisedButton):
             from tpof import __version__ as _app_version
@@ -844,13 +1103,14 @@ def main() -> None:
             from kivy.metrics import dp
 
             self._pro_no_ads = active
+            ad_height = self._layout_metrics(dp)["ad_h"]
             if hasattr(self, "btn_pro"):
                 self.btn_pro.disabled = active
                 self.btn_pro.text = self._t("pro_active") if active else "PRO"
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
             if hasattr(self, "ad_slot"):
-                self.ad_slot.height = 0 if active else dp(96)
+                self.ad_slot.height = 0 if active else ad_height
                 self.ad_slot.opacity = 0 if active else 1
                 self.ad_slot.disabled = active
 
@@ -874,11 +1134,12 @@ def main() -> None:
             from kivy.metrics import dp
             from kivymd.uix.menu import MDDropdownMenu
 
+            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
             items = [
                 {
                     "text": self._display_category(cat),
                     "viewclass": "OneLineListItem",
-                    "height": dp(52),
+                    "height": item_height,
                     "theme_text_color": "Custom",
                     "text_color": self._menu_text_color(),
                     "on_release": lambda c=cat: self._pick_category(c),
@@ -904,11 +1165,12 @@ def main() -> None:
 
             if not self._selected_category:
                 return
+            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
             items = [
                 {
                     "text": name,
                     "viewclass": "OneLineListItem",
-                    "height": dp(52),
+                    "height": item_height,
                     "theme_text_color": "Custom",
                     "text_color": self._menu_text_color(),
                     "on_release": lambda n=name: self._pick_product(n),
