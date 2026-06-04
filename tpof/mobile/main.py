@@ -33,6 +33,7 @@ from tpof.core import (
     list_products,
     load_products,
 )
+from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, TRIAL_DAYS, Entitlements
 from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
 
 log = logging.getLogger(__name__)
@@ -96,6 +97,13 @@ I18N = {
         "field_temp_end": "temperatura końcowa",
         "field_time": "czas",
         "estimated": "  (szacowane)",
+        "trial_active": "Wersja próbna: pozostało {days} dni",
+        "trial_last_day": "Wersja próbna: ostatni dzień",
+        "trial_expired": "Wersja darmowa • 1 produkt z listy",
+        "pro_unlocked_footer": "PRO • pełen dostęp",
+        "locked_suffix": "  — PRO",
+        "product_locked": "Ten produkt jest dostępny w PRO. W wersji darmowej masz 1 produkt z każdej listy.",
+        "trial_expired_info": "Wersja próbna 7 dni dobiegła końca. Kup PRO, aby odblokować wszystkie produkty.",
     },
     "en": {
         "product": "Product",
@@ -136,6 +144,13 @@ I18N = {
         "field_temp_end": "final temperature",
         "field_time": "time",
         "estimated": "  (estimated)",
+        "trial_active": "Trial: {days} days left",
+        "trial_last_day": "Trial: last day",
+        "trial_expired": "Free version • 1 product per list",
+        "pro_unlocked_footer": "PRO • full access",
+        "locked_suffix": "  — PRO",
+        "product_locked": "This product is available in PRO. The free version allows 1 product per list.",
+        "trial_expired_info": "The 7-day trial has ended. Buy PRO to unlock all products.",
     },
 }
 
@@ -245,6 +260,8 @@ def main() -> None:
             self._language = "pl"
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
+            self._entitlements = Entitlements()
+            self._entitlements.ensure_started()
 
             self.root_layout = MDBoxLayout(orientation="vertical", md_bg_color=SURFACE_DARK)
             root = self.root_layout
@@ -301,6 +318,19 @@ def main() -> None:
             if self._pro_no_ads:
                 return self._t("pro_ads_off")
             return self._t("ad") if IS_ANDROID else self._t("ad_placeholder")
+
+        def _status_footer_text(self) -> str:
+            from tpof import __version__ as _app_version
+
+            base = f"{APP_NAME} v{_app_version}  |  Sebastian Milczarek"
+            if self._pro_no_ads:
+                return f"{base}  |  {self._t('pro_unlocked_footer')}"
+            if self._entitlements.is_trial_active():
+                days = self._entitlements.trial_days_left()
+                if days <= 1:
+                    return f"{base}  |  {self._t('trial_last_day')}"
+                return f"{base}  |  {self._t('trial_active', days=days)}"
+            return f"{base}  |  {self._t('trial_expired')}"
 
         def _screen_dp(self, dp):
             unit = max(float(dp(1)), 1.0)
@@ -1044,8 +1074,6 @@ def main() -> None:
             }
 
         def _build_footer(self, dp, MDBoxLayout, MDLabel, MDRaisedButton):
-            from tpof import __version__ as _app_version
-
             footer = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
@@ -1056,7 +1084,7 @@ def main() -> None:
             )
             self.footer_bar = footer
             self.footer_label = MDLabel(
-                text=f"{APP_NAME} v{_app_version}  |  Sebastian Milczarek",
+                text=self._status_footer_text(),
                 halign="center",
                 valign="middle",
                 theme_text_color="Hint",
@@ -1158,6 +1186,8 @@ def main() -> None:
                 self.ad_slot.height = 0 if active else ad_height
                 self.ad_slot.opacity = 0 if active else 1
                 self.ad_slot.disabled = active
+            if hasattr(self, "footer_label"):
+                self.footer_label.text = self._status_footer_text()
 
         def _buy_pro(self):
             if self._pro_no_ads:
@@ -1211,19 +1241,39 @@ def main() -> None:
             if not self._selected_category:
                 return
             item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
-            items = [
-                {
-                    "text": name,
-                    "viewclass": "OneLineListItem",
-                    "height": item_height,
-                    "theme_text_color": "Custom",
-                    "text_color": self._menu_text_color(),
-                    "on_release": lambda n=name: self._pick_product(n),
-                }
-                for name in list_products(catalog, self._selected_category)
-            ]
+            unlocked = self._entitlements.is_unlocked(self._pro_no_ads)
+            items = []
+            for idx, name in enumerate(list_products(catalog, self._selected_category)):
+                allowed = unlocked or idx < FREE_PRODUCTS_PER_CATEGORY
+                if allowed:
+                    items.append(
+                        {
+                            "text": name,
+                            "viewclass": "OneLineListItem",
+                            "height": item_height,
+                            "theme_text_color": "Custom",
+                            "text_color": self._menu_text_color(),
+                            "on_release": lambda n=name: self._pick_product(n),
+                        }
+                    )
+                else:
+                    items.append(
+                        {
+                            "text": f"{name}{self._t('locked_suffix')}",
+                            "viewclass": "OneLineListItem",
+                            "height": item_height,
+                            "theme_text_color": "Custom",
+                            "text_color": (0.55, 0.58, 0.62, 1),
+                            "on_release": lambda *_: self._on_locked_product(),
+                        }
+                    )
             self._prod_menu = self._menu(caller, items, 4.4, dp(420), dp, MDDropdownMenu)
             self._prod_menu.open()
+
+        def _on_locked_product(self):
+            if self._prod_menu:
+                self._prod_menu.dismiss()
+            self._show_error(self._t("product_locked"))
 
         def _pick_product(self, name: str):
             self._selected_product = name
@@ -1314,6 +1364,17 @@ def main() -> None:
                 if product is None:
                     self._show_error(self._t("missing_product_error"))
                     return
+
+                # Freemium: po wygaśnięciu triala (bez PRO) liczymy tylko dozwolone produkty.
+                if not self._entitlements.is_unlocked(self._pro_no_ads):
+                    products = list_products(catalog, self._selected_category)
+                    try:
+                        idx = products.index(self._selected_product)
+                    except ValueError:
+                        idx = FREE_PRODUCTS_PER_CATEGORY
+                    if not self._entitlements.is_product_allowed(idx, self._pro_no_ads):
+                        self._show_error(self._t("product_locked"))
+                        return
 
                 masa = self._parse_float(self.in_m.text, self._t("field_mass"))
                 if self._mass_unit == "t":
