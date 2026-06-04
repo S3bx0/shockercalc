@@ -36,6 +36,11 @@ import com.google.android.gms.ads.initialization.OnInitializationCompleteListene
 import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import com.google.android.ump.ConsentDebugSettings;
+import com.google.android.ump.ConsentInformation;
+import com.google.android.ump.ConsentRequestParameters;
+import com.google.android.ump.FormError;
+import com.google.android.ump.UserMessagingPlatform;
 
 import org.kivy.android.PythonActivity;
 
@@ -62,6 +67,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
     private RewardedAd rewardedAd;
     private boolean rewardedLoading;
     private boolean adsInitialized;
+    private ConsentInformation consentInformation;
     private BillingClient billingClient;
     private ProductDetails proProductDetails;
     private boolean billingConnecting;
@@ -76,6 +82,97 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
 
     private void initializeAds() {
         if (isProNoAdsActive()) {
+            return;
+        }
+        requestConsentThenInitAds();
+    }
+
+    /**
+     * Uruchamia przepływ zgody Google UMP (wymagany dla użytkowników z EOG/UK
+     * przy reklamach spersonalizowanych). Po zebraniu zgody — lub gdy nie jest
+     * wymagana — inicjalizuje SDK reklam tylko jeśli {@code canRequestAds()}.
+     */
+    private void requestConsentThenInitAds() {
+        ConsentRequestParameters.Builder paramsBuilder =
+                new ConsentRequestParameters.Builder();
+        if (isDebugBuild()) {
+            // W debug wymuszamy geografię EOG, aby przetestować formularz zgody.
+            ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(this)
+                    .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
+                    .build();
+            paramsBuilder.setConsentDebugSettings(debugSettings);
+        }
+        ConsentRequestParameters params = paramsBuilder.build();
+
+        consentInformation = UserMessagingPlatform.getConsentInformation(this);
+        consentInformation.requestConsentInfoUpdate(
+                this,
+                params,
+                new ConsentInformation.OnConsentInfoUpdateSuccessListener() {
+                    @Override
+                    public void onConsentInfoUpdateSuccess() {
+                        UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                                ShockerCalcActivity.this,
+                                new ConsentInformation.OnConsentFormDismissedListener() {
+                                    @Override
+                                    public void onConsentFormDismissed(FormError formError) {
+                                        if (formError != null) {
+                                            Log.w(TAG, "Consent form error: "
+                                                    + formError.getMessage());
+                                        }
+                                        maybeInitializeAdsAfterConsent();
+                                    }
+                                });
+                    }
+                },
+                new ConsentInformation.OnConsentInfoUpdateFailureListener() {
+                    @Override
+                    public void onConsentInfoUpdateFailure(FormError formError) {
+                        Log.w(TAG, "Consent info update failed: "
+                                + (formError != null ? formError.getMessage() : "unknown"));
+                        // Mimo błędu próbujemy zainicjalizować (np. gdy poza EOG).
+                        maybeInitializeAdsAfterConsent();
+                    }
+                });
+    }
+
+    private void maybeInitializeAdsAfterConsent() {
+        if (consentInformation == null || !consentInformation.canRequestAds()) {
+            Log.i(TAG, "Ads not requested: consent not granted / not available.");
+            return;
+        }
+        startMobileAdsSdk();
+    }
+
+    /** True, gdy dostępny jest formularz opcji prywatności (zmiana zgody). */
+    public boolean isPrivacyOptionsRequired() {
+        return consentInformation != null
+                && consentInformation.getPrivacyOptionsRequirementStatus()
+                == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED;
+    }
+
+    /** Ponownie otwiera formularz zgody (wywoływane z menu Prywatność). */
+    public void showPrivacyOptionsForm() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                UserMessagingPlatform.showPrivacyOptionsForm(
+                        ShockerCalcActivity.this,
+                        new ConsentInformation.OnConsentFormDismissedListener() {
+                            @Override
+                            public void onConsentFormDismissed(FormError formError) {
+                                if (formError != null) {
+                                    Log.w(TAG, "Privacy options error: "
+                                            + formError.getMessage());
+                                }
+                            }
+                        });
+            }
+        });
+    }
+
+    private void startMobileAdsSdk() {
+        if (adsInitialized || isProNoAdsActive()) {
             return;
         }
         new Thread(new Runnable() {

@@ -53,7 +53,7 @@ android.archs = arm64-v8a, armeabi-v7a
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.mdpuch.shockercalc.ShockerCalcActivity
 android.entrypoint = pl.mdpuch.shockercalc.ShockerCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Pin python-for-android do znanego dobrego release'u.

@@ -85,8 +85,15 @@ Jednorazowy zakup Google Play Billing:
 > (np. dobór zaworów) — każda nowa karta jest osobnym produktem
 > (`module_valves`, `module_insulation`, …), kupowanym niezależnie.
 
-Przed publikacją w Google Play trzeba jeszcze dodać ekran zgody prywatności
-Google UMP dla użytkowników z EEA/UK oraz uzupełnić deklaracje danych w Play Console.
+### Zgoda na reklamy (Google UMP / RODO)
+
+Przed inicjalizacją SDK reklam aplikacja uruchamia przepływ zgody **Google
+User Messaging Platform**. Dla użytkowników z EOG/UK pokazywany jest formularz
+zgody, a SDK reklam startuje dopiero gdy `canRequestAds()` zwróci `true`.
+Przycisk „tarcza" w pasku górnym pozwala później zmienić zgodę
+(`showPrivacyOptionsForm`). Komunikat o zgodzie trzeba jeszcze skonfigurować
+w panelu **AdMob → Prywatność i komunikaty** oraz uzupełnić deklaracje danych
+w Play Console.
 
 ## Plany rozwoju
 

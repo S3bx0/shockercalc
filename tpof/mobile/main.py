@@ -307,6 +307,8 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 1.2)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 3.5)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
+            Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 3.0)
+            Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
             return root
 
         # --- tekst / stan aplikacji -------------------------------------
@@ -753,6 +755,17 @@ def main() -> None:
             )
             bar.add_widget(self.btn_lang)
             bar.add_widget(self.btn_theme)
+            self.btn_privacy = MDIconButton(
+                icon="shield-account",
+                size_hint_x=None,
+                width=dp(48),
+                icon_size="26sp",
+                theme_text_color="Custom",
+                text_color=(1, 1, 1, 1),
+                on_release=lambda *_: self._open_privacy_options(),
+            )
+            bar.add_widget(self.btn_privacy)
+            self._refresh_privacy_button()
             return bar
 
         def _card_bg(self):
@@ -1255,6 +1268,29 @@ def main() -> None:
             self._credit_pending_reward_tokens()
             if self._entitlements.reward_tokens() > 0:
                 self._show_error(self._t("ad_token_earned"))
+
+        def _refresh_privacy_button(self):
+            """Pokazuje przycisk prywatności tylko gdy UMP wymaga opcji zgody."""
+            btn = getattr(self, "btn_privacy", None)
+            if btn is None:
+                return
+            required = False
+            if IS_ANDROID:
+                try:
+                    required = bool(self._android_activity().isPrivacyOptionsRequired())
+                except Exception:  # pragma: no cover - Android only
+                    log.debug("Nie udało się sprawdzić opcji prywatności", exc_info=True)
+            btn.disabled = not required
+            btn.opacity = 1 if required else 0
+
+        def _open_privacy_options(self):
+            """Otwiera formularz zgody UMP (zmiana zgody na reklamy / RODO)."""
+            if not IS_ANDROID:
+                return
+            try:
+                self._android_activity().showPrivacyOptionsForm()
+            except Exception:  # pragma: no cover - Android only
+                log.exception("Formularz prywatności")
 
         def _open_category_menu(self, caller):
             from kivy.metrics import dp
