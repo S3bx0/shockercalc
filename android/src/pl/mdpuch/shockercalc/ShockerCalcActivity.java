@@ -37,6 +37,7 @@ import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.ump.ConsentDebugSettings;
+import com.google.android.ump.ConsentForm;
 import com.google.android.ump.ConsentInformation;
 import com.google.android.ump.ConsentRequestParameters;
 import com.google.android.ump.FormError;
@@ -113,7 +114,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
                     public void onConsentInfoUpdateSuccess() {
                         UserMessagingPlatform.loadAndShowConsentFormIfRequired(
                                 ShockerCalcActivity.this,
-                                new ConsentInformation.OnConsentFormDismissedListener() {
+                                new ConsentForm.OnConsentFormDismissedListener() {
                                     @Override
                                     public void onConsentFormDismissed(FormError formError) {
                                         if (formError != null) {
@@ -158,7 +159,7 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
             public void run() {
                 UserMessagingPlatform.showPrivacyOptionsForm(
                         ShockerCalcActivity.this,
-                        new ConsentInformation.OnConsentFormDismissedListener() {
+                        new ConsentForm.OnConsentFormDismissedListener() {
                             @Override
                             public void onConsentFormDismissed(FormError formError) {
                                 if (formError != null) {
