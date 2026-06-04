@@ -16,6 +16,10 @@ tpof/                  # pakiet źródłowy
 └── desktop/           # warstwa Tkinter + ttkbootstrap
     ├── app.py
     └── paths.py
+└── mobile/            # warstwa mobilna (KivyMD)
+    ├── main.py        # UI + integracja AdMob/Billing
+    ├── entitlements.py# trial, freemium, tokeny za reklamy, karty
+    └── paths.py
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
@@ -49,15 +53,37 @@ python -m pytest
 ## Android / AdMob / PRO
 
 Build mobilny używa natywnego banera AdMob przez `ShockerCalcActivity`.
-W `debug` ładowany jest testowy baner Google, a w `release` właściwy unit:
-`ca-app-pub-7481054652344026/5599859341`.
+W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki:
 
-Wersja PRO jest przygotowana jako jednorazowy zakup Google Play Billing:
+- baner: `ca-app-pub-7481054652344026/5599859341`
+- reklama z nagrodą (rewarded): `ca-app-pub-7481054652344026/1548239161`
+
+### Model dostępu (freemium)
+
+Logika uprawnień jest w `tpof/mobile/entitlements.py` (w pełni testowana,
+niezależna od UI):
+
+- **Trial 7 dni** — od pierwszego uruchomienia pełen dostęp do wszystkich
+  produktów i kart.
+- **Po triallu (wersja darmowa)** — 1 produkt z każdej listy za darmo;
+  pozostałe są płatne (PRO) lub odblokowywane pojedynczo za reklamę.
+- **Reklama z nagrodą = token** — obejrzenie pełnej reklamy daje 1 token =
+  1 bezpłatne przeliczenie zablokowanego produktu. Limit **8 reklam/dobę**
+  (przesuwne okno 24 h); cooldown konfigurowalny (`REWARD_AD_COOLDOWN_S`).
+
+### PRO (`pro_no_ads`)
+
+Jednorazowy zakup Google Play Billing:
 
 - typ produktu: one-time product / non-consumable,
 - product ID w Play Console: `pro_no_ads`,
-- efekt po zakupie: aplikacja zapisuje uprawnienie i ukrywa baner reklamowy,
+- efekt po zakupie: usuwa reklamy i odblokowuje **pełną listę produktów w karcie
+  rdzeniowej (zamrażanie)**,
 - cena: ustawiana w Google Play Console, nie w kodzie aplikacji.
+
+> PRO świadomie **nie** odblokowuje przyszłych płatnych kart funkcyjnych
+> (np. dobór zaworów) — każda nowa karta jest osobnym produktem
+> (`module_valves`, `module_insulation`, …), kupowanym niezależnie.
 
 Przed publikacją w Google Play trzeba jeszcze dodać ekran zgody prywatności
 Google UMP dla użytkowników z EEA/UK oraz uzupełnić deklaracje danych w Play Console.
@@ -65,3 +91,4 @@ Google UMP dla użytkowników z EEA/UK oraz uzupełnić deklaracje danych w Play
 ## Plany rozwoju
 
 - **Etap 4**: warstwa mobilna (KivyMD) + szablon `buildozer.spec` do publikacji w Google Play.
+- Kolejne płatne karty funkcyjne (zawory, izolacja) jako niezależne produkty IAP.
