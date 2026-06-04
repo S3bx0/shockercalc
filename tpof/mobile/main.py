@@ -324,13 +324,13 @@ def main() -> None:
 
             base = f"{APP_NAME} v{_app_version}  |  Sebastian Milczarek"
             if self._pro_no_ads:
-                return f"{base}  |  {self._t('pro_unlocked_footer')}"
+                return f"{base}\n{self._t('pro_unlocked_footer')}"
             if self._entitlements.is_trial_active():
                 days = self._entitlements.trial_days_left()
                 if days <= 1:
-                    return f"{base}  |  {self._t('trial_last_day')}"
-                return f"{base}  |  {self._t('trial_active', days=days)}"
-            return f"{base}  |  {self._t('trial_expired')}"
+                    return f"{base}\n{self._t('trial_last_day')}"
+                return f"{base}\n{self._t('trial_active', days=days)}"
+            return f"{base}\n{self._t('trial_expired')}"
 
         def _screen_dp(self, dp):
             unit = max(float(dp(1)), 1.0)
@@ -448,7 +448,7 @@ def main() -> None:
                 "props_row_h": dp(props_row_h),
                 "unit_w": dp(64 if compact else 72),
                 "unit_h": dp(38 if compact else 42),
-                "footer_h": dp(34 if compact else 38),
+                "footer_h": dp(48 if compact else 54),
                 "footer_sp": int(11 * text_scale),
                 "pro_w": dp(64 if compact else 72),
                 "pro_h": dp(24 if compact else 26),
@@ -708,6 +708,7 @@ def main() -> None:
                 size_hint_x=None,
                 width=dp(44),
                 halign="center",
+                valign="middle",
                 font_size="30sp",
                 theme_text_color="Custom",
                 text_color=(1, 1, 1, 1),
@@ -1077,7 +1078,7 @@ def main() -> None:
             footer = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(34),
+                height=dp(48),
                 padding=[dp(12), dp(4), dp(12), dp(4)],
                 spacing=dp(8),
                 md_bg_color=(0.04, 0.07, 0.10, 1),
