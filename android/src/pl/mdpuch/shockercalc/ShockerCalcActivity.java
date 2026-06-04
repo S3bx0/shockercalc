@@ -27,9 +27,15 @@ import com.android.billingclient.api.QueryPurchasesParams;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.OnUserEarnedRewardListener;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
 import org.kivy.android.PythonActivity;
 
@@ -42,12 +48,20 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
             "ca-app-pub-7481054652344026/5599859341";
     private static final String TEST_BANNER_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/9214589741";
+    private static final String LIVE_REWARDED_AD_UNIT_ID =
+            "ca-app-pub-7481054652344026/1548239161";
+    private static final String TEST_REWARDED_AD_UNIT_ID =
+            "ca-app-pub-3940256099942544/5224354917";
     private static final String PRO_PRODUCT_ID = "pro_no_ads";
     private static final String PREFS_NAME = "shockercalc_billing";
     private static final String PREF_PRO_NO_ADS = "pro_no_ads";
+    private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
 
     private AdView bannerAdView;
     private FrameLayout bannerContainer;
+    private RewardedAd rewardedAd;
+    private boolean rewardedLoading;
+    private boolean adsInitialized;
     private BillingClient billingClient;
     private ProductDetails proProductDetails;
     private boolean billingConnecting;
@@ -76,7 +90,9 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
+                                        adsInitialized = true;
                                         attachBanner();
+                                        loadRewardedAd();
                                     }
                                 });
                             }
@@ -130,6 +146,103 @@ public class ShockerCalcActivity extends PythonActivity implements PurchasesUpda
 
     private String getBannerAdUnitId() {
         return isDebugBuild() ? TEST_BANNER_AD_UNIT_ID : LIVE_BANNER_AD_UNIT_ID;
+    }
+
+    private String getRewardedAdUnitId() {
+        return isDebugBuild() ? TEST_REWARDED_AD_UNIT_ID : LIVE_REWARDED_AD_UNIT_ID;
+    }
+
+    /** Preloads a rewarded ad so it is ready to show on demand. */
+    private void loadRewardedAd() {
+        if (isProNoAdsActive() || rewardedAd != null || rewardedLoading) {
+            return;
+        }
+        rewardedLoading = true;
+        RewardedAd.load(
+                this,
+                getRewardedAdUnitId(),
+                new AdRequest.Builder().build(),
+                new RewardedAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(RewardedAd ad) {
+                        rewardedLoading = false;
+                        rewardedAd = ad;
+                        Log.i(TAG, "Rewarded ad loaded. Debug test ads: " + isDebugBuild());
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError error) {
+                        rewardedLoading = false;
+                        rewardedAd = null;
+                        Log.w(TAG, "Rewarded ad failed to load: " + error.getMessage());
+                    }
+                });
+    }
+
+    /** Returns true when a rewarded ad is loaded and ready to show. */
+    public boolean isRewardedAdReady() {
+        return rewardedAd != null;
+    }
+
+    /**
+     * Shows the preloaded rewarded ad. On a completed view the user earns one
+     * reward token, persisted to SharedPreferences for the Python layer to
+     * consume via {@link #consumePendingRewardTokens()}. Daily caps / cooldowns
+     * are enforced on the Python entitlements side before this is called.
+     */
+    public void showRewardedAd() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (rewardedAd == null) {
+                    Log.w(TAG, "Rewarded ad requested but not ready.");
+                    loadRewardedAd();
+                    return;
+                }
+                final RewardedAd ad = rewardedAd;
+                rewardedAd = null;
+                ad.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        loadRewardedAd();
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(
+                            com.google.android.gms.ads.AdError adError) {
+                        Log.w(TAG, "Rewarded ad failed to show: " + adError.getMessage());
+                        loadRewardedAd();
+                    }
+                });
+                ad.show(ShockerCalcActivity.this, new OnUserEarnedRewardListener() {
+                    @Override
+                    public void onUserEarnedReward(RewardItem rewardItem) {
+                        grantRewardToken();
+                    }
+                });
+            }
+        });
+    }
+
+    /** Atomically increments the pending reward-token counter in prefs. */
+    private void grantRewardToken() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int pending = prefs.getInt(PREF_PENDING_REWARD_TOKENS, 0) + 1;
+        prefs.edit().putInt(PREF_PENDING_REWARD_TOKENS, pending).apply();
+        Log.i(TAG, "Reward token granted. Pending: " + pending);
+    }
+
+    /**
+     * Returns the number of reward tokens earned since the last call and resets
+     * the pending counter to zero. Called from Python to credit entitlements.
+     */
+    public int consumePendingRewardTokens() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int pending = prefs.getInt(PREF_PENDING_REWARD_TOKENS, 0);
+        if (pending > 0) {
+            prefs.edit().putInt(PREF_PENDING_REWARD_TOKENS, 0).apply();
+        }
+        return pending;
     }
 
     private boolean isDebugBuild() {

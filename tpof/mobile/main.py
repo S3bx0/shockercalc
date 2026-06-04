@@ -104,6 +104,10 @@ I18N = {
         "locked_suffix": "  — PRO",
         "product_locked": "Ten produkt jest dostępny w PRO. W wersji darmowej masz 1 produkt z każdej listy.",
         "trial_expired_info": "Wersja próbna 7 dni dobiegła końca. Kup PRO, aby odblokować wszystkie produkty.",
+        "watch_ad_for_token": "Obejrzyj reklamę, aby wykonać 1 bezpłatne przeliczenie tego produktu.",
+        "ad_token_earned": "Masz token! Naciśnij Oblicz, aby wykonać bezpłatne przeliczenie.",
+        "ad_not_ready": "Reklama jeszcze się ładuje. Spróbuj za chwilę.",
+        "ad_limit_reached": "Dzienny limit reklam wyczerpany. Kup PRO, aby liczyć bez ograniczeń.",
     },
     "en": {
         "product": "Product",
@@ -151,6 +155,10 @@ I18N = {
         "locked_suffix": "  — PRO",
         "product_locked": "This product is available in PRO. The free version allows 1 product per list.",
         "trial_expired_info": "The 7-day trial has ended. Buy PRO to unlock all products.",
+        "watch_ad_for_token": "Watch an ad to run 1 free calculation for this product.",
+        "ad_token_earned": "Token granted! Tap Calculate to run your free calculation.",
+        "ad_not_ready": "The ad is still loading. Try again in a moment.",
+        "ad_limit_reached": "Daily ad limit reached. Buy PRO to calculate without limits.",
     },
 }
 
@@ -1205,7 +1213,49 @@ def main() -> None:
                 log.exception("Zakup PRO")
                 self._show_error(self._t("pro_unavailable"))
 
-        # --- menu --------------------------------------------------------
+        def _credit_pending_reward_tokens(self):
+            """Dolicza tokeny zdobyte za reklamy rewarded (most z warstwy Android)."""
+            if not IS_ANDROID:
+                return
+            try:
+                pending = int(self._android_activity().consumePendingRewardTokens())
+            except Exception:  # pragma: no cover - Android only
+                log.debug("Nie udało się odczytać tokenów reward", exc_info=True)
+                return
+            for _ in range(max(0, pending)):
+                self._entitlements.grant_reward_for_ad()
+
+        def _offer_reward_ad(self):
+            """Blokada freemium: proponuje obejrzenie reklamy za 1 token."""
+            if not IS_ANDROID:
+                self._show_error(self._t("product_locked"))
+                return
+            if not self._entitlements.can_watch_ad():
+                self._show_error(self._t("ad_limit_reached"))
+                return
+            try:
+                activity = self._android_activity()
+                if not bool(activity.isRewardedAdReady()):
+                    self._show_error(self._t("ad_not_ready"))
+                    return
+                activity.showRewardedAd()
+                self._show_error(self._t("watch_ad_for_token"))
+                # Po zamknięciu reklamy dolicz token i odśwież status.
+                Clock.schedule_once(
+                    lambda *_: self._credit_pending_reward_tokens(), 1.0
+                )
+                Clock.schedule_once(
+                    lambda *_: self._after_reward_ad(), 3.0
+                )
+            except Exception:  # pragma: no cover - Android only
+                log.exception("Reklama rewarded")
+                self._show_error(self._t("pro_unavailable"))
+
+        def _after_reward_ad(self):
+            self._credit_pending_reward_tokens()
+            if self._entitlements.reward_tokens() > 0:
+                self._show_error(self._t("ad_token_earned"))
+
         def _open_category_menu(self, caller):
             from kivy.metrics import dp
             from kivymd.uix.menu import MDDropdownMenu
@@ -1374,8 +1424,14 @@ def main() -> None:
                     except ValueError:
                         idx = FREE_PRODUCTS_PER_CATEGORY
                     if not self._entitlements.is_product_allowed(idx, self._pro_no_ads):
-                        self._show_error(self._t("product_locked"))
-                        return
+                        # Najpierw dolicz tokeny zdobyte za obejrzane reklamy.
+                        self._credit_pending_reward_tokens()
+                        # Spróbuj odblokować to przeliczenie jednym tokenem.
+                        if not self._entitlements.try_unlock_product_with_token(
+                            idx, self._pro_no_ads
+                        ):
+                            self._offer_reward_ad()
+                            return
 
                 masa = self._parse_float(self.in_m.text, self._t("field_mass"))
                 if self._mass_unit == "t":

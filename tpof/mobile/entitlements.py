@@ -22,6 +22,13 @@ płatnych kart funkcyjnych — każda nowa karta jest kupowana niezależnie
 (osobny produkt w Google Play Billing). Trial daje czasowy podgląd wszystkich
 kart; po jego wygaśnięciu każdą płatną kartę trzeba kupić osobno.
 
+4. **Tokeny za reklamy (rewarded)** — darmowy użytkownik bez PRO/triala może
+   obejrzeć reklamę rewarded i otrzymać token, który pozwala na **jedno**
+   bezpłatne przeliczenie zablokowanego produktu w karcie rdzeniowej.
+   Limit ``REWARD_DAILY_AD_CAP`` reklam na dobę chroni przed nadużyciem i
+   popycha intensywnych użytkowników do zakupu PRO. Opcjonalny cooldown
+   ``REWARD_AD_COOLDOWN_S`` między reklamami (domyślnie 0 — bez przerwy).
+
 Stan trwały trzymany jest w pliku JSON w prywatnym katalogu aplikacji
 (Android: ``ANDROID_PRIVATE``; desktop: ``%APPDATA%``/``~/.config``).
 """
@@ -47,6 +54,15 @@ MODULE_INSULATION = "module_insulation"  # izolacje / obciążenie komory (płat
 
 # Moduły dostępne bez opłaty (rdzeń + ewentualne darmowe karty promocyjne).
 FREE_MODULES: frozenset = frozenset({CORE_MODULE})
+
+# --- Tokeny za reklamy rewarded ------------------------------------------
+# Wariant B: 1 reklama = 1 token, bez wymuszonej przerwy między reklamami,
+# ale z dziennym sufitem obejrzanych reklam. Cooldown jest parametrem
+# (domyślnie 0 s); ustaw na np. 21600 (6h), jeśli chcesz wymusić odstęp.
+REWARD_TOKEN_PER_AD = 1     # ile tokenów daje jedna obejrzana reklama
+REWARD_DAILY_AD_CAP = 8     # maks. liczba reklam rozliczonych w ciągu doby
+REWARD_AD_COOLDOWN_S = 0    # minimalny odstęp między reklamami (0 = brak)
+_REWARD_DAY_SECONDS = 24 * 60 * 60
 
 
 
@@ -79,6 +95,8 @@ class Entitlements:
         self._path = Path(state_path) if state_path else (_state_dir() / STATE_FILE)
         self._first_launch_ts: Optional[float] = None
         self._modules: set = set()
+        self._reward_tokens: int = 0
+        self._ad_timestamps: list = []  # epoch ostatnich obejrzanych reklam
         self._load()
 
     # --- trwały stan -----------------------------------------------------
@@ -95,6 +113,14 @@ class Entitlements:
         mods = data.get("modules")
         if isinstance(mods, list):
             self._modules = {str(m) for m in mods if isinstance(m, str)}
+        tokens = data.get("reward_tokens")
+        if isinstance(tokens, int) and tokens > 0:
+            self._reward_tokens = tokens
+        stamps = data.get("ad_timestamps")
+        if isinstance(stamps, list):
+            self._ad_timestamps = [
+                float(s) for s in stamps if isinstance(s, (int, float)) and s > 0
+            ]
 
     def _save(self) -> None:
         try:
@@ -104,6 +130,8 @@ class Entitlements:
                     {
                         "first_launch_ts": self._first_launch_ts,
                         "modules": sorted(self._modules),
+                        "reward_tokens": self._reward_tokens,
+                        "ad_timestamps": self._ad_timestamps,
                     }
                 ),
                 encoding="utf-8",
@@ -145,6 +173,18 @@ class Entitlements:
         if self.is_unlocked(pro):
             return True
         return index < FREE_PRODUCTS_PER_CATEGORY
+
+    def try_unlock_product_with_token(self, index: int, pro: bool) -> bool:
+        """Próbuje odblokować zablokowany produkt zużywając jeden token.
+
+        Jeśli produkt i tak jest dostępny (PRO/trial/freemium) — nic nie zużywa
+        i zwraca ``True``. Jeśli jest zablokowany, zużywa token (gdy dostępny) i
+        zwraca ``True``; gdy brak tokenów — ``False``. Wywoływać w momencie
+        faktycznego przeliczenia, nie do samego renderowania UI.
+        """
+        if self.is_product_allowed(index, pro):
+            return True
+        return self.consume_reward_token()
 
     # --- moduły funkcyjne (karty) ---------------------------------------
     def owned_modules(self) -> frozenset:
@@ -188,3 +228,62 @@ class Entitlements:
         if self.is_trial_active():
             return True
         return module_id in self._modules
+
+    # --- tokeny za reklamy rewarded -------------------------------------
+    def _prune_ad_window(self) -> None:
+        """Usuwa znaczniki reklam starsze niż 24h (przesuwne okno doby)."""
+        cutoff = self._clock() - _REWARD_DAY_SECONDS
+        kept = [t for t in self._ad_timestamps if t > cutoff]
+        if len(kept) != len(self._ad_timestamps):
+            self._ad_timestamps = kept
+
+    def reward_tokens(self) -> int:
+        """Liczba dostępnych tokenów (1 token = 1 bezpłatne przeliczenie)."""
+        return self._reward_tokens
+
+    def ads_watched_today(self) -> int:
+        """Liczba reklam rozliczonych w bieżącym oknie 24h."""
+        self._prune_ad_window()
+        return len(self._ad_timestamps)
+
+    def ads_left_today(self) -> int:
+        """Ile jeszcze reklam można dziś rozliczyć (do ``REWARD_DAILY_AD_CAP``)."""
+        return max(0, REWARD_DAILY_AD_CAP - self.ads_watched_today())
+
+    def ad_cooldown_left(self) -> float:
+        """Sekundy do końca cooldownu między reklamami (0 = można oglądać)."""
+        if REWARD_AD_COOLDOWN_S <= 0 or not self._ad_timestamps:
+            return 0.0
+        last = max(self._ad_timestamps)
+        remaining = REWARD_AD_COOLDOWN_S - (self._clock() - last)
+        return max(0.0, remaining)
+
+    def can_watch_ad(self) -> bool:
+        """Czy można teraz obejrzeć reklamę po token (limit dobowy + cooldown)."""
+        return self.ads_left_today() > 0 and self.ad_cooldown_left() <= 0
+
+    def grant_reward_for_ad(self) -> bool:
+        """Rozlicza obejrzaną reklamę: dodaje token i zapisuje znacznik czasu.
+
+        Zwraca ``True`` gdy token przyznano, ``False`` gdy wykorzystano limit
+        dobowy lub trwa cooldown (wtedy stan się nie zmienia). Wywoływać tylko
+        po faktycznym, pełnym obejrzeniu reklamy rewarded (callback AdMob).
+        """
+        if not self.can_watch_ad():
+            return False
+        self._ad_timestamps.append(float(self._clock()))
+        self._reward_tokens += REWARD_TOKEN_PER_AD
+        self._save()
+        return True
+
+    def consume_reward_token(self) -> bool:
+        """Zużywa jeden token na pojedyncze bezpłatne przeliczenie.
+
+        Zwraca ``True`` gdy token był dostępny i został odjęty, w przeciwnym
+        razie ``False`` (brak tokenów).
+        """
+        if self._reward_tokens <= 0:
+            return False
+        self._reward_tokens -= 1
+        self._save()
+        return True

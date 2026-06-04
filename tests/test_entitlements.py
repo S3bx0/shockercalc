@@ -12,6 +12,8 @@ from tpof.mobile.entitlements import (
     CORE_MODULE,
     MODULE_VALVES,
     MODULE_INSULATION,
+    REWARD_DAILY_AD_CAP,
+    REWARD_TOKEN_PER_AD,
     Entitlements,
 )
 
@@ -237,4 +239,78 @@ def test_stary_plik_bez_modulow_dziala(tmp_path):
     assert ent.trial_start_ts() == 1000000.0
     assert ent.owned_modules() == frozenset()
     assert ent.has_module(CORE_MODULE)
+
+
+# --- tokeny za reklamy rewarded ------------------------------------------
+
+def _expired(tmp_path, clock):
+    """Pomocnik: instancja z wygasłym trialem (freemium aktywne)."""
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()
+    clock.advance_days(TRIAL_DAYS + 1)
+    return ent
+
+
+def test_reklama_daje_token(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    assert ent.reward_tokens() == 0
+    assert ent.grant_reward_for_ad() is True
+    assert ent.reward_tokens() == REWARD_TOKEN_PER_AD
+
+
+def test_token_odblokowuje_jedno_przeliczenie(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    # Produkt poza darmowym freemium (index 1) jest zablokowany.
+    assert ent.is_product_allowed(1, pro=False) is False
+    ent.grant_reward_for_ad()
+    # Token odblokowuje jednorazowo i zostaje zużyty.
+    assert ent.try_unlock_product_with_token(1, pro=False) is True
+    assert ent.reward_tokens() == 0
+    # Kolejne przeliczenie znów zablokowane.
+    assert ent.try_unlock_product_with_token(1, pro=False) is False
+
+
+def test_token_nie_jest_zuzywany_dla_dostepnego_produktu(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    ent.grant_reward_for_ad()
+    # Produkt freemium (index 0) jest dostępny — token nie powinien zniknąć.
+    assert ent.try_unlock_product_with_token(0, pro=False) is True
+    assert ent.reward_tokens() == REWARD_TOKEN_PER_AD
+
+
+def test_dzienny_limit_reklam(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    for _ in range(REWARD_DAILY_AD_CAP):
+        assert ent.grant_reward_for_ad() is True
+    # Po wyczerpaniu limitu kolejna reklama nie przechodzi.
+    assert ent.can_watch_ad() is False
+    assert ent.grant_reward_for_ad() is False
+    assert ent.ads_left_today() == 0
+    assert ent.reward_tokens() == REWARD_DAILY_AD_CAP * REWARD_TOKEN_PER_AD
+
+
+def test_limit_reklam_resetuje_sie_po_dobie(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    for _ in range(REWARD_DAILY_AD_CAP):
+        ent.grant_reward_for_ad()
+    assert ent.ads_left_today() == 0
+    # Po przesunięciu o ponad dobę okno się czyści.
+    clock.advance_days(1.01)
+    assert ent.ads_left_today() == REWARD_DAILY_AD_CAP
+    assert ent.can_watch_ad() is True
+    assert ent.grant_reward_for_ad() is True
+
+
+def test_tokeny_sa_trwale(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    ent.grant_reward_for_ad()
+    ent2 = _make(tmp_path, clock)
+    assert ent2.reward_tokens() == REWARD_TOKEN_PER_AD
+    assert ent2.ads_watched_today() == 1
 
