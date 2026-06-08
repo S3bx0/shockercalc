@@ -71,6 +71,10 @@ jobs:
           rm -rf ~/.buildozer/android/platform/python-for-android* || true
           rm -rf .buildozer/android/platform/python-for-android* || true
           rm -rf .buildozer/android/platform/build-* || true
+          # Usun ewentualne host-arch (x86_64) .so fonttools z przywroconego cache,
+          # zeby nie trafily do bundla arm64 (dlopen EM_X86_64 vs EM_AARCH64).
+          find ~/.buildozer .buildozer -type f -path '*fontTools*' -name '*.so' -delete 2>/dev/null || true
+          find ~/.buildozer .buildozer -type f -path '*fonttools*' -name '*.so' -delete 2>/dev/null || true
 
       - name: Run unit tests (core)
         run: |

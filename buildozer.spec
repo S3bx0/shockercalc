@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.0.3
+version = 1.0.4
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -62,6 +62,10 @@ android.add_gradle_repositories = "google()", "mavenCentral()"
 # Tag v2024.01.21 -> Python 3.11.x, Kivy 2.3.0 buduje czysto.
 p4a.fork = kivy
 p4a.branch = v2024.01.21
+
+# Hook p4a: usuwa błędne (host-arch) rozszerzenia .so fonttools z bundla,
+# by na arm64 nie padało dlopen (bezierTools.so EM_X86_64 vs EM_AARCH64).
+p4a.hook = p4a_hooks.py
 
 # Ikona i splash
 icon.filename = %(source.dir)s/assets/icon.png
