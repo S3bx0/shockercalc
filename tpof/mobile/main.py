@@ -90,6 +90,8 @@ I18N = {
         "pdf_unavailable": "Eksport PDF niedostępny w wersji mobilnej. Użyj wersji desktopowej.",
         "saved": "Zapisano: {path}",
         "pdf_error": "Błąd PDF: {error}",
+        "pdf_share_subject": "Refrigeration Calc — wyniki obliczeń",
+        "pdf_share_text": "W załączniku raport PDF z obliczeń mocy chłodniczej.",
         "calc_error": "Błąd: {error}",
         "invalid_field": "Nieprawidłowa wartość pola: {name}",
         "field_mass": "masa",
@@ -141,6 +143,8 @@ I18N = {
         "pdf_unavailable": "PDF export is unavailable in the mobile build. Use the desktop version.",
         "saved": "Saved: {path}",
         "pdf_error": "PDF error: {error}",
+        "pdf_share_subject": "Refrigeration Calc — calculation results",
+        "pdf_share_text": "Attached is the PDF report from the cooling power calculation.",
         "calc_error": "Error: {error}",
         "invalid_field": "Invalid value in field: {name}",
         "field_mass": "mass",
@@ -1399,31 +1403,54 @@ def main() -> None:
             self.props_grid.clear_widgets()
             self._last_results = None
 
-        def _export_pdf(self):
-            if self._last_results is None:
-                self._show_error(self._t("pdf_first"))
-                return
+        def _build_pdf_bytes(self) -> Optional[bytes]:
+            """Buduje PDF: pełny reportlab (desktop) lub fpdf2 (Android)."""
             try:
-                try:
-                    from tpof.core.pdf_report import build_pdf, save_pdf
-                except ImportError:
-                    self._show_error(self._t("pdf_unavailable"))
-                    return
+                from tpof.core.pdf_report import build_pdf
 
                 img_path = _safe_image_path(self._last_results.produkt.nazwa)
-                pdf_bytes = build_pdf(
+                return build_pdf(
                     self._last_results,
                     font_path=FONT_PATH,
                     product_image_path=Path(img_path) if img_path else None,
                     watermark_image_path=WATERMARK_PATH if WATERMARK_PATH.exists() else None,
                 )
+            except ImportError:
+                pass
+            try:
+                from tpof.core.pdf_report_mobile import build_pdf_simple
+            except ImportError:
+                return None
+            return build_pdf_simple(self._last_results, font_path=FONT_PATH)
+
+        def _export_pdf(self):
+            if self._last_results is None:
+                self._show_error(self._t("pdf_first"))
+                return
+            try:
+                pdf_bytes = self._build_pdf_bytes()
+                if pdf_bytes is None:
+                    self._show_error(self._t("pdf_unavailable"))
+                    return
                 out_dir = _pdf_output_dir()
                 out_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 nazwa = self._last_results.produkt.nazwa.replace(" ", "_")
                 out_path = out_dir / f"RefrigerationCalc_{nazwa}_{ts}.pdf"
-                save_pdf(pdf_bytes, out_path)
-                self._show_error(self._t("saved", path=out_path))
+                out_path.write_bytes(pdf_bytes)
+                if IS_ANDROID:
+                    try:
+                        self._android_activity().shareFile(
+                            str(out_path),
+                            "application/pdf",
+                            self._t("pdf_share_subject"),
+                            self._t("pdf_share_text"),
+                        )
+                    except Exception:  # pragma: no cover - Android only
+                        log.exception("Udostępnianie PDF")
+                        self._show_error(self._t("saved", path=out_path))
+                else:
+                    self._show_error(self._t("saved", path=out_path))
             except Exception as exc:  # pragma: no cover - UI feedback
                 log.exception("Eksport PDF")
                 self._show_error(self._t("pdf_error", error=exc))

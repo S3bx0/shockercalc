@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.0.0
+version = 1.0.2
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -30,8 +30,8 @@ android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczare
 # Zależności (uwaga: kivymd musi być w wersji kompatybilnej z kivy)
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
 # pod Python 3.14 wybierany przez najnowszego python-for-android.
-# PDF jest dostępny w wersji desktop. Na Androidzie pokażemy komunikat informacyjny.
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow
+# PDF na Androidzie generujemy czysto-pythonowym fpdf2 (+ fonttools, defusedxml).
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,fpdf2,fonttools,defusedxml
 
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main

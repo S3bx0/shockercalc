@@ -1,8 +1,11 @@
 package pl.smilczarek.refrigerationcalc;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -45,6 +48,7 @@ import com.google.android.ump.UserMessagingPlatform;
 
 import org.kivy.android.PythonActivity;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -341,6 +345,39 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             prefs.edit().putInt(PREF_PENDING_REWARD_TOKENS, 0).apply();
         }
         return pending;
+    }
+
+    public void shareFile(final String path, final String mimeType,
+                          final String subject, final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    File file = new File(path);
+                    if (!file.exists()) {
+                        Log.w(TAG, "shareFile: plik nie istnieje " + path);
+                        return;
+                    }
+                    // Pozwala przekazać file:// w EXTRA_STREAM bez konfiguracji FileProvider.
+                    StrictMode.VmPolicy.Builder vmBuilder = new StrictMode.VmPolicy.Builder();
+                    StrictMode.setVmPolicy(vmBuilder.build());
+
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType(mimeType != null ? mimeType : "application/octet-stream");
+                    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                    if (subject != null) {
+                        intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+                    }
+                    if (text != null) {
+                        intent.putExtra(Intent.EXTRA_TEXT, text);
+                    }
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, subject));
+                } catch (Exception e) {
+                    Log.e(TAG, "shareFile nie powiod\u0142o si\u0119", e);
+                }
+            }
+        });
     }
 
     private boolean isDebugBuild() {
