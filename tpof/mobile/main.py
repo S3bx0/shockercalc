@@ -227,7 +227,6 @@ def main() -> None:
         from kivymd.uix.menu import MDDropdownMenu
         from kivymd.uix.progressbar import MDProgressBar
         from kivymd.uix.scrollview import MDScrollView
-        from kivymd.uix.snackbar import Snackbar
         from kivymd.uix.textfield import MDTextField
     except ImportError as exc:  # pragma: no cover
         raise SystemExit(
@@ -1170,9 +1169,18 @@ def main() -> None:
             self.image_box.add_widget(self.image_placeholder)
 
         def _android_activity(self):
-            from jnius import autoclass
+            from jnius import autoclass, cast
 
-            return autoclass("org.kivy.android.PythonActivity").mActivity
+            activity = autoclass("org.kivy.android.PythonActivity").mActivity
+            # pyjnius opakowuje mActivity jako bazowy PythonActivity, przez co metody
+            # naszej podklasy są niewidoczne -> rzutujemy na właściwą aktywność.
+            try:
+                return cast(
+                    "pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity",
+                    activity,
+                )
+            except Exception:  # pragma: no cover - Android only
+                return activity
 
         def _refresh_pro_status(self):
             if not IS_ANDROID:
@@ -1456,9 +1464,24 @@ def main() -> None:
                 self._show_error(self._t("pdf_error", error=exc))
 
         def _show_error(self, message: str):
-            from kivymd.uix.snackbar import Snackbar
-
+            # KivyMD 1.2.0 udostępnia MDSnackbar; starsze wersje miały Snackbar(text=...).
             try:
+                from kivymd.uix.label import MDLabel
+                from kivymd.uix.snackbar import MDSnackbar
+                from kivy.metrics import dp
+
+                MDSnackbar(
+                    MDLabel(text=message),
+                    y=dp(24),
+                    pos_hint={"center_x": 0.5},
+                    size_hint_x=0.9,
+                ).open()
+                return
+            except Exception:
+                pass
+            try:
+                from kivymd.uix.snackbar import Snackbar
+
                 Snackbar(text=message, duration=3).open()
             except Exception:  # pragma: no cover
                 log.warning("Snackbar fail: %s", message)
