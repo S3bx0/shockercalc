@@ -64,10 +64,14 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private static final String TAG = "RefrigerationCalc";
     private static final String LIVE_BANNER_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/5599859341";
+    private static final String LIVE_BANNER_VALVES_AD_UNIT_ID =
+            "ca-app-pub-7481054652344026/6303778370";
     private static final String TEST_BANNER_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/9214589741";
     private static final String LIVE_REWARDED_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/1548239161";
+    private static final String LIVE_REWARDED_VALVES_AD_UNIT_ID =
+            "ca-app-pub-7481054652344026/1060900411";
     private static final String TEST_REWARDED_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/5224354917";
     private static final String PRO_PRODUCT_ID = "pro_no_ads";
@@ -80,6 +84,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private RewardedAd rewardedAd;
     private boolean rewardedLoading;
     private boolean adsInitialized;
+    // Aktywna zakładka UI ("freezing" / "valves") — wybiera jednostkę reklamową.
+    private volatile String activeAdTab = "freezing";
     private ConsentInformation consentInformation;
     private BillingClient billingClient;
     private ProductDetails proProductDetails;
@@ -255,11 +261,54 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     }
 
     private String getBannerAdUnitId() {
-        return isDebugBuild() ? TEST_BANNER_AD_UNIT_ID : LIVE_BANNER_AD_UNIT_ID;
+        if (isDebugBuild()) {
+            return TEST_BANNER_AD_UNIT_ID;
+        }
+        return "valves".equals(activeAdTab)
+                ? LIVE_BANNER_VALVES_AD_UNIT_ID
+                : LIVE_BANNER_AD_UNIT_ID;
     }
 
     private String getRewardedAdUnitId() {
-        return isDebugBuild() ? TEST_REWARDED_AD_UNIT_ID : LIVE_REWARDED_AD_UNIT_ID;
+        if (isDebugBuild()) {
+            return TEST_REWARDED_AD_UNIT_ID;
+        }
+        return "valves".equals(activeAdTab)
+                ? LIVE_REWARDED_VALVES_AD_UNIT_ID
+                : LIVE_REWARDED_AD_UNIT_ID;
+    }
+
+    /**
+     * Ustawia aktywną zakładkę UI ("freezing" / "valves") z warstwy Pythona.
+     * Gdy zakładka się zmienia, przeładowuje baner oraz reklamę rewarded na
+     * jednostkę przypisaną do danej zakładki. Wywoływane przy przełączaniu
+     * dolnej nawigacji — reklamy są inicjowane akcją użytkownika, więc nie
+     * narusza zasad AdMob (brak auto-odświeżania programowego).
+     */
+    public void setActiveAdTab(final String tab) {
+        final String normalized = "valves".equals(tab) ? "valves" : "freezing";
+        if (normalized.equals(activeAdTab)) {
+            return;
+        }
+        activeAdTab = normalized;
+        if (isProNoAdsActive()) {
+            return;
+        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Przeładuj baner na jednostkę aktywnej zakładki.
+                if (bannerAdView != null || bannerContainer != null) {
+                    hideBanner();
+                    attachBanner();
+                }
+                // Przeładuj rewarded na jednostkę aktywnej zakładki.
+                if (rewardedAd != null) {
+                    rewardedAd = null;
+                }
+                loadRewardedAd();
+            }
+        });
     }
 
     /** Preloads a rewarded ad so it is ready to show on demand. */

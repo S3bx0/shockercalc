@@ -25,8 +25,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from tpof.core import (
+    ZAWORY,
     FreezingInputs,
     Product,
+    calculate_decompression_valves,
     calculate_freezing,
     find_product,
     list_categories,
@@ -159,6 +161,20 @@ I18N = {
         "pro_thanks": "Dziękujemy za zakup PRO! Reklamy wyłączone, pełen dostęp odblokowany.",
         "ad_not_ready": "Reklama jeszcze się ładuje. Spróbuj za chwilę.",
         "ad_limit_reached": "Dzienny limit reklam wyczerpany. Kup PRO, aby liczyć bez ograniczeń.",
+        "nav_freezing": "Chłodnicze",
+        "nav_valves": "Zawory",
+        "valve_title": "Zawory dekompresyjne",
+        "valve_type": "Typ zaworu",
+        "valve_volume": "Objętość komory [m³]",
+        "valve_temp_before": "Temp. przed dekompresją [°C]",
+        "valve_temp_after": "Temp. po dekompresji [°C]",
+        "valve_factor": "Współczynnik częstości F [1/h]",
+        "valve_calculate": "Oblicz zawory",
+        "valve_result": "Wynik",
+        "valve_delta_t": "Tempo zmian ΔT: {value} °C/min",
+        "valve_flow": "Wymagany przepływ Q: {value} l/min",
+        "valve_unit_flow": "Przepływ zaworu: {value} l/min",
+        "valve_count": "Liczba zaworów: {value}",
     },
     "en": {
         "product": "Product",
@@ -214,6 +230,20 @@ I18N = {
         "pro_thanks": "Thank you for buying PRO! Ads disabled, full access unlocked.",
         "ad_not_ready": "The ad is still loading. Try again in a moment.",
         "ad_limit_reached": "Daily ad limit reached. Buy PRO to calculate without limits.",
+        "nav_freezing": "Cooling",
+        "nav_valves": "Valves",
+        "valve_title": "Decompression valves",
+        "valve_type": "Valve type",
+        "valve_volume": "Chamber volume [m³]",
+        "valve_temp_before": "Temp. before decompression [°C]",
+        "valve_temp_after": "Temp. after decompression [°C]",
+        "valve_factor": "Frequency factor F [1/h]",
+        "valve_calculate": "Calculate valves",
+        "valve_result": "Result",
+        "valve_delta_t": "Change rate ΔT: {value} °C/min",
+        "valve_flow": "Required flow Q: {value} l/min",
+        "valve_unit_flow": "Valve flow: {value} l/min",
+        "valve_count": "Number of valves: {value}",
     },
 }
 
@@ -270,6 +300,10 @@ def main() -> None:
         from kivy.metrics import dp
         from kivy.uix.image import AsyncImage
         from kivymd.app import MDApp
+        from kivymd.uix.bottomnavigation import (
+            MDBottomNavigation,
+            MDBottomNavigationItem,
+        )
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDIconButton, MDRaisedButton
         from kivymd.uix.card import MDCard
@@ -323,6 +357,9 @@ def main() -> None:
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
             self._pro_thanks_shown = False
+            self._valve_type = "Maxi Elebar"
+            self._last_valve_results = None
+            self._valve_menu: Optional[MDDropdownMenu] = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
 
@@ -352,7 +389,29 @@ def main() -> None:
             content.add_widget(self.results_card)
 
             self.scroll.add_widget(content)
-            root.add_widget(self.scroll)
+
+            # Dolna nawigacja w stylu Danfoss Ref Tools: zakładka chłodnicza + zawory.
+            self.bottom_nav = MDBottomNavigation()
+            try:
+                self.bottom_nav.bind(on_switch_tabs=self._on_tab_switch)
+            except Exception:  # pragma: no cover - zależne od wersji KivyMD
+                log.debug("Nie udało się podpiąć on_switch_tabs", exc_info=True)
+            self.tab_freezing = MDBottomNavigationItem(
+                name="freezing", text=self._t("nav_freezing"), icon="snowflake"
+            )
+            self.tab_freezing.add_widget(self.scroll)
+            self.bottom_nav.add_widget(self.tab_freezing)
+            self.tab_valves = MDBottomNavigationItem(
+                name="valves", text=self._t("nav_valves"), icon="valve"
+            )
+            self.tab_valves.add_widget(
+                self._build_valve_tab(
+                    dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
+                )
+            )
+            self.bottom_nav.add_widget(self.tab_valves)
+            root.add_widget(self.bottom_nav)
+
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
             Window.bind(size=self._apply_responsive_layout)
@@ -709,6 +768,25 @@ def main() -> None:
                 self.lbl_total.text = self._total_text()
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
+            if hasattr(self, "tab_freezing"):
+                self.tab_freezing.text = self._t("nav_freezing")
+            if hasattr(self, "tab_valves"):
+                self.tab_valves.text = self._t("nav_valves")
+            if hasattr(self, "valve_lbl_title"):
+                self.valve_lbl_title.text = self._t("valve_title")
+                self.valve_in_V.hint_text = self._t("valve_volume")
+                self.valve_in_tp.hint_text = self._t("valve_temp_before")
+                self.valve_in_tz.hint_text = self._t("valve_temp_after")
+                self.valve_in_F.hint_text = self._t("valve_factor")
+                self.valve_btn_calc.text = self._t("valve_calculate")
+                self.valve_lbl_result.text = self._t("valve_result")
+                if self._last_valve_results is not None:
+                    self._render_valve_results(self._last_valve_results)
+                else:
+                    self.valve_lbl_count.text = self._t("valve_count", value="—")
+                    self.valve_lbl_delta.text = self._t("valve_delta_t", value="—")
+                    self.valve_lbl_flow.text = self._t("valve_flow", value="—")
+                    self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value="—")
             self._set_pro_status(self._pro_no_ads)
 
         def _display_category(self, category: Optional[str]) -> str:
@@ -1208,6 +1286,200 @@ def main() -> None:
             )
             slot.add_widget(self.ad_label)
             return slot
+
+        # --- karta zaworów dekompresyjnych -------------------------------
+        def _build_valve_tab(self, dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
+            scroll = MDScrollView()
+            content = MDBoxLayout(
+                orientation="vertical",
+                padding=[dp(16), dp(16), dp(16), dp(20)],
+                spacing=dp(14),
+                size_hint_y=None,
+            )
+            content.bind(minimum_height=content.setter("height"))
+
+            # Karta danych wejściowych.
+            card = MDCard(
+                orientation="vertical",
+                padding=dp(14),
+                spacing=dp(10),
+                size_hint_y=None,
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
+            )
+            card.bind(minimum_height=card.setter("height"))
+            self._themed_cards.append(card)
+            self.valve_card = card
+
+            self.valve_lbl_title = MDLabel(
+                text=self._t("valve_title"),
+                font_style="H6",
+                size_hint_y=None,
+                height=dp(36),
+            )
+            card.add_widget(self.valve_lbl_title)
+
+            self.valve_btn_type = MDRaisedButton(
+                text=self._valve_type,
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(52),
+                font_size="15sp",
+                on_release=lambda btn: self._open_valve_type_menu(btn),
+            )
+            card.add_widget(self.valve_btn_type)
+
+            self.valve_in_V = MDTextField(hint_text=self._t("valve_volume"), input_filter="float")
+            self.valve_in_tp = MDTextField(hint_text=self._t("valve_temp_before"), input_filter="float")
+            self.valve_in_tz = MDTextField(hint_text=self._t("valve_temp_after"), input_filter="float")
+            self.valve_in_F = MDTextField(hint_text=self._t("valve_factor"), input_filter="float")
+            for w in (self.valve_in_V, self.valve_in_tp, self.valve_in_tz, self.valve_in_F):
+                w.size_hint_y = None
+                w.height = dp(60)
+                card.add_widget(w)
+
+            self.valve_btn_calc = MDRaisedButton(
+                text=self._t("valve_calculate"),
+                icon="calculator-variant",
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(50),
+                font_size="15sp",
+                on_release=lambda *_: self._calculate_valves(),
+            )
+            card.add_widget(self.valve_btn_calc)
+            content.add_widget(card)
+
+            # Karta wyniku.
+            res_card = MDCard(
+                orientation="vertical",
+                padding=dp(14),
+                spacing=dp(8),
+                size_hint_y=None,
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
+            )
+            res_card.bind(minimum_height=res_card.setter("height"))
+            self._themed_cards.append(res_card)
+            self.valve_result_card = res_card
+
+            self.valve_lbl_result = MDLabel(
+                text=self._t("valve_result"),
+                font_style="H6",
+                size_hint_y=None,
+                height=dp(36),
+            )
+            res_card.add_widget(self.valve_lbl_result)
+
+            self.valve_lbl_count = MDLabel(
+                text=self._t("valve_count", value="—"),
+                font_style="H6",
+                halign="center",
+                size_hint_y=None,
+                height=dp(42),
+                theme_text_color="Custom",
+                text_color=STAGE_COLORS["total"],
+            )
+            res_card.add_widget(self.valve_lbl_count)
+
+            self.valve_lbl_delta = MDLabel(
+                text=self._t("valve_delta_t", value="—"),
+                size_hint_y=None,
+                height=dp(30),
+                theme_text_color="Secondary",
+            )
+            self.valve_lbl_flow = MDLabel(
+                text=self._t("valve_flow", value="—"),
+                size_hint_y=None,
+                height=dp(30),
+                theme_text_color="Secondary",
+            )
+            self.valve_lbl_unitflow = MDLabel(
+                text=self._t("valve_unit_flow", value="—"),
+                size_hint_y=None,
+                height=dp(30),
+                theme_text_color="Secondary",
+            )
+            res_card.add_widget(self.valve_lbl_delta)
+            res_card.add_widget(self.valve_lbl_flow)
+            res_card.add_widget(self.valve_lbl_unitflow)
+            content.add_widget(res_card)
+
+            scroll.add_widget(content)
+            return scroll
+
+        def _open_valve_type_menu(self, caller):
+            from kivy.metrics import dp
+            from kivymd.uix.menu import MDDropdownMenu
+
+            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
+            items = [
+                {
+                    "text": name,
+                    "viewclass": "OneLineListItem",
+                    "height": item_height,
+                    "theme_text_color": "Custom",
+                    "text_color": self._menu_text_color(),
+                    "on_release": lambda n=name: self._pick_valve_type(n),
+                }
+                for name in ZAWORY
+            ]
+            self._valve_menu = self._menu(caller, items, 4.4, dp(300), dp, MDDropdownMenu)
+            self._valve_menu.open()
+
+        def _pick_valve_type(self, name: str):
+            self._valve_type = name
+            self.valve_btn_type.text = name
+            if self._valve_menu:
+                self._valve_menu.dismiss()
+            if self._last_valve_results is not None:
+                self._calculate_valves()
+
+        def _calculate_valves(self):
+            try:
+                V = self._parse_float(self.valve_in_V.text, self._t("valve_volume"))
+                tp = self._parse_float(self.valve_in_tp.text, self._t("valve_temp_before"))
+                tz = self._parse_float(self.valve_in_tz.text, self._t("valve_temp_after"))
+                F = self._parse_float(self.valve_in_F.text, self._t("valve_factor"))
+                results = calculate_decompression_valves(V, tp, tz, F, self._valve_type)
+                self._last_valve_results = results
+                self._render_valve_results(results)
+            except ValueError as exc:
+                self._show_error(str(exc))
+            except Exception as exc:  # pragma: no cover - UI feedback
+                log.exception("Obliczenia zaworów")
+                self._show_error(self._t("calc_error", error=exc))
+
+        def _render_valve_results(self, results):
+            self.valve_lbl_count.text = self._t("valve_count", value=results.ilosc_zaworow)
+            self.valve_lbl_delta.text = self._t("valve_delta_t", value=f"{results.delta_T:.4f}")
+            self.valve_lbl_flow.text = self._t("valve_flow", value=f"{results.Q:.1f}")
+            self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value=results.przeplyw_zaworu)
+
+        def _on_tab_switch(self, *args):
+            """Reaguje na zmianę zakładki dolnej nawigacji — przełącza jednostkę reklam."""
+            name = None
+            for a in args:
+                if isinstance(a, str) and a in ("freezing", "valves"):
+                    name = a
+                    break
+                item_name = getattr(a, "name", None)
+                if item_name in ("freezing", "valves"):
+                    name = item_name
+                    break
+            if name is None:
+                return
+            self._set_active_ad_tab(name)
+
+        def _set_active_ad_tab(self, tab: str):
+            if not IS_ANDROID:
+                return
+            try:
+                self._android_activity().setActiveAdTab(tab)
+            except Exception:  # pragma: no cover - Android only
+                log.debug("setActiveAdTab nie powiodło się", exc_info=True)
 
         def _show_product_image(self, img_path: Optional[str]) -> None:
             self.image_box.clear_widgets()

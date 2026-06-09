@@ -11,6 +11,16 @@ from .validators import (
 from .calculations import calculate_freezing
 from .data_loader import load_products, find_product, list_categories, list_products
 from .formatters import format_results_text
+from .valves import (
+    ValveResults,
+    calculate_decompression_valves,
+    ZAWORY,
+    K,
+    V_MAX,
+    F_MAX,
+    TEMP_MIN,
+    TEMP_MAX,
+)
 
 __all__ = [
     "Product",
@@ -27,4 +37,12 @@ __all__ = [
     "list_categories",
     "list_products",
     "format_results_text",
+    "ValveResults",
+    "calculate_decompression_valves",
+    "ZAWORY",
+    "K",
+    "V_MAX",
+    "F_MAX",
+    "TEMP_MIN",
+    "TEMP_MAX",
 ]

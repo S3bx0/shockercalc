@@ -4,6 +4,30 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.1.0] — 2026-06-09
+
+### Dodane — druga zakładka: zawory dekompresyjne
+
+- **`tpof/core/valves.py`** — czysta logika doboru zaworów dekompresyjnych
+  (port z desktopowego repo): `calculate_decompression_valves()` + `ValveResults`,
+  słownik `ZAWORY` (Maxi Elebar 4300 l/min, EVO-VERTICAL 1430 l/min), stała `K=3.66`,
+  limity bezpieczeństwa i pełna walidacja wejść. Bez pośrednich zaokrągleń.
+- **`tests/test_valves.py`** — 22 testy (oba typy zaworów, walidacja, `KeyError`,
+  niemutowalność wyniku). Cała suita: 101 testów.
+- **Dolna nawigacja** (`MDBottomNavigation`) w stylu Danfoss Ref Tools: zakładki
+  **Chłodnicze** (dotychczasowy kalkulator) i **Zawory** (nowy kalkulator).
+- Kalkulator zaworów: wybór typu, objętość komory, temperatury przed/po dekompresji,
+  współczynnik częstości; wynik = liczba zaworów, ΔT, wymagany przepływ Q.
+- Lokalizacja PL/EN nowych etykiet i zakładek.
+
+### Dodane — reklamy per zakładka (AdMob)
+
+- Dedykowane jednostki reklamowe dla zakładki zaworów: baner `/6303778370`,
+  rewarded `/1060900411`.
+- **`RefrigerationCalcActivity.setActiveAdTab()`** — przy zmianie zakładki baner
+  i reklama rewarded przeładowują się na jednostkę przypisaną do aktywnej zakładki
+  (`getBannerAdUnitId()` / `getRewardedAdUnitId()` zależne od `activeAdTab`).
+- Strona Pythona podpina przełączanie zakładek (`on_switch_tabs`) do mostka Android.
 ## [Unreleased] — 2026-05-30
 
 ### Mobile (Android — Etap A: parytet UI)
