@@ -57,6 +57,53 @@ CARD_BG_LIGHT = (0.96, 0.98, 1.0, 1)
 SURFACE_DARK = (0.05, 0.08, 0.11, 1)
 SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
 
+_FONTTOOLS_SO_PURGED = False
+
+
+def _purge_host_arch_fonttools_so() -> None:
+    """Usuwa host-arch (.so) rozszerzenia fonttools z rozpakowanego bundla.
+
+    Na Androidzie p4a instaluje fonttools hostowym pipem, więc skompilowane
+    rozszerzenia Cython (np. ``fontTools/misc/bezierTools.so``) są dla x86_64,
+    a nie arm64 -> ``dlopen`` pada przy generowaniu PDF. Katalog
+    ``_python_bundle`` jest rozpakowany do zapisywalnego ``files/app/...``,
+    więc kasujemy te ``.so`` w runtime — fonttools wraca do czystego Pythona.
+    """
+    global _FONTTOOLS_SO_PURGED
+    if _FONTTOOLS_SO_PURGED or not IS_ANDROID:
+        return
+    _FONTTOOLS_SO_PURGED = True
+
+    import sys
+
+    roots: List[str] = []
+    try:
+        import fontTools  # noqa: WPS433 - pakiet __init__ jest czysto-pythonowy
+
+        roots.extend(getattr(fontTools, "__path__", []) or [])
+    except Exception:  # pragma: no cover - Android only
+        pass
+    for entry in sys.path:
+        candidate = os.path.join(entry, "fontTools")
+        if os.path.isdir(candidate):
+            roots.append(candidate)
+
+    seen = set()
+    for root in roots:
+        root = os.path.abspath(root)
+        if root in seen or not os.path.isdir(root):
+            continue
+        seen.add(root)
+        for dirpath, _dirnames, filenames in os.walk(root):
+            for name in filenames:
+                if name.endswith(".so"):
+                    try:
+                        os.remove(os.path.join(dirpath, name))
+                        log.warning("Usunieto host-arch fonttools .so: %s", name)
+                    except OSError as exc:  # pragma: no cover - Android only
+                        log.warning("Nie usunieto %s: %s", name, exc)
+
+
 I18N = {
     "pl": {
         "product": "Produkt",
@@ -1426,6 +1473,7 @@ def main() -> None:
             except ImportError:
                 pass
             try:
+                _purge_host_arch_fonttools_so()
                 from tpof.core.pdf_report_mobile import build_pdf_simple
             except ImportError:
                 return None
