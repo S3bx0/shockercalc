@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Decompression valve product icon">
+  <defs>
+    <linearGradient id="bg" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#234575"/>
+      <stop offset="1" stop-color="#36a8df"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="none" stroke="#eaf6ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="16">
+    <!-- pipe -->
+    <path d="M64 322 H448"/>
+    <!-- globe valve body (bowtie) -->
+    <path d="M188 282 L188 362 L256 322 L324 362 L324 282 L256 322 Z"/>
+    <!-- stem -->
+    <path d="M256 322 V172"/>
+    <!-- handwheel -->
+    <circle cx="256" cy="150" r="48"/>
+    <path d="M208 150 H304"/>
+    <!-- relief / decompression vent arrows -->
+    <path d="M150 250 V150"/>
+    <path d="m132 176 18 -26 18 26"/>
+    <path d="M362 250 V150"/>
+    <path d="m344 176 18 -26 18 26"/>
+  </g>
+</svg>
