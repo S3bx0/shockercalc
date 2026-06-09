@@ -35,7 +35,7 @@ from tpof.core import (
     list_products,
     load_products,
 )
-from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, TRIAL_DAYS, Entitlements
+from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
 from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
 
 log = logging.getLogger(__name__)
@@ -175,6 +175,12 @@ I18N = {
         "valve_flow": "Wymagany przepływ Q: {value} l/min",
         "valve_unit_flow": "Przepływ zaworu: {value} l/min",
         "valve_count": "Liczba zaworów: {value}",
+        "valve_locked": "Moduł doboru zaworów dekompresyjnych jest płatny. Kup go raz, aby odblokować na stałe, albo obejrzyj reklamę za jedno przeliczenie.",
+        "valve_locked_hint": "Moduł zaworów zablokowany — kup moduł lub obejrzyj reklamę.",
+        "valve_buy": "Kup moduł na stałe",
+        "valve_watch_ad": "Obejrzyj reklamę (1 przeliczenie)",
+        "valve_purchase_unavailable": "Zakup chwilowo niedostępny. Spróbuj ponownie później.",
+        "valve_unlocked_thanks": "Dziękujemy! Moduł zaworów odblokowany na stałe.",
     },
     "en": {
         "product": "Product",
@@ -244,6 +250,12 @@ I18N = {
         "valve_flow": "Required flow Q: {value} l/min",
         "valve_unit_flow": "Valve flow: {value} l/min",
         "valve_count": "Number of valves: {value}",
+        "valve_locked": "The decompression valve module is a paid feature. Buy it once to unlock permanently, or watch an ad for a single calculation.",
+        "valve_locked_hint": "Valve module locked — buy the module or watch an ad.",
+        "valve_buy": "Buy module (one-time)",
+        "valve_watch_ad": "Watch an ad (1 calculation)",
+        "valve_purchase_unavailable": "Purchase is temporarily unavailable. Please try again later.",
+        "valve_unlocked_thanks": "Thank you! The valve module is now unlocked.",
     },
 }
 
@@ -423,6 +435,8 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 3.0)
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
+            Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 1.0)
+            Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
             return root
 
         # --- tekst / stan aplikacji -------------------------------------
@@ -780,6 +794,10 @@ def main() -> None:
                 self.valve_in_F.hint_text = self._t("valve_factor")
                 self.valve_btn_calc.text = self._t("valve_calculate")
                 self.valve_lbl_result.text = self._t("valve_result")
+                if hasattr(self, "valve_lbl_locked"):
+                    self.valve_lbl_locked.text = self._t("valve_locked")
+                    self.valve_btn_buy.text = self._t("valve_buy")
+                    self.valve_btn_watch.text = self._t("valve_watch_ad")
                 if self._last_valve_results is not None:
                     self._render_valve_results(self._last_valve_results)
                 else:
@@ -1298,6 +1316,52 @@ def main() -> None:
             )
             content.bind(minimum_height=content.setter("height"))
 
+            # Karta blokady modułu (płatny) — widoczna tylko gdy moduł zablokowany.
+            lock_card = MDCard(
+                orientation="vertical",
+                padding=dp(14),
+                spacing=dp(10),
+                size_hint_y=None,
+                height=dp(196),
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
+            )
+            self._themed_cards.append(lock_card)
+            self.valve_lock_card = lock_card
+
+            self.valve_lbl_locked = MDLabel(
+                text=self._t("valve_locked"),
+                font_style="Subtitle1",
+                size_hint_y=None,
+                height=dp(64),
+                theme_text_color="Secondary",
+            )
+            lock_card.add_widget(self.valve_lbl_locked)
+
+            self.valve_btn_buy = MDRaisedButton(
+                text=self._t("valve_buy"),
+                icon="cart",
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(50),
+                font_size="15sp",
+                on_release=lambda *_: self._buy_valve_module(),
+            )
+            lock_card.add_widget(self.valve_btn_buy)
+
+            self.valve_btn_watch = MDRaisedButton(
+                text=self._t("valve_watch_ad"),
+                icon="play-circle-outline",
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(50),
+                font_size="15sp",
+                on_release=lambda *_: self._offer_reward_ad(),
+            )
+            lock_card.add_widget(self.valve_btn_watch)
+            content.add_widget(lock_card)
+
             # Karta danych wejściowych.
             card = MDCard(
                 orientation="vertical",
@@ -1438,6 +1502,9 @@ def main() -> None:
                 self._calculate_valves()
 
         def _calculate_valves(self):
+            if not self._valve_module_available():
+                self._refresh_valve_lock_ui()
+                return
             try:
                 V = self._parse_float(self.valve_in_V.text, self._t("valve_volume"))
                 tp = self._parse_float(self.valve_in_tp.text, self._t("valve_temp_before"))
@@ -1451,6 +1518,76 @@ def main() -> None:
             except Exception as exc:  # pragma: no cover - UI feedback
                 log.exception("Obliczenia zaworów")
                 self._show_error(self._t("calc_error", error=exc))
+
+        def _valve_module_available(self) -> bool:
+            """Zwraca True gdy wolno wykonać przeliczenie zaworów.
+
+            Kolejność: trial/PRO-nie-dotyczy/kupiony moduł -> dostęp;
+            w przeciwnym razie próba odblokowania jednym tokenem (1 przeliczenie).
+            """
+            self._refresh_module_valves_status()
+            if self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads):
+                return True
+            # Dolicz tokeny zdobyte za reklamy i spróbuj odblokować jedno przeliczenie.
+            self._credit_pending_reward_tokens()
+            if self._entitlements.try_unlock_module_with_token(
+                MODULE_VALVES, self._pro_no_ads
+            ):
+                return True
+            self._show_error(self._t("valve_locked_hint"))
+            return False
+
+        def _refresh_module_valves_status(self):
+            """Synchronizuje własność modułu zaworów z warstwą Android (Billing)."""
+            if not IS_ANDROID:
+                return
+            try:
+                owned = bool(self._android_activity().isModuleValvesOwned())
+            except Exception:  # pragma: no cover - Android only
+                log.debug("Nie udało się odczytać statusu modułu zaworów", exc_info=True)
+                return
+            if owned:
+                self._entitlements.grant_module(MODULE_VALVES)
+
+        def _refresh_valve_lock_ui(self):
+            """Pokazuje/ukrywa kartę blokady modułu zaworów."""
+            card = getattr(self, "valve_lock_card", None)
+            if card is None:
+                return
+            self._refresh_module_valves_status()
+            locked = not self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads)
+            from kivy.metrics import dp
+
+            card.height = dp(196) if locked else 0
+            card.opacity = 1 if locked else 0
+            card.disabled = not locked
+
+        def _buy_valve_module(self):
+            if self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads):
+                return
+            if not IS_ANDROID:
+                self._show_error(self._t("pro_google_play_only"))
+                return
+            try:
+                self._android_activity().launchModulePurchase()
+                for delay in (1.0, 4.0, 10.0):
+                    Clock.schedule_once(
+                        lambda *_: self._after_valve_purchase(), delay
+                    )
+            except Exception:  # pragma: no cover - Android only
+                log.exception("Zakup modułu zaworów")
+                self._show_error(self._t("valve_purchase_unavailable"))
+
+        def _after_valve_purchase(self):
+            was_locked = not self._entitlements.has_module(
+                MODULE_VALVES, self._pro_no_ads
+            )
+            self._refresh_module_valves_status()
+            self._refresh_valve_lock_ui()
+            if was_locked and self._entitlements.has_module(
+                MODULE_VALVES, self._pro_no_ads
+            ):
+                self._show_error(self._t("valve_unlocked_thanks"))
 
         def _render_valve_results(self, results):
             self.valve_lbl_count.text = self._t("valve_count", value=results.ilosc_zaworow)
@@ -1472,6 +1609,8 @@ def main() -> None:
             if name is None:
                 return
             self._set_active_ad_tab(name)
+            if name == "valves":
+                self._refresh_valve_lock_ui()
 
         def _set_active_ad_tab(self, tab: str):
             if not IS_ANDROID:
@@ -1614,6 +1753,7 @@ def main() -> None:
             self._credit_pending_reward_tokens()
             if self._entitlements.reward_tokens() > 0:
                 self._show_error(self._t("ad_thanks"))
+            self._refresh_valve_lock_ui()
 
         def _refresh_privacy_button(self):
             """Pokazuje przycisk prywatności tylko gdy UMP wymaga opcji zgody."""

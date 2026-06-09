@@ -4,6 +4,26 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.0] — 2026-06-09
+
+### Dodane — płatny moduł zaworów (monetyzacja)
+
+- **Gating modułu `module_valves`**: zakładka zaworów jest jednorazowo płatna.
+  Dostęp przez: trial (1 dzień, wszystkie moduły), trwały zakup `module_valves`
+  albo obejrzenie reklamy rewarded = 1 przeliczenie (token, dzienny limit 8).
+  PRO (brak reklam) **nie** odblokowuje modułu — kupowany niezależnie.
+- **`entitlements.try_unlock_module_with_token()`** — jednorazowe odblokowanie
+  modułu tokenem (token zużywany, moduł nie jest nadawany na stałe). +3 testy
+  (suita: 104 testy).
+- **Java Billing** (`RefrigerationCalcActivity`): drugi produkt INAPP
+  `module_valves` równolegle do `pro_no_ads` — `launchModulePurchase()`,
+  `isModuleValvesOwned()`, query/handle/acknowledge/ownership-sync. Gdy produkt
+  nie jest jeszcze aktywny w Play Console, zakup pokazuje „niedostępny", a ścieżka
+  z reklamą nadal działa.
+- **UI zakładki zaworów**: karta blokady z przyciskami „Kup moduł na stałe"
+  i „Obejrzyj reklamę (1 przeliczenie)"; synchronizacja własności z warstwą
+  Android; lokalizacja PL/EN nowych komunikatów.
+
 ## [1.1.0] — 2026-06-09
 
 ### Dodane — druga zakładka: zawory dekompresyjne

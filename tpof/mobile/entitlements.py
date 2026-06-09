@@ -229,6 +229,21 @@ class Entitlements:
             return True
         return module_id in self._modules
 
+    def try_unlock_module_with_token(self, module_id: str, pro: bool = False) -> bool:
+        """Próbuje odblokować płatny moduł zużywając jeden token za reklamę.
+
+        Jeśli moduł i tak jest dostępny (darmowy/trial/kupiony) — nic nie zużywa
+        i zwraca ``True``. Jeśli jest zablokowany, zużywa token (gdy dostępny) i
+        zwraca ``True``; gdy brak tokenów — ``False``. Wywoływać w momencie
+        faktycznego użycia karty (np. przeliczenia), nie do renderowania UI.
+
+        Token daje JEDNO użycie — moduł nie jest nadawany na stałe (do tego służy
+        zakup przez :meth:`grant_module`).
+        """
+        if self.has_module(module_id, pro):
+            return True
+        return self.consume_reward_token()
+
     # --- tokeny za reklamy rewarded -------------------------------------
     def _prune_ad_window(self) -> None:
         """Usuwa znaczniki reklam starsze niż 24h (przesuwne okno doby)."""

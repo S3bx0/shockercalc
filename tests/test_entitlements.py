@@ -281,6 +281,40 @@ def test_token_nie_jest_zuzywany_dla_dostepnego_produktu(tmp_path):
     assert ent.reward_tokens() == REWARD_TOKEN_PER_AD
 
 
+def test_token_odblokowuje_jedno_uzycie_modulu(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    # Po wygaśnięciu trialu płatny moduł jest zablokowany.
+    assert ent.has_module(MODULE_VALVES, pro=False) is False
+    ent.grant_reward_for_ad()
+    # Token odblokowuje jednorazowo i zostaje zużyty — moduł NIE jest nadawany.
+    assert ent.try_unlock_module_with_token(MODULE_VALVES, pro=False) is True
+    assert ent.reward_tokens() == 0
+    assert ent.has_module(MODULE_VALVES, pro=False) is False
+    # Kolejne użycie znów zablokowane (brak tokenów).
+    assert ent.try_unlock_module_with_token(MODULE_VALVES, pro=False) is False
+
+
+def test_token_nie_jest_zuzywany_dla_kupionego_modulu(tmp_path):
+    clock = _Clock()
+    ent = _expired(tmp_path, clock)
+    ent.grant_module(MODULE_VALVES)
+    ent.grant_reward_for_ad()
+    # Moduł kupiony — token nie powinien zniknąć.
+    assert ent.try_unlock_module_with_token(MODULE_VALVES, pro=False) is True
+    assert ent.reward_tokens() == REWARD_TOKEN_PER_AD
+
+
+def test_token_nie_jest_zuzywany_dla_modulu_w_trialu(tmp_path):
+    clock = _Clock()
+    ent = _make(tmp_path, clock)
+    ent.ensure_started()  # trial aktywny
+    ent.grant_reward_for_ad()
+    # Trial daje dostęp do modułu — token nie znika.
+    assert ent.try_unlock_module_with_token(MODULE_VALVES, pro=False) is True
+    assert ent.reward_tokens() == REWARD_TOKEN_PER_AD
+
+
 def test_dzienny_limit_reklam(tmp_path):
     clock = _Clock()
     ent = _expired(tmp_path, clock)
