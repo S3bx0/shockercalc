@@ -15,6 +15,7 @@ license = { text = "Proprietary" }
 keywords = ["chłodnictwo", "zamrażanie", "kalkulator", "HVAC", "refrigeration"]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "License :: Other/Proprietary License",
   "Operating System :: OS Independent",
   "Topic :: Scientific/Engineering",
 ]

@@ -1,6 +1,12 @@
 # Refrigeration Calc
 
-Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych.
+Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych
+oraz doboru zaworów dekompresyjnych.
+
+> **⚠️ Oprogramowanie własnościowe.** Ten kod jest udostępniony publicznie
+> wyłącznie do wglądu. **Nie wolno** go kopiować, używać, modyfikować ani
+> rozpowszechniać bez pisemnej zgody autora. Szczegóły w pliku
+> [`LICENSE`](LICENSE).
 
 ## Struktura projektu
 
@@ -17,8 +23,8 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # UI + integracja AdMob/Billing
-    ├── entitlements.py# trial, freemium, tokeny za reklamy, karty
+    ├── main.py        # UI (dolna nawigacja) + integracja AdMob/Billing
+    ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
     └── paths.py
 
 assets/                # zasoby aplikacji
@@ -53,23 +59,30 @@ python -m pytest
 ## Android / AdMob / PRO
 
 Build mobilny używa natywnego banera AdMob przez `RefrigerationCalcActivity`.
-W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki:
+W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki
+— **osobne dla każdej zakładki** (rozdzielone raporty):
 
-- baner: `ca-app-pub-7481054652344026/5599859341`
-- reklama z nagrodą (rewarded): `ca-app-pub-7481054652344026/1548239161`
+| Zakładka | Baner | Reklama z nagrodą |
+|----------|-------|-------------------|
+| Chłodnicze (zamrażanie) | `…/5599859341` | `…/1548239161` |
+| Zawory dekompresyjne    | `…/6303778370` | `…/1060900411` |
+
+App ID: `ca-app-pub-7481054652344026~2716191071`. Jednostka reklamowa jest
+przełączana w warstwie natywnej (`setActiveAdTab`) przy zmianie zakładki.
 
 ### Model dostępu (freemium)
 
 Logika uprawnień jest w `tpof/mobile/entitlements.py` (w pełni testowana,
 niezależna od UI):
 
-- **Trial 7 dni** — od pierwszego uruchomienia pełen dostęp do wszystkich
-  produktów i kart.
+- **Trial 1 dzień** — od pierwszego uruchomienia pełen dostęp do wszystkich
+  produktów, kart i modułów płatnych.
 - **Po triallu (wersja darmowa)** — 1 produkt z każdej listy za darmo;
   pozostałe są płatne (PRO) lub odblokowywane pojedynczo za reklamę.
 - **Reklama z nagrodą = token** — obejrzenie pełnej reklamy daje 1 token =
-  1 bezpłatne przeliczenie zablokowanego produktu. Limit **8 reklam/dobę**
-  (przesuwne okno 24 h); cooldown konfigurowalny (`REWARD_AD_COOLDOWN_S`).
+  1 bezpłatne przeliczenie zablokowanego produktu / modułu. Limit
+  **8 reklam/dobę** (przesuwne okno 24 h); cooldown konfigurowalny
+  (`REWARD_AD_COOLDOWN_S`).
 
 ### PRO (`pro_no_ads`)
 
@@ -81,9 +94,20 @@ Jednorazowy zakup Google Play Billing:
   rdzeniowej (zamrażanie)**,
 - cena: ustawiana w Google Play Console, nie w kodzie aplikacji.
 
-> PRO świadomie **nie** odblokowuje przyszłych płatnych kart funkcyjnych
-> (np. dobór zaworów) — każda nowa karta jest osobnym produktem
+> PRO świadomie **nie** odblokowuje płatnych kart funkcyjnych
+> (np. dobór zaworów) — każda taka karta jest osobnym produktem
 > (`module_valves`, `module_insulation`, …), kupowanym niezależnie.
+
+### Moduł zaworów dekompresyjnych (`module_valves`)
+
+Druga zakładka (dobór zaworów) jest **płatnym modułem jednorazowym**:
+
+- product ID w Play Console: `module_valves` (one-time / non-consumable),
+- dostęp: trial → za darmo; trwały zakup `module_valves` → na stałe;
+  reklama z nagrodą → 1 przeliczenie (token),
+- PRO **nie** odblokowuje tego modułu (kupowany niezależnie),
+- gdy produkt nie jest jeszcze aktywny w Play Console, zakup pokazuje
+  „niedostępny”, a ścieżka z reklamą działa normalnie.
 
 ### Zgoda na reklamy (Google UMP / RODO)
 
@@ -97,5 +121,17 @@ w Play Console.
 
 ## Plany rozwoju
 
-- **Etap 4**: warstwa mobilna (KivyMD) + szablon `buildozer.spec` do publikacji w Google Play.
-- Kolejne płatne karty funkcyjne (zawory, izolacja) jako niezależne produkty IAP.
+- Kolejna płatna karta funkcyjna: izolacja (`module_insulation`) jako
+  niezależny produkt IAP.
+- Dalsze testy zamknięte i publikacja w Google Play.
+
+## Licencja
+
+Copyright © 2026 Sebastian Milczarek. Wszelkie prawa zastrzeżone.
+
+To repozytorium jest **własnościowe** i udostępnione publicznie wyłącznie
+w celach poglądowych (portfolio / wgląd w kod). Bez uprzedniej pisemnej zgody
+autora **zabronione** jest m.in.: kopiowanie, uruchamianie, modyfikowanie,
+rozpowszechnianie, publikowanie, tworzenie utworów zależnych oraz komercyjne
+lub niekomercyjne wykorzystanie kodu, zasobów i danych (w tym `Table3.json`,
+grafik i ikon). Pełny tekst w pliku [`LICENSE`](LICENSE).

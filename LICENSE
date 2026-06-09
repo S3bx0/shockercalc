@@ -1,0 +1,75 @@
+Refrigeration Calc — Licencja własnościowa (Proprietary License)
+Copyright © 2026 Sebastian Milczarek. Wszelkie prawa zastrzeżone.
+All rights reserved.
+
+================================================================================
+POLSKI
+================================================================================
+
+Niniejsze repozytorium oraz cała jego zawartość — w tym między innymi kod
+źródłowy, skrypty, zasoby graficzne, ikony, czcionki, dane (np. plik
+„Table3.json") oraz dokumentacja (dalej „Oprogramowanie") — stanowią
+własność Sebastiana Milczarka („Autor") i są chronione prawem autorskim.
+
+Oprogramowanie jest udostępnione publicznie WYŁĄCZNIE w celu wglądu
+(przeglądania kodu, np. jako portfolio). Udostępnienie publiczne NIE oznacza
+udzielenia jakiejkolwiek licencji open source ani przeniesienia praw.
+
+Bez uprzedniej, wyraźnej, pisemnej zgody Autora ZABRONIONE jest w
+szczególności:
+
+  1. kopiowanie, pobieranie w celu użycia, powielanie lub przechowywanie
+     Oprogramowania w całości lub w części poza przeglądaniem na platformie
+     hostingowej;
+  2. uruchamianie, kompilowanie i wdrażanie Oprogramowania;
+  3. modyfikowanie, tłumaczenie, adaptowanie lub tworzenie utworów zależnych;
+  4. rozpowszechnianie, publikowanie, udostępnianie, sublicencjonowanie,
+     wynajmowanie, sprzedaż lub jakiekolwiek inne udostępnianie osobom trzecim;
+  5. wykorzystanie Oprogramowania lub jego fragmentów (w tym kodu, algorytmów,
+     danych, grafik i ikon) w innych projektach — komercyjnych lub
+     niekomercyjnych;
+  6. usuwanie lub zmienianie informacji o prawach autorskich i niniejszej
+     licencji.
+
+Wszelkie prośby o zgodę lub licencję należy kierować do Autora.
+
+OPROGRAMOWANIE JEST DOSTARCZANE „TAKIM, JAKIE JEST", BEZ JAKICHKOLWIEK
+GWARANCJI, WYRAŹNYCH LUB DOROZUMIANYCH. AUTOR NIE PONOSI ODPOWIEDZIALNOŚCI
+ZA JAKIEKOLWIEK ROSZCZENIA, SZKODY LUB INNE ZOBOWIĄZANIA WYNIKAJĄCE Z
+KORZYSTANIA Z OPROGRAMOWANIA LUB Z NIM ZWIĄZANE.
+
+================================================================================
+ENGLISH (informational translation)
+================================================================================
+
+This repository and all of its contents — including but not limited to source
+code, scripts, graphic assets, icons, fonts, data (e.g. the "Table3.json"
+file) and documentation (the "Software") — are the property of Sebastian
+Milczarek (the "Author") and are protected by copyright law.
+
+The Software is made publicly available SOLELY for viewing purposes (source
+code inspection, e.g. as a portfolio). Public availability does NOT grant any
+open-source license nor transfer any rights.
+
+Without the Author's prior, explicit, written permission, the following are
+PROHIBITED, including but not limited to:
+
+  1. copying, downloading for use, reproducing, or storing the Software in
+     whole or in part beyond viewing it on the hosting platform;
+  2. running, compiling, and deploying the Software;
+  3. modifying, translating, adapting, or creating derivative works;
+  4. distributing, publishing, sharing, sublicensing, renting, selling, or
+     otherwise making the Software available to third parties;
+  5. using the Software or any portion of it (including code, algorithms,
+     data, graphics, and icons) in other projects — commercial or
+     non-commercial;
+  6. removing or altering copyright notices and this license.
+
+All permission or licensing requests must be directed to the Author.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. THE AUTHOR SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+In case of any discrepancy between the language versions, the Polish version
+prevails.
