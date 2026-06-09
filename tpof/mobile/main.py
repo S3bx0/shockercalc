@@ -165,13 +165,22 @@ I18N = {
         "nav_valves": "Zawory",
         "valve_title": "Zawory dekompresyjne",
         "valve_type": "Typ zaworu",
+        "valve_mode_volume": "Kubatura",
+        "valve_mode_dims": "Wymiary",
         "valve_volume": "Objętość komory [m³]",
-        "valve_temp_before": "Temp. przed dekompresją [°C]",
-        "valve_temp_after": "Temp. po dekompresji [°C]",
-        "valve_factor": "Współczynnik częstości F [1/h]",
+        "valve_length": "Długość [m]",
+        "valve_width": "Szerokość [m]",
+        "valve_height": "Wysokość [m]",
+        "valve_temp_before": "Temp. przed wlotem [°C]",
+        "valve_temp_after": "Temp. za wlotem [°C]",
+        "valve_coolers": "Ilość chłodnic",
+        "valve_flow_per": "Przepływ na 1 chłodnicę [m³/h]",
+        "valve_coolers_min": "Ilość chłodnic musi być co najmniej 1.",
+        "valve_flow_positive": "Przepływ na 1 chłodnicę musi być większy od zera.",
         "valve_calculate": "Oblicz zawory",
         "valve_result": "Wynik",
         "valve_delta_t": "Tempo zmian ΔT: {value} °C/min",
+        "valve_total_flow": "Przepływ całkowity F: {value} m³/h",
         "valve_flow": "Wymagany przepływ Q: {value} l/min",
         "valve_unit_flow": "Przepływ zaworu: {value} l/min",
         "valve_count": "Liczba zaworów: {value}",
@@ -240,13 +249,22 @@ I18N = {
         "nav_valves": "Valves",
         "valve_title": "Decompression valves",
         "valve_type": "Valve type",
+        "valve_mode_volume": "Volume",
+        "valve_mode_dims": "Dimensions",
         "valve_volume": "Chamber volume [m³]",
-        "valve_temp_before": "Temp. before decompression [°C]",
-        "valve_temp_after": "Temp. after decompression [°C]",
-        "valve_factor": "Frequency factor F [1/h]",
+        "valve_length": "Length [m]",
+        "valve_width": "Width [m]",
+        "valve_height": "Height [m]",
+        "valve_temp_before": "Temp. before cooler [°C]",
+        "valve_temp_after": "Temp. after cooler [°C]",
+        "valve_coolers": "Number of coolers",
+        "valve_flow_per": "Flow per cooler [m³/h]",
+        "valve_coolers_min": "Number of coolers must be at least 1.",
+        "valve_flow_positive": "Flow per cooler must be greater than zero.",
         "valve_calculate": "Calculate valves",
         "valve_result": "Result",
         "valve_delta_t": "Change rate ΔT: {value} °C/min",
+        "valve_total_flow": "Total flow F: {value} m³/h",
         "valve_flow": "Required flow Q: {value} l/min",
         "valve_unit_flow": "Valve flow: {value} l/min",
         "valve_count": "Number of valves: {value}",
@@ -370,6 +388,7 @@ def main() -> None:
             self._pro_no_ads = False
             self._pro_thanks_shown = False
             self._valve_type = "Maxi Elebar"
+            self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
             self._last_valve_results = None
             self._valve_menu: Optional[MDDropdownMenu] = None
             self._entitlements = Entitlements()
@@ -788,10 +807,16 @@ def main() -> None:
                 self.tab_valves.text = self._t("nav_valves")
             if hasattr(self, "valve_lbl_title"):
                 self.valve_lbl_title.text = self._t("valve_title")
+                self.valve_btn_mode_k.text = self._t("valve_mode_volume")
+                self.valve_btn_mode_w.text = self._t("valve_mode_dims")
                 self.valve_in_V.hint_text = self._t("valve_volume")
+                self.valve_in_L.hint_text = self._t("valve_length")
+                self.valve_in_W.hint_text = self._t("valve_width")
+                self.valve_in_H.hint_text = self._t("valve_height")
                 self.valve_in_tp.hint_text = self._t("valve_temp_before")
                 self.valve_in_tz.hint_text = self._t("valve_temp_after")
-                self.valve_in_F.hint_text = self._t("valve_factor")
+                self.valve_in_n.hint_text = self._t("valve_coolers")
+                self.valve_in_q.hint_text = self._t("valve_flow_per")
                 self.valve_btn_calc.text = self._t("valve_calculate")
                 self.valve_lbl_result.text = self._t("valve_result")
                 if hasattr(self, "valve_lbl_locked"):
@@ -803,6 +828,7 @@ def main() -> None:
                 else:
                     self.valve_lbl_count.text = self._t("valve_count", value="—")
                     self.valve_lbl_delta.text = self._t("valve_delta_t", value="—")
+                    self.valve_lbl_totalflow.text = self._t("valve_total_flow", value="—")
                     self.valve_lbl_flow.text = self._t("valve_flow", value="—")
                     self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value="—")
             self._set_pro_status(self._pro_no_ads)
@@ -1394,11 +1420,62 @@ def main() -> None:
             )
             card.add_widget(self.valve_btn_type)
 
+            # Przełącznik trybu objętości: Kubatura / Wymiary.
+            mode_box = MDBoxLayout(
+                orientation="horizontal",
+                spacing=dp(8),
+                size_hint_y=None,
+                height=dp(44),
+            )
+            self.valve_btn_mode_k = MDRaisedButton(
+                text=self._t("valve_mode_volume"),
+                size_hint_x=0.5,
+                size_hint_y=None,
+                height=dp(44),
+                font_size="13sp",
+                on_release=lambda *_: self._set_valve_mode("K"),
+            )
+            self.valve_btn_mode_w = MDRaisedButton(
+                text=self._t("valve_mode_dims"),
+                size_hint_x=0.5,
+                size_hint_y=None,
+                height=dp(44),
+                font_size="13sp",
+                on_release=lambda *_: self._set_valve_mode("W"),
+            )
+            mode_box.add_widget(self.valve_btn_mode_k)
+            mode_box.add_widget(self.valve_btn_mode_w)
+            card.add_widget(mode_box)
+
+            # Pole objętości (tryb Kubatura).
             self.valve_in_V = MDTextField(hint_text=self._t("valve_volume"), input_filter="float")
+            self.valve_in_V.size_hint_y = None
+            self.valve_in_V.height = dp(60)
+            self.valve_vol_box = MDBoxLayout(
+                orientation="vertical", size_hint_y=None, height=dp(60)
+            )
+            self.valve_vol_box.add_widget(self.valve_in_V)
+            card.add_widget(self.valve_vol_box)
+
+            # Pola wymiarów (tryb Wymiary): objętość = L × Sz × W.
+            self.valve_in_L = MDTextField(hint_text=self._t("valve_length"), input_filter="float")
+            self.valve_in_W = MDTextField(hint_text=self._t("valve_width"), input_filter="float")
+            self.valve_in_H = MDTextField(hint_text=self._t("valve_height"), input_filter="float")
+            self.valve_dim_box = MDBoxLayout(
+                orientation="vertical", size_hint_y=None, height=dp(180)
+            )
+            for w in (self.valve_in_L, self.valve_in_W, self.valve_in_H):
+                w.size_hint_y = None
+                w.height = dp(60)
+                self.valve_dim_box.add_widget(w)
+            card.add_widget(self.valve_dim_box)
+
+            # Temperatury, ilość chłodnic, przepływ na 1 chłodnicę.
             self.valve_in_tp = MDTextField(hint_text=self._t("valve_temp_before"), input_filter="float")
             self.valve_in_tz = MDTextField(hint_text=self._t("valve_temp_after"), input_filter="float")
-            self.valve_in_F = MDTextField(hint_text=self._t("valve_factor"), input_filter="float")
-            for w in (self.valve_in_V, self.valve_in_tp, self.valve_in_tz, self.valve_in_F):
+            self.valve_in_n = MDTextField(hint_text=self._t("valve_coolers"), input_filter="int")
+            self.valve_in_q = MDTextField(hint_text=self._t("valve_flow_per"), input_filter="float")
+            for w in (self.valve_in_tp, self.valve_in_tz, self.valve_in_n, self.valve_in_q):
                 w.size_hint_y = None
                 w.height = dp(60)
                 card.add_widget(w)
@@ -1414,6 +1491,7 @@ def main() -> None:
             )
             card.add_widget(self.valve_btn_calc)
             content.add_widget(card)
+            self._set_valve_mode(self._valve_input_mode)
 
             # Karta wyniku.
             res_card = MDCard(
@@ -1454,6 +1532,12 @@ def main() -> None:
                 height=dp(30),
                 theme_text_color="Secondary",
             )
+            self.valve_lbl_totalflow = MDLabel(
+                text=self._t("valve_total_flow", value="—"),
+                size_hint_y=None,
+                height=dp(30),
+                theme_text_color="Secondary",
+            )
             self.valve_lbl_flow = MDLabel(
                 text=self._t("valve_flow", value="—"),
                 size_hint_y=None,
@@ -1467,12 +1551,32 @@ def main() -> None:
                 theme_text_color="Secondary",
             )
             res_card.add_widget(self.valve_lbl_delta)
+            res_card.add_widget(self.valve_lbl_totalflow)
             res_card.add_widget(self.valve_lbl_flow)
             res_card.add_widget(self.valve_lbl_unitflow)
             content.add_widget(res_card)
 
             scroll.add_widget(content)
             return scroll
+
+        def _set_valve_mode(self, mode: str):
+            """Przełącza tryb wprowadzania objętości: Kubatura ("K") / Wymiary ("W")."""
+            from kivy.metrics import dp
+
+            self._valve_input_mode = "W" if mode == "W" else "K"
+            k = self._valve_input_mode == "K"
+            if hasattr(self, "valve_vol_box"):
+                self.valve_vol_box.height = dp(60) if k else 0
+                self.valve_vol_box.opacity = 1 if k else 0
+                self.valve_vol_box.disabled = not k
+                self.valve_dim_box.height = 0 if k else dp(180)
+                self.valve_dim_box.opacity = 0 if k else 1
+                self.valve_dim_box.disabled = k
+            active = self.theme_cls.primary_color
+            inactive = (0.55, 0.57, 0.62, 1)
+            if hasattr(self, "valve_btn_mode_k"):
+                self.valve_btn_mode_k.md_bg_color = active if k else inactive
+                self.valve_btn_mode_w.md_bg_color = inactive if k else active
 
         def _open_valve_type_menu(self, caller):
             from kivy.metrics import dp
@@ -1506,12 +1610,26 @@ def main() -> None:
                 self._refresh_valve_lock_ui()
                 return
             try:
-                V = self._parse_float(self.valve_in_V.text, self._t("valve_volume"))
+                if self._valve_input_mode == "W":
+                    L = self._parse_float(self.valve_in_L.text, self._t("valve_length"))
+                    Wd = self._parse_float(self.valve_in_W.text, self._t("valve_width"))
+                    H = self._parse_float(self.valve_in_H.text, self._t("valve_height"))
+                    V = L * Wd * H
+                else:
+                    V = self._parse_float(self.valve_in_V.text, self._t("valve_volume"))
                 tp = self._parse_float(self.valve_in_tp.text, self._t("valve_temp_before"))
                 tz = self._parse_float(self.valve_in_tz.text, self._t("valve_temp_after"))
-                F = self._parse_float(self.valve_in_F.text, self._t("valve_factor"))
-                results = calculate_decompression_valves(V, tp, tz, F, self._valve_type)
+                n = self._parse_int(self.valve_in_n.text, self._t("valve_coolers"))
+                if n < 1:
+                    raise ValueError(self._t("valve_coolers_min"))
+                q = self._parse_float(self.valve_in_q.text, self._t("valve_flow_per"))
+                if q <= 0:
+                    raise ValueError(self._t("valve_flow_positive"))
+                # Całkowity przepływ = przepływ na 1 chłodnicę × liczba chłodnic.
+                F_total = q * n
+                results = calculate_decompression_valves(V, tp, tz, F_total, self._valve_type)
                 self._last_valve_results = results
+                self._last_valve_total_flow = F_total
                 self._render_valve_results(results)
             except ValueError as exc:
                 self._show_error(str(exc))
@@ -1591,7 +1709,11 @@ def main() -> None:
 
         def _render_valve_results(self, results):
             self.valve_lbl_count.text = self._t("valve_count", value=results.ilosc_zaworow)
-            self.valve_lbl_delta.text = self._t("valve_delta_t", value=f"{results.delta_T:.4f}")
+            self.valve_lbl_delta.text = self._t("valve_delta_t", value=f"{results.delta_T:.2f}")
+            total = getattr(self, "_last_valve_total_flow", None)
+            self.valve_lbl_totalflow.text = self._t(
+                "valve_total_flow", value=("—" if total is None else f"{total:.1f}")
+            )
             self.valve_lbl_flow.text = self._t("valve_flow", value=f"{results.Q:.1f}")
             self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value=results.przeplyw_zaworu)
 
@@ -1966,6 +2088,12 @@ def main() -> None:
                 return float((raw or "").replace(",", "."))
             except (TypeError, ValueError, AttributeError) as exc:
                 raise ValueError(self._t("invalid_field", name=name)) from exc
+
+        def _parse_int(self, raw: str, name: str) -> int:
+            value = self._parse_float(raw, name)
+            if not float(value).is_integer():
+                raise ValueError(self._t("invalid_field", name=name))
+            return int(value)
 
         def _calculate(self):
             try:

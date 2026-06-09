@@ -4,6 +4,26 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.1] — 2026-06-09
+
+### Poprawione — model danych wejściowych kalkulatora zaworów
+
+- **Krytyczna poprawka zgodności z aplikacją referencyjną (desktop)**: zakładka
+  zaworów wymagała wcześniej ręcznego podania współczynnika częstości `F`, co
+  dawało błędne wyniki. Teraz pola wejściowe odwzorowują aplikację desktopową:
+  - przełącznik trybu objętości: **Kubatura** (objętość `V` w m³) /
+    **Wymiary** (długość × szerokość × wysokość → `V`),
+  - **Ilość chłodnic** (liczba całkowita ≥ 1),
+  - **Przepływ na 1 chłodnicę** [m³/h].
+- Całkowity przepływ liczony jest jako `F = przepływ_na_1_chłodnicę × ilość_chłodnic`
+  i przekazywany do rdzenia `calculate_decompression_valves` (rdzeń bez zmian).
+- Wynik pokazuje dodatkowo **przepływ całkowity F [m³/h]**.
+- Walidacja: ilość chłodnic ≥ 1, przepływ > 0; nowy pomocnik `_parse_int`.
+- i18n PL/EN: nowe klucze (`valve_mode_volume`, `valve_mode_dims`,
+  `valve_length`, `valve_width`, `valve_height`, `valve_coolers`,
+  `valve_flow_per`, `valve_total_flow`, `valve_coolers_min`,
+  `valve_flow_positive`); usunięto `valve_factor`.
+
 ## [1.2.0] — 2026-06-09
 
 ### Dodane — płatny moduł zaworów (monetyzacja)
