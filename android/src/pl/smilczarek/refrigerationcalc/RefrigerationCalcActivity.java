@@ -1,11 +1,16 @@
 package pl.smilczarek.refrigerationcalc;
 
 import android.content.Intent;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
+import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -49,6 +54,9 @@ import com.google.android.ump.UserMessagingPlatform;
 import org.kivy.android.PythonActivity;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
 
@@ -358,13 +366,23 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                         Log.w(TAG, "shareFile: plik nie istnieje " + path);
                         return;
                     }
-                    // Pozwala przekazać file:// w EXTRA_STREAM bez konfiguracji FileProvider.
-                    StrictMode.VmPolicy.Builder vmBuilder = new StrictMode.VmPolicy.Builder();
-                    StrictMode.setVmPolicy(vmBuilder.build());
+
+                    Uri uri = null;
+                    // Android 10+ (API 29): kopiujemy plik do publicznego MediaStore
+                    // (Pobrane) i udostępniamy content:// URI — Gmail/Outlook moga go
+                    // odczytac (prywatny katalog aplikacji jest dla nich niewidoczny).
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        uri = exportToDownloads(file, mimeType);
+                    }
+                    if (uri == null) {
+                        // Fallback dla starszych Androidow: file:// + StrictMode.
+                        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().build());
+                        uri = Uri.fromFile(file);
+                    }
 
                     Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType(mimeType != null ? mimeType : "application/octet-stream");
-                    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                    intent.putExtra(Intent.EXTRA_STREAM, uri);
                     if (subject != null) {
                         intent.putExtra(Intent.EXTRA_SUBJECT, subject);
                     }
@@ -378,6 +396,48 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                 }
             }
         });
+    }
+
+    /**
+     * Kopiuje plik do publicznego katalogu Pobrane przez MediaStore i zwraca
+     * jego content:// URI (czytelny dla innych aplikacji). API 29+.
+     */
+    private Uri exportToDownloads(File file, String mimeType) {
+        try {
+            ContentResolver resolver = getContentResolver();
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, file.getName());
+            values.put(MediaStore.Downloads.MIME_TYPE,
+                    mimeType != null ? mimeType : "application/pdf");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            values.put(MediaStore.Downloads.IS_PENDING, 1);
+
+            Uri item = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (item == null) {
+                return null;
+            }
+            OutputStream os = null;
+            InputStream is = null;
+            try {
+                os = resolver.openOutputStream(item);
+                is = new FileInputStream(file);
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = is.read(buf)) > 0) {
+                    os.write(buf, 0, n);
+                }
+            } finally {
+                if (is != null) { try { is.close(); } catch (Exception ignored) {} }
+                if (os != null) { try { os.close(); } catch (Exception ignored) {} }
+            }
+            values.clear();
+            values.put(MediaStore.Downloads.IS_PENDING, 0);
+            resolver.update(item, values, null, null);
+            return item;
+        } catch (Exception e) {
+            Log.e(TAG, "exportToDownloads nie powiod\u0142o si\u0119", e);
+            return null;
+        }
     }
 
     private boolean isDebugBuild() {
