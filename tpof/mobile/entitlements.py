@@ -41,7 +41,7 @@ import time
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
-TRIAL_DAYS = 7
+TRIAL_DAYS = 1
 _TRIAL_SECONDS = TRIAL_DAYS * 24 * 60 * 60
 FREE_PRODUCTS_PER_CATEGORY = 1
 STATE_FILE = "entitlement.json"

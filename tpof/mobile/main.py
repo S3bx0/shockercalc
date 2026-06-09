@@ -152,9 +152,11 @@ I18N = {
         "pro_unlocked_footer": "PRO • pełen dostęp",
         "locked_suffix": "  — PRO",
         "product_locked": "Ten produkt jest dostępny w PRO. W wersji darmowej masz 1 produkt z każdej listy.",
-        "trial_expired_info": "Wersja próbna 7 dni dobiegła końca. Kup PRO, aby odblokować wszystkie produkty.",
+        "trial_expired_info": "Okres próbny dobiegł końca. Kup PRO, aby odblokować wszystkie produkty.",
         "watch_ad_for_token": "Obejrzyj reklamę, aby wykonać 1 bezpłatne przeliczenie tego produktu.",
         "ad_token_earned": "Masz token! Naciśnij Oblicz, aby wykonać bezpłatne przeliczenie.",
+        "ad_thanks": "Dziękujemy za obejrzenie reklamy! Masz 1 bezpłatne przeliczenie.",
+        "pro_thanks": "Dziękujemy za zakup PRO! Reklamy wyłączone, pełen dostęp odblokowany.",
         "ad_not_ready": "Reklama jeszcze się ładuje. Spróbuj za chwilę.",
         "ad_limit_reached": "Dzienny limit reklam wyczerpany. Kup PRO, aby liczyć bez ograniczeń.",
     },
@@ -205,9 +207,11 @@ I18N = {
         "pro_unlocked_footer": "PRO • full access",
         "locked_suffix": "  — PRO",
         "product_locked": "This product is available in PRO. The free version allows 1 product per list.",
-        "trial_expired_info": "The 7-day trial has ended. Buy PRO to unlock all products.",
+        "trial_expired_info": "The trial has ended. Buy PRO to unlock all products.",
         "watch_ad_for_token": "Watch an ad to run 1 free calculation for this product.",
         "ad_token_earned": "Token granted! Tap Calculate to run your free calculation.",
+        "ad_thanks": "Thanks for watching the ad! You have 1 free calculation.",
+        "pro_thanks": "Thank you for buying PRO! Ads disabled, full access unlocked.",
         "ad_not_ready": "The ad is still loading. Try again in a moment.",
         "ad_limit_reached": "Daily ad limit reached. Buy PRO to calculate without limits.",
     },
@@ -318,6 +322,7 @@ def main() -> None:
             self._language = "pl"
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
+            self._pro_thanks_shown = False
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
 
@@ -1229,14 +1234,24 @@ def main() -> None:
             except Exception:  # pragma: no cover - Android only
                 return activity
 
-        def _refresh_pro_status(self):
+        def _refresh_pro_status(self, announce: bool = False):
             if not IS_ANDROID:
                 self._set_pro_status(False)
                 return
             try:
                 activity = self._android_activity()
-                self._set_pro_status(bool(activity.isProNoAdsActive()))
+                was_active = self._pro_no_ads
+                active = bool(activity.isProNoAdsActive())
+                self._set_pro_status(active)
                 self._refresh_ad_slot_height()
+                if (
+                    announce
+                    and active
+                    and not was_active
+                    and not self._pro_thanks_shown
+                ):
+                    self._pro_thanks_shown = True
+                    self._show_error(self._t("pro_thanks"))
             except Exception:  # pragma: no cover - Android only
                 log.debug("Nie udało się odczytać statusu PRO", exc_info=True)
 
@@ -1278,9 +1293,9 @@ def main() -> None:
                 return
             try:
                 self._android_activity().launchProPurchase()
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(), 1.0)
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(), 4.0)
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(), 10.0)
+                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 1.0)
+                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 4.0)
+                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 10.0)
             except Exception:  # pragma: no cover - Android only
                 log.exception("Zakup PRO")
                 self._show_error(self._t("pro_unavailable"))
@@ -1326,7 +1341,7 @@ def main() -> None:
         def _after_reward_ad(self):
             self._credit_pending_reward_tokens()
             if self._entitlements.reward_tokens() > 0:
-                self._show_error(self._t("ad_token_earned"))
+                self._show_error(self._t("ad_thanks"))
 
         def _refresh_privacy_button(self):
             """Pokazuje przycisk prywatności tylko gdy UMP wymaga opcji zgody."""
