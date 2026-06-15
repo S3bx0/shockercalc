@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.2] — 2026-06-15
+
+### Techniczne — Google Play
+
+- Wydanie techniczne bez zmian funkcjonalnych: podbicie wersji aplikacji po tym,
+  jak Google Play Console odrzucił ponowny upload pakietu z użytym już
+  `versionCode = 11`.
+- Nowy release workflow wygeneruje kolejny, wyższy `versionCode`, wymagany przez
+  Google Play dla testów zamkniętych i kolejnych ścieżek wydania.
+- Ujednolicono wersję pakietu Python (`pyproject.toml`) z wersją Androida i
+  stopką aplikacji.
+
 ## [1.2.1] — 2026-06-09
 
 ### Poprawione — model danych wejściowych kalkulatora zaworów
