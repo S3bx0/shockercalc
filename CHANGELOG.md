@@ -4,6 +4,14 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.7] — 2026-06-18
+
+### Techniczne — build Android
+
+- Dodano brakujące pakiety autotools/libtool (`libtool-bin`, `libltdl-dev`,
+  `m4`) do workflowów Android, aby libffi w p4a `develop` mogło przejść
+  `autogen.sh` bez błędu `LT_SYS_SYMBOL_USCORE`.
+
 ## [1.2.6] — 2026-06-18
 
 ### Techniczne — 16 KB page size
