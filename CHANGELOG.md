@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.10] — 2026-06-18
+
+### Techniczne — CI Android
+
+- Rozdzielono instalację Buildozera i Cythona w workflowach Android:
+  Buildozer instalowany jest z własnymi zależnościami, a następnie Cython jest
+  świadomie nadpisywany do `3.0.11`. Omija to konflikt resolvera pip
+  (`buildozer` deklaruje `cython<3.0`, a Kivy 2.3.1 wspiera do `3.0.11`).
+
 ## [1.2.9] — 2026-06-18
 
 ### Techniczne — CI Android
