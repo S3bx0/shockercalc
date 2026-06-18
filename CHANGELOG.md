@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.5] — 2026-06-18
+
+### Techniczne — build Android
+
+- Obniżono `androidx.core:core` z `1.16.0` do `1.15.0`, ponieważ `1.16.0`
+  wymaga Android Gradle Plugin `8.6.0`, a obecny stabilny toolchain
+  python-for-android generuje projekt z AGP `8.1.1`. `core:1.15.0` obsługuje
+  target SDK 35 i jest kompatybilny z obecnym buildem.
+
 ## [1.2.4] — 2026-06-18
 
 ### Techniczne — build Android
