@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.8] — 2026-06-18
+
+### Techniczne — build Android
+
+- Przypięto Androidowego CPythona do `python3==3.13.14` oraz
+  `hostpython3==3.13.14`, aby uniknąć niekompatybilności Kivy z domyślnym
+  CPythonem 3.14 w p4a `develop`.
+- Podniesiono Kivy z `2.3.0` do `2.3.1` i przypięto Cythona w workflowach
+  do `3.0.11`, zgodnie z zakresem wspieranym przez Kivy 2.3.1.
+- Ograniczono workflow debugowego APK: tagi `v*` uruchamiają teraz tylko
+  workflow podpisanego AAB, żeby nie mnożyć zbędnych runów w GitHub Actions.
+
 ## [1.2.7] — 2026-06-18
 
 ### Techniczne — build Android
