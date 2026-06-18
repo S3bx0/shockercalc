@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.2
+version = 1.2.3
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -36,8 +36,10 @@ requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,fpdf2,fonttools,defusedx
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
 
-# Orientacja
-orientation = portrait
+# Orientacja / duże ekrany
+# Android 16+ ignoruje ograniczenia orientacji na dużych ekranach; pozwalamy
+# systemowi obracać i resize'ować okno, a UI Kivy skaluje się responsywnie.
+orientation = all
 fullscreen = 0
 
 # Uprawnienia Android
@@ -53,7 +55,7 @@ android.archs = arm64-v8a
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0, androidx.core:core:1.16.0, androidx.fragment:fragment:1.8.9
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Pin python-for-android do znanego dobrego release'u.

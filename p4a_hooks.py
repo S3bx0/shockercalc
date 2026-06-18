@@ -13,7 +13,7 @@ ale w pełni poprawnie) — fpdf2 generuje PDF bez problemu.
 """
 
 import os
-
+import re
 
 def _strip_fonttools_native(*roots):
     """Usuwa pliki .so z katalogów fonttools we wskazanych korzeniach."""
@@ -52,6 +52,64 @@ def _candidate_roots(toolchain):
     return roots
 
 
+def _iter_files(filename, *roots):
+    seen = set()
+    for root in roots:
+        if not root:
+            continue
+        root = os.path.abspath(root)
+        if root in seen or not os.path.isdir(root):
+            continue
+        seen.add(root)
+        for dirpath, _dirnames, filenames in os.walk(root):
+            if filename in filenames:
+                yield os.path.join(dirpath, filename)
+
+
+def _patch_android_manifest(*roots):
+    """Usuwa ograniczenia orientacji/resize z wygenerowanego Manifestu."""
+    patched = 0
+    for path in _iter_files("AndroidManifest.xml", *roots):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        original = text
+        text = re.sub(r'\s+android:screenOrientation="[^"]*"', "", text)
+        text = re.sub(r'\s+android:(?:max|min)AspectRatio="[^"]*"', "", text)
+        text = re.sub(r'android:resizeableActivity="false"', 'android:resizeableActivity="true"', text)
+
+        if "android:resizeableActivity=" not in text:
+            text = re.sub(
+                r"(<application\b)",
+                r'\1 android:resizeableActivity="true"',
+                text,
+                count=1,
+            )
+
+        if text != original:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            patched += 1
+            print("[p4a hook] zaktualizowano AndroidManifest:", path)
+    print("[p4a hook] zaktualizowanych Manifestow:", patched)
+
+
+def _set_16kb_linker_flags():
+    """Probuje wymusic 16 KB LOAD alignment dla bibliotek budowanych przez p4a."""
+    flags = "-Wl,-z,max-page-size=16384"
+    current = os.environ.get("LDFLAGS", "")
+    if flags not in current:
+        os.environ["LDFLAGS"] = (current + " " + flags).strip()
+    print("[p4a hook] LDFLAGS:", os.environ.get("LDFLAGS", ""))
+
+
+def before_apk_build(toolchain):
+    _set_16kb_linker_flags()
+
+
 def after_apk_build(toolchain):
     # Bundle _python_bundle jest juz utworzony na tym etapie.
     _strip_fonttools_native(*_candidate_roots(toolchain))
@@ -59,4 +117,7 @@ def after_apk_build(toolchain):
 
 def before_apk_assemble(toolchain):
     # Ostatni moment przed gradle (bezpiecznik).
-    _strip_fonttools_native(*_candidate_roots(toolchain))
+    roots = _candidate_roots(toolchain)
+    _set_16kb_linker_flags()
+    _patch_android_manifest(*roots)
+    _strip_fonttools_native(*roots)

@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.3] — 2026-06-18
+
+### Techniczne — uwagi Google Play
+
+- Dodano jawne zależności AndroidX: `androidx.fragment:fragment:1.8.9`
+  oraz `androidx.core:core:1.16.0`, aby zastąpić wykrytą przez Play Console
+  przestarzałą wersję `androidx.fragment:fragment:1.1.0`.
+- Dodano obsługę Android 15 edge-to-edge w natywnej aktywności Android:
+  `WindowCompat.setDecorFitsSystemWindows(false)`, przezroczyste system bars
+  oraz padding z `WindowInsetsCompat` dla system bars i display cutout.
+- Usunięto blokadę orientacji (`orientation = all`) i dodano hook p4a, który
+  usuwa `screenOrientation`, ograniczenia aspect ratio oraz wymusza
+  `resizeableActivity=true` w wygenerowanym `AndroidManifest.xml`.
+- Dodano próbę wymuszenia 16 KB LOAD alignment przez linker flag
+  `-Wl,-z,max-page-size=16384` oraz raport CI sprawdzający segmenty `LOAD`
+  bibliotek natywnych `.so` przez `llvm-readelf`.
+
 ## [1.2.2] — 2026-06-15
 
 ### Techniczne — Google Play

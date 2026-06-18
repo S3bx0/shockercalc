@@ -115,7 +115,60 @@ jobs:
           P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -eo pipefail
+          export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384"
+          echo "LDFLAGS=$LDFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
+
+      - name: Check native libraries 16 KB alignment
+        if: always()
+        run: |
+          set -eo pipefail
+          REPORT="native-libs-16kb-report.txt"
+          AAB="$(ls bin/*.aab 2>/dev/null | head -n1 || true)"
+          {
+            echo "16 KB native library alignment report"
+            echo "===================================="
+            echo "AAB: ${AAB:-not found}"
+            echo
+          } > "$REPORT"
+          if [ -z "$AAB" ]; then
+            echo "No AAB produced; skipping native library inspection." >> "$REPORT"
+            exit 0
+          fi
+
+          rm -rf aab-16kb-check
+          mkdir -p aab-16kb-check
+          unzip -q "$AAB" -d aab-16kb-check
+
+          READELF="$(find ~/.buildozer .buildozer -path '*/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf' -type f | head -n1 || true)"
+          echo "llvm-readelf: ${READELF:-not found}" >> "$REPORT"
+          if [ -z "$READELF" ]; then
+            echo "Cannot inspect LOAD segment alignment without llvm-readelf." >> "$REPORT"
+            exit 0
+          fi
+
+          BAD=0
+          COUNT=0
+          while IFS= read -r -d '' SO; do
+            COUNT=$((COUNT + 1))
+            echo >> "$REPORT"
+            echo "== $SO ==" >> "$REPORT"
+            "$READELF" -l "$SO" | awk '/LOAD/ {print}' >> "$REPORT"
+            ALIGNS="$("$READELF" -l "$SO" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')"
+            echo "LOAD alignments: $ALIGNS" >> "$REPORT"
+            if echo "$ALIGNS" | grep -Eq '(^| )0x0*1000( |$)|(^| )4096( |$)'; then
+              BAD=1
+              echo "WARNING: possible 4 KB LOAD alignment." >> "$REPORT"
+            fi
+          done < <(find aab-16kb-check -name '*.so' -print0)
+
+          echo >> "$REPORT"
+          echo "Native libraries inspected: $COUNT" >> "$REPORT"
+          if [ "$BAD" -eq 1 ]; then
+            echo "::warning::Some native libraries may still have 4 KB LOAD alignment. See $REPORT."
+          else
+            echo "No 4 KB LOAD alignment found in inspected native libraries." >> "$REPORT"
+          fi
 
       - name: Upload buildozer log (on failure)
         if: failure()
@@ -125,6 +178,15 @@ jobs:
           path: buildozer.log
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Upload 16 KB alignment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-16kb-report
+          path: native-libs-16kb-report.txt
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Upload AAB artifact
         if: always()
