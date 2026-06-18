@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.3
+version = 1.2.4
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -37,9 +37,9 @@ requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,fpdf2,fonttools,defusedx
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
 
 # Orientacja / duże ekrany
-# Android 16+ ignoruje ograniczenia orientacji na dużych ekranach; pozwalamy
-# systemowi obracać i resize'ować okno, a UI Kivy skaluje się responsywnie.
-orientation = all
+# Buildozer wymaga poprawnej wartosci orientacji. Finalny AndroidManifest jest
+# czyszczony w p4a_hooks.py z screenOrientation i ograniczen duzych ekranow.
+orientation = portrait
 fullscreen = 0
 
 # Uprawnienia Android

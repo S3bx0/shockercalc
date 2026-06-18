@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.4] — 2026-06-18
+
+### Techniczne — build Android
+
+- Poprawiono konfigurację orientacji po nieudanym buildzie `1.2.3`:
+  Buildozer nie akceptuje `orientation = all`, więc generator otrzymuje
+  poprawną wartość `portrait`, a finalny manifest nadal jest czyszczony przez
+  hook p4a z `screenOrientation`, ograniczeń aspect ratio i blokad resize.
+
 ## [1.2.3] — 2026-06-18
 
 ### Techniczne — uwagi Google Play
@@ -14,7 +23,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano obsługę Android 15 edge-to-edge w natywnej aktywności Android:
   `WindowCompat.setDecorFitsSystemWindows(false)`, przezroczyste system bars
   oraz padding z `WindowInsetsCompat` dla system bars i display cutout.
-- Usunięto blokadę orientacji (`orientation = all`) i dodano hook p4a, który
+- Dodano hook p4a, który
   usuwa `screenOrientation`, ograniczenia aspect ratio oraz wymusza
   `resizeableActivity=true` w wygenerowanym `AndroidManifest.xml`.
 - Dodano próbę wymuszenia 16 KB LOAD alignment przez linker flag
