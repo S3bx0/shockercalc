@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.9] — 2026-06-18
+
+### Techniczne — CI Android
+
+- Utwardzono krok instalacji zależności systemowych w workflowach Android:
+  dodano retry i timeout dla `apt-get`, limit czasu kroku oraz usunięto
+  zbędną instalację `openjdk-17-jdk`, ponieważ JDK dostarcza `setup-java`.
+  Ma to zapobiegać wielogodzinnym zwisom runnera przed etapem Buildozer.
+
 ## [1.2.8] — 2026-06-18
 
 ### Techniczne — build Android

@@ -35,10 +35,11 @@ jobs:
           java-version: "17"
 
       - name: Install system deps
+        timeout-minutes: 12
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential git zip unzip openjdk-17-jdk \
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends \
+            build-essential git zip unzip \
             autoconf libtool libtool-bin libltdl-dev m4 pkg-config zlib1g-dev libncurses-dev \
             libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev \
             automake autopoint gettext ccache python3-pip python3-virtualenv
