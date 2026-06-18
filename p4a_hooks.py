@@ -97,17 +97,30 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
-def _set_16kb_linker_flags():
+def _append_env_flag(name, flag):
+    current = os.environ.get(name, "")
+    if flag not in current:
+        os.environ[name] = (current + " " + flag).strip()
+
+
+def _set_16kb_build_flags():
     """Probuje wymusic 16 KB LOAD alignment dla bibliotek budowanych przez p4a."""
-    flags = "-Wl,-z,max-page-size=16384"
-    current = os.environ.get("LDFLAGS", "")
-    if flags not in current:
-        os.environ["LDFLAGS"] = (current + " " + flags).strip()
+    ld_flag = "-Wl,-z,max-page-size=16384"
+    c_flag = "-Dban_ALooper_pollAll=ALooper_pollOnce"
+    warn_flags = "-Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
+
+    for name in ("LDFLAGS", "APP_LDFLAGS"):
+        _append_env_flag(name, ld_flag)
+    _append_env_flag("CFLAGS", c_flag)
+    _append_env_flag("CFLAGS", warn_flags)
+    _append_env_flag("CXXFLAGS", warn_flags)
+
     print("[p4a hook] LDFLAGS:", os.environ.get("LDFLAGS", ""))
+    print("[p4a hook] APP_LDFLAGS:", os.environ.get("APP_LDFLAGS", ""))
 
 
 def before_apk_build(toolchain):
-    _set_16kb_linker_flags()
+    _set_16kb_build_flags()
 
 
 def after_apk_build(toolchain):
@@ -118,6 +131,6 @@ def after_apk_build(toolchain):
 def before_apk_assemble(toolchain):
     # Ostatni moment przed gradle (bezpiecznik).
     roots = _candidate_roots(toolchain)
-    _set_16kb_linker_flags()
+    _set_16kb_build_flags()
     _patch_android_manifest(*roots)
     _strip_fonttools_native(*roots)

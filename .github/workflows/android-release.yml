@@ -17,16 +17,16 @@ on:
 jobs:
   build-release:
     name: Buildozer (signed release AAB)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -40,8 +40,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential git zip unzip openjdk-17-jdk \
             autoconf libtool pkg-config zlib1g-dev libncurses-dev \
-            libncursesw5-dev cmake libffi-dev libssl-dev \
-            automake ccache python3-pip
+            libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev \
+            automake autopoint gettext ccache python3-pip python3-virtualenv
+
+      - name: Install Rust toolchain
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Cache Buildozer global dir
         uses: actions/cache@v4
@@ -64,7 +69,7 @@ jobs:
       - name: Install Python build tools
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          python -m pip install buildozer==1.5.0 cython==0.29.36
+          python -m pip install git+https://github.com/kivy/buildozer legacy-cgi cython==0.29.34
 
       - name: Purge stale python-for-android cache
         run: |
@@ -116,59 +121,83 @@ jobs:
         run: |
           set -eo pipefail
           export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384"
+          export APP_LDFLAGS="${APP_LDFLAGS:-} -Wl,-z,max-page-size=16384"
+          export CFLAGS="${CFLAGS:-} -Dban_ALooper_pollAll=ALooper_pollOnce -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
+          export CXXFLAGS="${CXXFLAGS:-} -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
           echo "LDFLAGS=$LDFLAGS"
+          echo "APP_LDFLAGS=$APP_LDFLAGS"
+          echo "CFLAGS=$CFLAGS"
+          echo "CXXFLAGS=$CXXFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
 
       - name: Check native libraries 16 KB alignment
         if: always()
         run: |
           set -eo pipefail
-          REPORT="native-libs-16kb-report.txt"
-          AAB="$(ls bin/*.aab 2>/dev/null | head -n1 || true)"
-          {
-            echo "16 KB native library alignment report"
-            echo "===================================="
-            echo "AAB: ${AAB:-not found}"
-            echo
-          } > "$REPORT"
-          if [ -z "$AAB" ]; then
-            echo "No AAB produced; skipping native library inspection." >> "$REPORT"
-            exit 0
-          fi
+          python - <<'PY'
+          import struct
+          import zipfile
+          from pathlib import Path
 
-          rm -rf aab-16kb-check
-          mkdir -p aab-16kb-check
-          unzip -q "$AAB" -d aab-16kb-check
+          report = Path("native-libs-16kb-report.txt")
+          aabs = sorted(Path("bin").glob("*.aab"))
+          lines = [
+              "16 KB native library alignment report",
+              "====================================",
+              f"AAB: {aabs[0] if aabs else 'not found'}",
+              "",
+          ]
+          if not aabs:
+              lines.append("No AAB produced; skipping native library inspection.")
+              report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+              raise SystemExit(0)
 
-          READELF="$(find ~/.buildozer .buildozer -path '*/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf' -type f | head -n1 || true)"
-          echo "llvm-readelf: ${READELF:-not found}" >> "$REPORT"
-          if [ -z "$READELF" ]; then
-            echo "Cannot inspect LOAD segment alignment without llvm-readelf." >> "$REPORT"
-            exit 0
-          fi
+          def load_alignments(data):
+              if data[:4] != b"\x7fELF":
+                  return []
+              elf_class = data[4]
+              endian = data[5]
+              prefix = "<" if endian == 1 else ">"
+              if elf_class == 2:
+                  e_phoff = struct.unpack_from(prefix + "Q", data, 32)[0]
+                  e_phentsize = struct.unpack_from(prefix + "H", data, 54)[0]
+                  e_phnum = struct.unpack_from(prefix + "H", data, 56)[0]
+                  fmt = prefix + "IIQQQQQQ"
+              else:
+                  e_phoff = struct.unpack_from(prefix + "I", data, 28)[0]
+                  e_phentsize = struct.unpack_from(prefix + "H", data, 42)[0]
+                  e_phnum = struct.unpack_from(prefix + "H", data, 44)[0]
+                  fmt = prefix + "IIIIIIII"
+              aligns = []
+              for i in range(e_phnum):
+                  off = e_phoff + i * e_phentsize
+                  ph = struct.unpack_from(fmt, data, off)
+                  if ph[0] == 1:
+                      aligns.append(ph[-1])
+              return aligns
 
-          BAD=0
-          COUNT=0
-          while IFS= read -r -d '' SO; do
-            COUNT=$((COUNT + 1))
-            echo >> "$REPORT"
-            echo "== $SO ==" >> "$REPORT"
-            "$READELF" -l "$SO" | awk '/LOAD/ {print}' >> "$REPORT"
-            ALIGNS="$("$READELF" -l "$SO" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')"
-            echo "LOAD alignments: $ALIGNS" >> "$REPORT"
-            if echo "$ALIGNS" | grep -Eq '(^| )0x0*1000( |$)|(^| )4096( |$)'; then
-              BAD=1
-              echo "WARNING: possible 4 KB LOAD alignment." >> "$REPORT"
-            fi
-          done < <(find aab-16kb-check -name '*.so' -print0)
+          bad = []
+          count = 0
+          with zipfile.ZipFile(aabs[0]) as bundle:
+              for name in sorted(n for n in bundle.namelist() if n.endswith(".so")):
+                  count += 1
+                  aligns = sorted(set(load_alignments(bundle.read(name))))
+                  align_text = " ".join(hex(a) for a in aligns) or "none"
+                  lines.append(f"{name}: {align_text}")
+                  if any(a == 0x1000 or a == 4096 for a in aligns):
+                      bad.append((name, align_text))
 
-          echo >> "$REPORT"
-          echo "Native libraries inspected: $COUNT" >> "$REPORT"
-          if [ "$BAD" -eq 1 ]; then
-            echo "::warning::Some native libraries may still have 4 KB LOAD alignment. See $REPORT."
-          else
-            echo "No 4 KB LOAD alignment found in inspected native libraries." >> "$REPORT"
-          fi
+          lines.append("")
+          lines.append(f"Native libraries inspected: {count}")
+          if bad:
+              lines.append("WARNING: 4 KB LOAD alignment detected:")
+              for name, align_text in bad:
+                  lines.append(f"- {name}: {align_text}")
+              print("::warning::Some native libraries still have 4 KB LOAD alignment. See native-libs-16kb-report.txt.")
+          else:
+              lines.append("No 4 KB LOAD alignment found in inspected native libraries.")
+          report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
 
       - name: Upload buildozer log (on failure)
         if: failure()

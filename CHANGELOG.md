@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.6] — 2026-06-18
+
+### Techniczne — 16 KB page size
+
+- Przełączono Android build na aktualny tor Google Play: `p4a.branch=develop`,
+  `android.api=36` oraz `android.ndk=29`, zgodnie z bieżącymi wymaganiami
+  Buildozer/python-for-android dla aplikacji publikowanych w sklepie.
+- Rozszerzono flagi kompilacji/linkowania dla bibliotek natywnych:
+  `LDFLAGS`, `APP_LDFLAGS`, `CFLAGS`, `CXXFLAGS`, `android.extra_cflags`
+  i `android.extra_ldflags`, aby wymuszać 16 KB LOAD alignment także tam,
+  gdzie biblioteki buduje `ndk-build`.
+
 ## [1.2.5] — 2026-06-18
 
 ### Techniczne — build Android

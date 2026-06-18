@@ -11,16 +11,16 @@ on:
 jobs:
   build-apk:
     name: Buildozer (debug APK)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -34,8 +34,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential git zip unzip openjdk-17-jdk \
             autoconf libtool pkg-config zlib1g-dev libncurses-dev \
-            libncursesw5-dev cmake libffi-dev libssl-dev \
-            automake ccache python3-pip
+            libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev \
+            automake autopoint gettext ccache python3-pip python3-virtualenv
+
+      - name: Install Rust toolchain
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Cache Buildozer global dir
         uses: actions/cache@v4
@@ -58,12 +63,9 @@ jobs:
       - name: Install Python build tools
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          python -m pip install buildozer==1.5.0 cython==0.29.36
+          python -m pip install git+https://github.com/kivy/buildozer legacy-cgi cython==0.29.34
 
       - name: Purge stale python-for-android cache
-        # Buildozer 1.5.0 ignoruje pip-instalowane p4a i klonuje własną kopię.
-        # Jeśli z poprzedniego runu została wersja master (Python 3.14),
-        # usuwamy ją — buildozer sklonuje teraz tag z buildozer.spec (v2024.01.21).
         run: |
           rm -rf ~/.buildozer/android/platform/python-for-android* || true
           rm -rf .buildozer/android/platform/python-for-android* || true
@@ -87,6 +89,10 @@ jobs:
       - name: Build debug APK
         run: |
           set -eo pipefail
+          export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384"
+          export APP_LDFLAGS="${APP_LDFLAGS:-} -Wl,-z,max-page-size=16384"
+          export CFLAGS="${CFLAGS:-} -Dban_ALooper_pollAll=ALooper_pollOnce -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
+          export CXXFLAGS="${CXXFLAGS:-} -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
           # `yes` ko\u0144czy si\u0119 SIGPIPE (141) gdy buildozer si\u0119 zamknie \u2014 nie jest to b\u0142\u0105d builda.
           # Akceptujemy exit code 0 lub 141; reszta = realny b\u0142\u0105d.
           ( yes || true ) | buildozer android debug 2>&1 | tee buildozer.log

@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.5
+version = 1.2.6
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -46,10 +46,13 @@ fullscreen = 0
 android.permissions = INTERNET, ACCESS_NETWORK_STATE, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 
 # Min / target API (AdMob SDK 25.x wymaga compileSdk 35+)
-android.api = 35
+android.api = 36
 android.minapi = 24
-android.ndk = 25b
+android.ndk = 29
+android.ndk_api = 24
 android.archs = arm64-v8a
+android.extra_cflags = -Dban_ALooper_pollAll=ALooper_pollOnce -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type
+android.extra_ldflags = -Wl,-z,max-page-size=16384
 
 # AdMob / Google Mobile Ads SDK + Google Play Billing (PRO: no ads)
 android.add_src = %(source.dir)s/android/src
@@ -58,12 +61,10 @@ android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0, androidx.core:core:1.15.0, androidx.fragment:fragment:1.8.9
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
-# Pin python-for-android do znanego dobrego release'u.
-# Najnowszy p4a domyślnie buduje Python 3.14, pod którym Kivy 2.3.0 i reportlab
-# nie kompilują się (usunięte _PyThreadState_UncheckedGet, Py_UNICODE itp.).
-# Tag v2024.01.21 -> Python 3.11.x, Kivy 2.3.0 buduje czysto.
+# Aktualny tor python-for-android wymagany do zgodnosci z Google Play
+# (16 KB page size, API 36, NDK 29).
 p4a.fork = kivy
-p4a.branch = v2024.01.21
+p4a.branch = develop
 
 # Hook p4a: usuwa błędne (host-arch) rozszerzenia .so fonttools z bundla,
 # by na arm64 nie padało dlopen (bezierTools.so EM_X86_64 vs EM_AARCH64).
