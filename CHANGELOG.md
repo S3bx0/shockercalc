@@ -4,6 +4,16 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.11] — 2026-06-19
+
+### Naprawione — Google Play Billing
+
+- Synchronizacja płatnego modułu `module_valves` cofa teraz lokalne
+  uprawnienie w warstwie Python, gdy Google Play Billing nie zwraca już
+  zakupu (np. po zwrocie lub revoke w Play Console). Wcześniej Java czyściła
+  flagę Billing, ale lokalny plik uprawnień mógł nadal trzymać moduł jako
+  odblokowany.
+
 ## [1.2.10] — 2026-06-18
 
 ### Techniczne — CI Android

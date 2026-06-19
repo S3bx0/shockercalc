@@ -309,6 +309,14 @@ def _safe_image_path(nazwa: str) -> Optional[str]:
     return None
 
 
+def _sync_module_ownership(entitlements: Entitlements, module_id: str, owned: bool) -> None:
+    """Synchronizuje lokalne uprawnienie modułu z aktualnym stanem Google Play."""
+    if owned:
+        entitlements.grant_module(module_id)
+    else:
+        entitlements.revoke_module(module_id)
+
+
 def _pdf_output_dir() -> Path:
     """Zwraca katalog do zapisu PDF — Android Downloads albo cwd."""
     # Android: użyj public Downloads, gdy aplikacja ma uprawnienia
@@ -1664,8 +1672,7 @@ def main() -> None:
             except Exception:  # pragma: no cover - Android only
                 log.debug("Nie udało się odczytać statusu modułu zaworów", exc_info=True)
                 return
-            if owned:
-                self._entitlements.grant_module(MODULE_VALVES)
+            _sync_module_ownership(self._entitlements, MODULE_VALVES, owned)
 
         def _refresh_valve_lock_ui(self):
             """Pokazuje/ukrywa kartę blokady modułu zaworów."""

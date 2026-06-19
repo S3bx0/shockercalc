@@ -41,6 +41,25 @@ def test_safe_image_path_dla_nieistniejacego():
     assert _safe_image_path("NieistniejacyProdukt_12345") is None
 
 
+def test_sync_module_ownership_nadaje_modul(tmp_path):
+    from tpof.mobile.entitlements import MODULE_VALVES, Entitlements
+    from tpof.mobile.main import _sync_module_ownership
+
+    ent = Entitlements(state_path=tmp_path / "entitlement.json")
+    _sync_module_ownership(ent, MODULE_VALVES, True)
+    assert MODULE_VALVES in ent.owned_modules()
+
+
+def test_sync_module_ownership_cofa_modul_po_revoke(tmp_path):
+    from tpof.mobile.entitlements import MODULE_VALVES, Entitlements
+    from tpof.mobile.main import _sync_module_ownership
+
+    ent = Entitlements(state_path=tmp_path / "entitlement.json")
+    ent.grant_module(MODULE_VALVES)
+    _sync_module_ownership(ent, MODULE_VALVES, False)
+    assert MODULE_VALVES not in ent.owned_modules()
+
+
 def test_pdf_output_dir_na_desktopie_zwraca_cwd():
     from tpof.mobile.main import _pdf_output_dir
 
