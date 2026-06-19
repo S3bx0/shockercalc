@@ -4,6 +4,21 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.13] — 2026-06-19
+
+### Techniczne — Google Play Console
+
+- Release build dopina `android.buildTypes.release.ndk.debugSymbolLevel =
+  SYMBOL_TABLE`, aby App Bundle zawierał natywne symbole debugowania dla
+  Android vitals / Play Console.
+- Workflow release zbiera dodatkowy artefakt `play-console-diagnostics`
+  z plikami diagnostycznymi dla Play Console: `native-debug-symbols.zip`
+  (jeśli Gradle wygeneruje go osobno), `mapping.txt` (jeśli R8 zostanie
+  włączony) oraz `README.txt`.
+- Release p4a/Kivy jawnie pozostaje bez R8-obfuscation (`minifyEnabled false`,
+  `shrinkResources false`), więc brak `mapping.txt` nie oznacza utraty danych
+  deobfuscation dla obecnego modelu buildu.
+
 ## [1.2.12] — 2026-06-19
 
 ### Zmienione — Google Play Billing

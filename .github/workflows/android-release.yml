@@ -132,6 +132,59 @@ jobs:
           echo "CXXFLAGS=$CXXFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
 
+      - name: Collect Play Console diagnostic files
+        if: always()
+        run: |
+          set -eo pipefail
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+
+          out = Path("play-console-diagnostics")
+          out.mkdir(exist_ok=True)
+
+          roots = [Path(".buildozer"), Path.home() / ".buildozer"]
+          targets = {
+              "native-debug-symbols.zip": [
+                  "**/outputs/native-debug-symbols/**/native-debug-symbols.zip",
+                  "**/native-debug-symbols.zip",
+              ],
+              "mapping.txt": [
+                  "**/outputs/mapping/**/mapping.txt",
+              ],
+          }
+
+          found = {}
+          for dest_name, patterns in targets.items():
+              for root in roots:
+                  if not root.exists():
+                      continue
+                  for pattern in patterns:
+                      matches = sorted(root.glob(pattern))
+                      if matches:
+                          src = matches[0]
+                          shutil.copy2(src, out / dest_name)
+                          found[dest_name] = str(src)
+                          break
+                  if dest_name in found:
+                      break
+
+          notes = [
+              "Play Console diagnostic files",
+              "=============================",
+              "",
+              "native-debug-symbols.zip: "
+              + found.get("native-debug-symbols.zip", "not generated separately"),
+              "mapping.txt: "
+              + found.get("mapping.txt", "not generated because release is not R8-obfuscated"),
+              "",
+              "For AAB releases, native symbols may also be embedded in the bundle when",
+              "android.buildTypes.release.ndk.debugSymbolLevel is set to SYMBOL_TABLE.",
+          ]
+          (out / "README.txt").write_text("\n".join(notes) + "\n", encoding="utf-8")
+          print("\n".join(notes))
+          PY
+
       - name: Check native libraries 16 KB alignment
         if: always()
         run: |
@@ -180,7 +233,13 @@ jobs:
 
           bad = []
           count = 0
+          native_debug_entries = []
           with zipfile.ZipFile(aabs[0]) as bundle:
+              native_debug_entries = sorted(
+                  name for name in bundle.namelist()
+                  if "debugsymbols" in name.lower()
+                  or "native-debug-symbols" in name.lower()
+              )
               for name in sorted(n for n in bundle.namelist() if n.endswith(".so")):
                   count += 1
                   aligns = sorted(set(load_alignments(bundle.read(name))))
@@ -198,6 +257,10 @@ jobs:
               print("::warning::Some native libraries still have 4 KB LOAD alignment. See native-libs-16kb-report.txt.")
           else:
               lines.append("No 4 KB LOAD alignment found in inspected native libraries.")
+          lines.append("")
+          lines.append(f"Native debug metadata entries in AAB: {len(native_debug_entries)}")
+          for name in native_debug_entries[:20]:
+              lines.append(f"- {name}")
           report.write_text("\n".join(lines) + "\n", encoding="utf-8")
           PY
 
@@ -216,6 +279,15 @@ jobs:
         with:
           name: native-libs-16kb-report
           path: native-libs-16kb-report.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload Play Console diagnostic files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: play-console-diagnostics
+          path: play-console-diagnostics/*
           if-no-files-found: ignore
           retention-days: 30
 

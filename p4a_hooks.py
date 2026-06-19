@@ -97,6 +97,46 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
+def _patch_release_gradle_diagnostics(*roots):
+    """Dodaje bezpieczne ustawienia release dla ostrzezen Google Play."""
+    marker = "Refrigeration Calc release diagnostics"
+    snippet = f"""
+
+// {marker} (patched by p4a_hooks.py).
+android {{
+    buildTypes {{
+        release {{
+            // Include native symbol table in AAB for Google Play Android vitals.
+            ndk {{
+                debugSymbolLevel 'SYMBOL_TABLE'
+            }}
+            // The p4a/Kivy release is not R8-obfuscated in this line.
+            minifyEnabled false
+            shrinkResources false
+        }}
+    }}
+}}
+"""
+    patched = 0
+    for path in _iter_files("build.gradle", *roots):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        if marker in text:
+            continue
+        if "com.android.application" not in text or "android {" not in text:
+            continue
+
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text.rstrip() + snippet + "\n")
+        patched += 1
+        print("[p4a hook] zaktualizowano build.gradle diagnostics:", path)
+    print("[p4a hook] zaktualizowanych build.gradle diagnostics:", patched)
+
+
 def _append_env_flag(name, flag):
     current = os.environ.get(name, "")
     if flag not in current:
@@ -133,4 +173,5 @@ def before_apk_assemble(toolchain):
     roots = _candidate_roots(toolchain)
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
+    _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)

@@ -118,6 +118,20 @@ Przycisk „tarcza" w pasku górnym pozwala później zmienić zgodę
 w panelu **AdMob → Prywatność i komunikaty** oraz uzupełnić deklaracje danych
 w Play Console.
 
+### Artefakty diagnostyczne Google Play
+
+Release workflow generuje dodatkowy artefakt `play-console-diagnostics`.
+Zawiera on:
+
+- `native-debug-symbols.zip`, jeśli Android Gradle Plugin wygeneruje osobny
+  plik symboli natywnych,
+- `mapping.txt`, jeśli w przyszłości włączymy R8/ProGuard,
+- `README.txt` z informacją, co zostało znalezione w danym buildzie.
+
+Dla App Bundle ustawiamy `debugSymbolLevel = SYMBOL_TABLE`, więc symbole
+natywne powinny być dołączone bezpośrednio do AAB. R8/ProGuard jest obecnie
+wyłączony dla release p4a/Kivy, dlatego brak `mapping.txt` jest oczekiwany.
+
 ## Plany rozwoju
 
 - Kolejna płatna karta funkcyjna: izolacja (`module_insulation`) jako
