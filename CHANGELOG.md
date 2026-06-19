@@ -4,6 +4,19 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.12] — 2026-06-19
+
+### Zmienione — Google Play Billing
+
+- PRO przełączono z jednorazowego produktu `pro_no_ads` na miesięczną
+  subskrypcję Google Play `refrigeration_pro`.
+- Aktywne PRO nadal obejmuje legacy zakup `pro_no_ads`, ale nowy zakup z
+  przycisku PRO uruchamia subskrypcję z base planem `monthly-499`.
+- Aktywne PRO odblokowuje teraz reklamy-off, pełną listę produktów oraz płatne
+  moduły, w tym moduł `module_valves`. Jednorazowy zakup `module_valves`
+  pozostaje jako fallback/legacy.
+- Zaktualizowano teksty UI na model subskrypcji `PRO 4,99 zł/mies.`.
+
 ## [1.2.11] — 2026-06-19
 
 ### Naprawione — Google Play Billing

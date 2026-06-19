@@ -179,14 +179,14 @@ def test_grant_module_odblokowuje_po_trialu(tmp_path):
     assert not ent.has_module(MODULE_INSULATION, pro=False)
 
 
-def test_pro_nie_odblokowuje_platnych_kart(tmp_path):
-    # KLUCZOWA REGUŁA: PRO (pro_no_ads) NIE odblokowuje płatnych kart.
-    # Każda karta kupowana jest osobno (grant_module).
+def test_pro_odblokowuje_platne_karty_w_modelu_subskrypcji(tmp_path):
+    # Nowy model: PRO (subskrypcja/legacy) odblokowuje płatne moduły.
     clock = _Clock()
     ent = _make(tmp_path, clock)
     ent.ensure_started()
     clock.advance_days(TRIAL_DAYS + 1)
-    assert not ent.has_module(MODULE_VALVES, pro=True)
+    assert ent.has_module(MODULE_VALVES, pro=True)
+    assert ent.has_module(MODULE_INSULATION, pro=True)
     assert not ent.has_module(MODULE_VALVES, pro=False)
     # Rdzeń pozostaje darmowy niezależnie od PRO.
     assert ent.has_module(CORE_MODULE, pro=False)

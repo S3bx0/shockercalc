@@ -51,7 +51,7 @@ APP_NAME = "Refrigeration Calc"
 ADMOB_APP_ID = "ca-app-pub-7481054652344026~2716191071"
 ADMOB_BANNER_AD_UNIT_ID = "ca-app-pub-7481054652344026/5599859341"
 ADMOB_TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
-PRO_PRODUCT_ID = "pro_no_ads"
+PRO_SUBSCRIPTION_PRODUCT_ID = "refrigeration_pro"
 
 IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
 CARD_BG_DARK = (0.09, 0.13, 0.17, 1)
@@ -130,9 +130,10 @@ I18N = {
         "ad": "Reklama",
         "ad_placeholder": "Miejsce na baner AdMob",
         "pro_active": "PRO",
+        "pro_button": "PRO 4,99 zł/mies.",
         "pro_ads_off": "PRO: reklamy wyłączone",
-        "pro_google_play_only": "Zakup PRO działa tylko w wersji z Google Play.",
-        "pro_unavailable": "Zakup PRO jest chwilowo niedostępny.",
+        "pro_google_play_only": "Subskrypcja PRO działa tylko w wersji z Google Play.",
+        "pro_unavailable": "Subskrypcja PRO jest chwilowo niedostępna.",
         "pick_product_error": "Wybierz kategorię i produkt.",
         "missing_product_error": "Nie znaleziono produktu w bazie.",
         "pdf_first": "Najpierw wykonaj obliczenia.",
@@ -154,13 +155,13 @@ I18N = {
         "pro_unlocked_footer": "PRO • pełen dostęp",
         "locked_suffix": "  — PRO",
         "product_locked": "Ten produkt jest dostępny w PRO. W wersji darmowej masz 1 produkt z każdej listy.",
-        "trial_expired_info": "Okres próbny dobiegł końca. Kup PRO, aby odblokować wszystkie produkty.",
+        "trial_expired_info": "Okres próbny dobiegł końca. Subskrybuj PRO, aby odblokować wszystkie produkty.",
         "watch_ad_for_token": "Obejrzyj reklamę, aby wykonać 1 bezpłatne przeliczenie tego produktu.",
         "ad_token_earned": "Masz token! Naciśnij Oblicz, aby wykonać bezpłatne przeliczenie.",
         "ad_thanks": "Dziękujemy za obejrzenie reklamy! Masz 1 bezpłatne przeliczenie.",
-        "pro_thanks": "Dziękujemy za zakup PRO! Reklamy wyłączone, pełen dostęp odblokowany.",
+        "pro_thanks": "Dziękujemy za subskrypcję PRO! Reklamy wyłączone, pełen dostęp odblokowany.",
         "ad_not_ready": "Reklama jeszcze się ładuje. Spróbuj za chwilę.",
-        "ad_limit_reached": "Dzienny limit reklam wyczerpany. Kup PRO, aby liczyć bez ograniczeń.",
+        "ad_limit_reached": "Dzienny limit reklam wyczerpany. Subskrybuj PRO, aby liczyć bez ograniczeń.",
         "nav_freezing": "Chłodnicze",
         "nav_valves": "Zawory",
         "valve_title": "Zawory dekompresyjne",
@@ -184,9 +185,9 @@ I18N = {
         "valve_flow": "Wymagany przepływ Q: {value} l/min",
         "valve_unit_flow": "Przepływ zaworu: {value} l/min",
         "valve_count": "Liczba zaworów: {value}",
-        "valve_locked": "Moduł doboru zaworów dekompresyjnych jest płatny. Kup go raz, aby odblokować na stałe, albo obejrzyj reklamę za jedno przeliczenie.",
-        "valve_locked_hint": "Moduł zaworów zablokowany — kup moduł lub obejrzyj reklamę.",
-        "valve_buy": "Kup moduł na stałe",
+        "valve_locked": "Moduł doboru zaworów dekompresyjnych jest częścią PRO. Subskrybuj PRO, kup moduł jednorazowo albo obejrzyj reklamę za jedno przeliczenie.",
+        "valve_locked_hint": "Moduł zaworów zablokowany — subskrybuj PRO, kup moduł lub obejrzyj reklamę.",
+        "valve_buy": "Kup moduł jednorazowo",
         "valve_watch_ad": "Obejrzyj reklamę (1 przeliczenie)",
         "valve_purchase_unavailable": "Zakup chwilowo niedostępny. Spróbuj ponownie później.",
         "valve_unlocked_thanks": "Dziękujemy! Moduł zaworów odblokowany na stałe.",
@@ -214,9 +215,10 @@ I18N = {
         "ad": "Ad",
         "ad_placeholder": "AdMob banner area",
         "pro_active": "PRO",
+        "pro_button": "PRO 4.99 zł/mo",
         "pro_ads_off": "PRO: ads disabled",
-        "pro_google_play_only": "PRO purchase works only in the Google Play build.",
-        "pro_unavailable": "PRO purchase is temporarily unavailable.",
+        "pro_google_play_only": "PRO subscription works only in the Google Play build.",
+        "pro_unavailable": "PRO subscription is temporarily unavailable.",
         "pick_product_error": "Choose a category and product.",
         "missing_product_error": "Product was not found in the database.",
         "pdf_first": "Calculate first.",
@@ -238,13 +240,13 @@ I18N = {
         "pro_unlocked_footer": "PRO • full access",
         "locked_suffix": "  — PRO",
         "product_locked": "This product is available in PRO. The free version allows 1 product per list.",
-        "trial_expired_info": "The trial has ended. Buy PRO to unlock all products.",
+        "trial_expired_info": "The trial has ended. Subscribe to PRO to unlock all products.",
         "watch_ad_for_token": "Watch an ad to run 1 free calculation for this product.",
         "ad_token_earned": "Token granted! Tap Calculate to run your free calculation.",
         "ad_thanks": "Thanks for watching the ad! You have 1 free calculation.",
-        "pro_thanks": "Thank you for buying PRO! Ads disabled, full access unlocked.",
+        "pro_thanks": "Thank you for subscribing to PRO! Ads disabled, full access unlocked.",
         "ad_not_ready": "The ad is still loading. Try again in a moment.",
-        "ad_limit_reached": "Daily ad limit reached. Buy PRO to calculate without limits.",
+        "ad_limit_reached": "Daily ad limit reached. Subscribe to PRO to calculate without limits.",
         "nav_freezing": "Cooling",
         "nav_valves": "Valves",
         "valve_title": "Decompression valves",
@@ -268,8 +270,8 @@ I18N = {
         "valve_flow": "Required flow Q: {value} l/min",
         "valve_unit_flow": "Valve flow: {value} l/min",
         "valve_count": "Number of valves: {value}",
-        "valve_locked": "The decompression valve module is a paid feature. Buy it once to unlock permanently, or watch an ad for a single calculation.",
-        "valve_locked_hint": "Valve module locked — buy the module or watch an ad.",
+        "valve_locked": "The decompression valve module is included in PRO. Subscribe to PRO, buy the module once, or watch an ad for a single calculation.",
+        "valve_locked_hint": "Valve module locked — subscribe to PRO, buy the module, or watch an ad.",
         "valve_buy": "Buy module (one-time)",
         "valve_watch_ad": "Watch an ad (1 calculation)",
         "valve_purchase_unavailable": "Purchase is temporarily unavailable. Please try again later.",
@@ -615,8 +617,8 @@ def main() -> None:
                 "unit_h": dp(38 if compact else 42),
                 "footer_h": dp(48 if compact else 54),
                 "footer_sp": int(11 * text_scale),
-                "pro_w": dp(64 if compact else 72),
-                "pro_h": dp(24 if compact else 26),
+                "pro_w": dp(116 if compact else 128),
+                "pro_h": dp(28 if compact else 30),
                 "ad_h": dp(reserved_ad_h),
             }
 
@@ -1298,12 +1300,12 @@ def main() -> None:
                 font_style="Caption",
             )
             self.btn_pro = MDRaisedButton(
-                text="PRO",
+                text=self._t("pro_button"),
                 size_hint_x=None,
-                width=dp(82),
+                width=dp(128),
                 size_hint_y=None,
-                height=dp(28),
-                font_size="12sp",
+                height=dp(30),
+                font_size="11sp",
                 pos_hint={"center_y": 0.5},
                 on_release=lambda *_: self._buy_pro(),
             )
@@ -1815,7 +1817,7 @@ def main() -> None:
             ad_height = self._layout_metrics(dp)["ad_h"]
             if hasattr(self, "btn_pro"):
                 self.btn_pro.disabled = active
-                self.btn_pro.text = self._t("pro_active") if active else "PRO"
+                self.btn_pro.text = self._t("pro_active") if active else self._t("pro_button")
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
             if hasattr(self, "ad_slot"):

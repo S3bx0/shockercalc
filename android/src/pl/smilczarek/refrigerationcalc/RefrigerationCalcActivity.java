@@ -81,10 +81,13 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             "ca-app-pub-7481054652344026/1060900411";
     private static final String TEST_REWARDED_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/5224354917";
-    private static final String PRO_PRODUCT_ID = "pro_no_ads";
+    private static final String LEGACY_PRO_PRODUCT_ID = "pro_no_ads";
+    private static final String PRO_SUBSCRIPTION_ID = "refrigeration_pro";
+    private static final String PRO_BASE_PLAN_ID = "monthly-499";
     private static final String MODULE_VALVES_PRODUCT_ID = "module_valves";
     private static final String PREFS_NAME = "shockercalc_billing";
     private static final String PREF_PRO_NO_ADS = "pro_no_ads";
+    private static final String PREF_PRO_SUBSCRIPTION = "refrigeration_pro";
     private static final String PREF_MODULE_VALVES = "module_valves";
     private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
 
@@ -97,7 +100,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private volatile String activeAdTab = "freezing";
     private ConsentInformation consentInformation;
     private BillingClient billingClient;
-    private ProductDetails proProductDetails;
+    private ProductDetails proSubscriptionDetails;
     private ProductDetails moduleValvesProductDetails;
     private boolean billingConnecting;
     private boolean pendingProPurchaseLaunch;
@@ -567,7 +570,9 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     }
 
     public boolean isProNoAdsActive() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(PREF_PRO_NO_ADS, false);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return prefs.getBoolean(PREF_PRO_NO_ADS, false)
+                || prefs.getBoolean(PREF_PRO_SUBSCRIPTION, false);
     }
 
     public void launchProPurchase() {
@@ -586,14 +591,22 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                     startBillingConnection();
                     return;
                 }
-                if (proProductDetails == null) {
+                if (proSubscriptionDetails == null) {
                     pendingProPurchaseLaunch = true;
+                    queryProProductDetails();
+                    return;
+                }
+                String offerToken = getSubscriptionOfferToken(proSubscriptionDetails);
+                if (offerToken == null) {
+                    Log.w(TAG, "PRO subscription offer token is unavailable.");
+                    pendingProPurchaseLaunch = false;
                     queryProProductDetails();
                     return;
                 }
                 BillingFlowParams.ProductDetailsParams productParams =
                         BillingFlowParams.ProductDetailsParams.newBuilder()
-                                .setProductDetails(proProductDetails)
+                                .setProductDetails(proSubscriptionDetails)
+                                .setOfferToken(offerToken)
                                 .build();
                 BillingFlowParams flowParams = BillingFlowParams.newBuilder()
                         .setProductDetailsParamsList(Collections.singletonList(productParams))
@@ -605,7 +618,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                 if (result.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
                     queryOwnedPurchases();
                 } else if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.w(TAG, "PRO purchase launch failed: " + result.getDebugMessage());
+                    Log.w(TAG, "PRO subscription launch failed: " + result.getDebugMessage());
                 }
             }
         });
@@ -706,6 +719,21 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         });
     }
 
+    private String getSubscriptionOfferToken(ProductDetails productDetails) {
+        if (productDetails == null
+                || productDetails.getSubscriptionOfferDetails() == null
+                || productDetails.getSubscriptionOfferDetails().isEmpty()) {
+            return null;
+        }
+        for (ProductDetails.SubscriptionOfferDetails offer :
+                productDetails.getSubscriptionOfferDetails()) {
+            if (PRO_BASE_PLAN_ID.equals(offer.getBasePlanId())) {
+                return offer.getOfferToken();
+            }
+        }
+        return productDetails.getSubscriptionOfferDetails().get(0).getOfferToken();
+    }
+
     private void queryProProductDetails() {
         if (billingClient == null || !billingClient.isReady()) {
             startBillingConnection();
@@ -714,8 +742,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
 
         QueryProductDetailsParams.Product product =
                 QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRO_PRODUCT_ID)
-                        .setProductType(BillingClient.ProductType.INAPP)
+                        .setProductId(PRO_SUBSCRIPTION_ID)
+                        .setProductType(BillingClient.ProductType.SUBS)
                         .build();
         QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
                 .setProductList(Collections.singletonList(product))
@@ -729,7 +757,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
                         && productDetailsResult != null
                         && !productDetailsResult.getProductDetailsList().isEmpty()) {
-                    proProductDetails = productDetailsResult.getProductDetailsList().get(0);
+                    proSubscriptionDetails = productDetailsResult.getProductDetailsList().get(0);
                     if (pendingProPurchaseLaunch) {
                         pendingProPurchaseLaunch = false;
                         launchProPurchase();
@@ -781,6 +809,11 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             startBillingConnection();
             return;
         }
+        queryOwnedInAppPurchases();
+        queryOwnedSubscriptionPurchases();
+    }
+
+    private void queryOwnedInAppPurchases() {
         QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build();
@@ -791,15 +824,15 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                     Log.w(TAG, "Cannot query purchases: " + billingResult.getDebugMessage());
                     return;
                 }
-                boolean ownsPro = false;
+                boolean ownsLegacyPro = false;
                 boolean ownsValves = false;
                 if (purchases != null) {
                     for (Purchase purchase : purchases) {
                         handlePurchase(purchase);
                         if (purchase != null
                                 && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                            if (purchase.getProducts().contains(PRO_PRODUCT_ID)) {
-                                ownsPro = true;
+                            if (purchase.getProducts().contains(LEGACY_PRO_PRODUCT_ID)) {
+                                ownsLegacyPro = true;
                             }
                             if (purchase.getProducts().contains(MODULE_VALVES_PRODUCT_ID)) {
                                 ownsValves = true;
@@ -807,11 +840,40 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                         }
                     }
                 }
-                if (!ownsPro && isProNoAdsActive()) {
+                if (!ownsLegacyPro && isLegacyProNoAdsActive()) {
                     setProNoAdsActive(false);
                 }
                 if (!ownsValves && isModuleValvesOwned()) {
                     setModuleValvesOwned(false);
+                }
+            }
+        });
+    }
+
+    private void queryOwnedSubscriptionPurchases() {
+        QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build();
+        billingClient.queryPurchasesAsync(params, new PurchasesResponseListener() {
+            @Override
+            public void onQueryPurchasesResponse(BillingResult billingResult, List<Purchase> purchases) {
+                if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    Log.w(TAG, "Cannot query subscriptions: " + billingResult.getDebugMessage());
+                    return;
+                }
+                boolean ownsSubscription = false;
+                if (purchases != null) {
+                    for (Purchase purchase : purchases) {
+                        handlePurchase(purchase);
+                        if (purchase != null
+                                && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED
+                                && purchase.getProducts().contains(PRO_SUBSCRIPTION_ID)) {
+                            ownsSubscription = true;
+                        }
+                    }
+                }
+                if (!ownsSubscription && isProSubscriptionActive()) {
+                    setProSubscriptionActive(false);
                 }
             }
         });
@@ -841,8 +903,12 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         }
 
         boolean handled = false;
-        if (purchase.getProducts().contains(PRO_PRODUCT_ID)) {
+        if (purchase.getProducts().contains(LEGACY_PRO_PRODUCT_ID)) {
             setProNoAdsActive(true);
+            handled = true;
+        }
+        if (purchase.getProducts().contains(PRO_SUBSCRIPTION_ID)) {
+            setProSubscriptionActive(true);
             handled = true;
         }
         if (purchase.getProducts().contains(MODULE_VALVES_PRODUCT_ID)) {
@@ -869,10 +935,31 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         return true;
     }
 
+    private boolean isLegacyProNoAdsActive() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(PREF_PRO_NO_ADS, false);
+    }
+
+    private boolean isProSubscriptionActive() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(PREF_PRO_SUBSCRIPTION, false);
+    }
+
     private void setProNoAdsActive(boolean active) {
         SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
         editor.putBoolean(PREF_PRO_NO_ADS, active);
         editor.apply();
+        updateAdsForProStatus();
+    }
+
+    private void setProSubscriptionActive(boolean active) {
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        editor.putBoolean(PREF_PRO_SUBSCRIPTION, active);
+        editor.apply();
+        updateAdsForProStatus();
+    }
+
+    private void updateAdsForProStatus() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

@@ -84,28 +84,27 @@ niezależna od UI):
   **8 reklam/dobę** (przesuwne okno 24 h); cooldown konfigurowalny
   (`REWARD_AD_COOLDOWN_S`).
 
-### PRO (`pro_no_ads`)
+### PRO (`refrigeration_pro`)
 
-Jednorazowy zakup Google Play Billing:
+Miesięczna subskrypcja Google Play Billing:
 
-- typ produktu: one-time product / non-consumable,
-- product ID w Play Console: `pro_no_ads`,
-- efekt po zakupie: usuwa reklamy i odblokowuje **pełną listę produktów w karcie
-  rdzeniowej (zamrażanie)**,
+- typ produktu: subscription / auto-renewing,
+- product ID w Play Console: `refrigeration_pro`,
+- base plan ID: `monthly-499`,
+- efekt aktywnej subskrypcji: usuwa reklamy, odblokowuje pełną listę produktów,
+  eksport PDF oraz moduły PRO, w tym zawory dekompresyjne,
 - cena: ustawiana w Google Play Console, nie w kodzie aplikacji.
 
-> PRO świadomie **nie** odblokowuje płatnych kart funkcyjnych
-> (np. dobór zaworów) — każda taka karta jest osobnym produktem
-> (`module_valves`, `module_insulation`, …), kupowanym niezależnie.
+Legacy zakup jednorazowy `pro_no_ads` nadal jest rozpoznawany jako PRO, aby
+nie odbierać dostępu użytkownikom/testom ze starego modelu.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 
 Druga zakładka (dobór zaworów) jest **płatnym modułem jednorazowym**:
 
 - product ID w Play Console: `module_valves` (one-time / non-consumable),
-- dostęp: trial → za darmo; trwały zakup `module_valves` → na stałe;
-  reklama z nagrodą → 1 przeliczenie (token),
-- PRO **nie** odblokowuje tego modułu (kupowany niezależnie),
+- dostęp: trial → za darmo; aktywne PRO → dostęp; trwały zakup
+  `module_valves` → na stałe; reklama z nagrodą → 1 przeliczenie (token),
 - gdy produkt nie jest jeszcze aktywny w Play Console, zakup pokazuje
   „niedostępny”, a ścieżka z reklamą działa normalnie.
 
