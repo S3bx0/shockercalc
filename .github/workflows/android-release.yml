@@ -235,6 +235,16 @@ jobs:
                   found["native-debug-symbols.zip"] = (
                       f"generated manually from {len(candidates)} app .so files"
                   )
+              elif app_lib_names and aabs:
+                  symbol_zip = out / "native-debug-symbols.zip"
+                  with zipfile.ZipFile(symbol_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                      with zipfile.ZipFile(aabs[0]) as bundle:
+                          for name in sorted(bundle.namelist()):
+                              if name.startswith("base/lib/") and name.endswith(".so"):
+                                  zf.writestr(f"lib/arm64-v8a/{Path(name).name}", bundle.read(name))
+                  found["native-debug-symbols.zip"] = (
+                      f"generated fallback from {len(app_lib_names)} packaged AAB .so files"
+                  )
 
           notes = [
               "Play Console diagnostic files",

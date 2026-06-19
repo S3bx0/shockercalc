@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.16] — 2026-06-19
+
+### Techniczne — Google Play Console
+
+- Jeśli workflow nie znajdzie osobnych nieobciętych bibliotek `.so`, generuje
+  fallback `native-debug-symbols.zip` bezpośrednio z bibliotek obecnych w AAB,
+  zachowując poprawną strukturę `lib/arm64-v8a/*.so` dla uploadu testowego w
+  Play Console.
+
 ## [1.2.15] — 2026-06-19
 
 ### Naprawione — Google Play Console
