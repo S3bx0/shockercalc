@@ -124,7 +124,8 @@ Release workflow generuje dodatkowy artefakt `play-console-diagnostics`.
 Zawiera on:
 
 - `native-debug-symbols.zip`, jeśli Android Gradle Plugin wygeneruje osobny
-  plik symboli natywnych,
+  plik symboli natywnych albo jeśli workflow znajdzie nieobcięte biblioteki
+  `.so` i zbuduje ZIP ręcznie,
 - `mapping.txt`, jeśli w przyszłości włączymy R8/ProGuard,
 - `README.txt` z informacją, co zostało znalezione w danym buildzie.
 

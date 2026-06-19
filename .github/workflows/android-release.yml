@@ -138,6 +138,8 @@ jobs:
           set -eo pipefail
           python - <<'PY'
           import shutil
+          import subprocess
+          import zipfile
           from pathlib import Path
 
           out = Path("play-console-diagnostics")
@@ -168,6 +170,52 @@ jobs:
                           break
                   if dest_name in found:
                       break
+
+          def has_native_symbols(path):
+              try:
+                  result = subprocess.run(
+                      ["readelf", "-S", str(path)],
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                      timeout=20,
+                  )
+              except (OSError, subprocess.SubprocessError):
+                  return False
+              return ".symtab" in result.stdout or ".debug_" in result.stdout
+
+          if "native-debug-symbols.zip" not in found:
+              candidates = {}
+              for root in roots:
+                  if not root.exists():
+                      continue
+                  for so in root.glob("**/*.so"):
+                      path_text = so.as_posix()
+                      if "/outputs/" in path_text:
+                          continue
+                      if "/fontTools/" in path_text or "/fonttools/" in path_text:
+                          continue
+                      if not has_native_symbols(so):
+                          continue
+                      score = 0
+                      if "/build/other_builds/" in path_text:
+                          score += 30
+                      if "/build/bootstrap_builds/" in path_text:
+                          score += 20
+                      if "/dists/" in path_text:
+                          score -= 10
+                      current = candidates.get(so.name)
+                      if current is None or score > current[0]:
+                          candidates[so.name] = (score, so)
+
+              if candidates:
+                  symbol_zip = out / "native-debug-symbols.zip"
+                  with zipfile.ZipFile(symbol_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                      for name, (_score, so) in sorted(candidates.items()):
+                          zf.write(so, f"lib/arm64-v8a/{name}")
+                  found["native-debug-symbols.zip"] = (
+                      f"generated manually from {len(candidates)} unstripped .so files"
+                  )
 
           notes = [
               "Play Console diagnostic files",

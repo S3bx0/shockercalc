@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.14] — 2026-06-19
+
+### Techniczne — Google Play Console
+
+- Workflow release generuje teraz `native-debug-symbols.zip` ręcznie z
+  nieobciętych bibliotek `.so` znalezionych w katalogach builda p4a, gdy
+  Android Gradle Plugin nie utworzy osobnego pliku symboli dla bibliotek
+  prebuilt.
+- `play-console-diagnostics` zawiera dzięki temu plik możliwy do uploadu w
+  osobnej sekcji symboli natywnych Play Console, jeśli ostrzeżenie pozostanie
+  po wgraniu samego AAB.
+
 ## [1.2.13] — 2026-06-19
 
 ### Techniczne — Google Play Console
