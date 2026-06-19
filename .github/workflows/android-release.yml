@@ -145,6 +145,16 @@ jobs:
           out = Path("play-console-diagnostics")
           out.mkdir(exist_ok=True)
 
+          aabs = sorted(Path("bin").glob("*.aab"))
+          app_lib_names = set()
+          if aabs:
+              with zipfile.ZipFile(aabs[0]) as bundle:
+                  app_lib_names = {
+                      Path(name).name
+                      for name in bundle.namelist()
+                      if name.startswith("base/lib/") and name.endswith(".so")
+                  }
+
           roots = [Path(".buildozer"), Path.home() / ".buildozer"]
           targets = {
               "native-debug-symbols.zip": [
@@ -191,19 +201,28 @@ jobs:
                       continue
                   for so in root.glob("**/*.so"):
                       path_text = so.as_posix()
+                      path_lower = path_text.lower()
+                      if app_lib_names and so.name not in app_lib_names:
+                          continue
                       if "/outputs/" in path_text:
+                          continue
+                      if "/android-ndk-" in path_lower or "/android-sdk/" in path_lower:
+                          continue
+                      if "/.gradle/caches/" in path_lower:
                           continue
                       if "/fontTools/" in path_text or "/fonttools/" in path_text:
                           continue
                       if not has_native_symbols(so):
                           continue
                       score = 0
+                      if "/build/intermediates/" in path_text:
+                          score += 50
                       if "/build/other_builds/" in path_text:
                           score += 30
                       if "/build/bootstrap_builds/" in path_text:
                           score += 20
                       if "/dists/" in path_text:
-                          score -= 10
+                          score += 10
                       current = candidates.get(so.name)
                       if current is None or score > current[0]:
                           candidates[so.name] = (score, so)
@@ -214,7 +233,7 @@ jobs:
                       for name, (_score, so) in sorted(candidates.items()):
                           zf.write(so, f"lib/arm64-v8a/{name}")
                   found["native-debug-symbols.zip"] = (
-                      f"generated manually from {len(candidates)} unstripped .so files"
+                      f"generated manually from {len(candidates)} app .so files"
                   )
 
           notes = [
@@ -223,6 +242,7 @@ jobs:
               "",
               "native-debug-symbols.zip: "
               + found.get("native-debug-symbols.zip", "not generated separately"),
+              f"AAB native library names: {len(app_lib_names)}",
               "mapping.txt: "
               + found.get("mapping.txt", "not generated because release is not R8-obfuscated"),
               "",

@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.15] — 2026-06-19
+
+### Naprawione — Google Play Console
+
+- Generator `native-debug-symbols.zip` filtruje teraz biblioteki po nazwach
+  faktycznie obecnych w AAB (`base/lib/.../*.so`) oraz pomija pliki z NDK,
+  SDK i cache Gradle. Dzięki temu artefakt symboli nie zawiera bibliotek
+  narzędziowych spoza aplikacji.
+
 ## [1.2.14] — 2026-06-19
 
 ### Techniczne — Google Play Console
