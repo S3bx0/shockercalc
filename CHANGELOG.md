@@ -4,6 +4,26 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.3.0] - 2026-06-20
+
+### Dodane
+
+- Opcjonalna, domyslnie wylaczona integracja Firebase Analytics,
+  Crashlytics i Remote Config z osobna zgoda uzytkownika.
+- Zdarzenia uzycia kalkulatorow i PDF bez przesylania wartosci obliczen,
+  nazw produktow ani zawartosci raportow.
+- Opcjonalna dystrybucja APK do testerow przez Firebase App Distribution.
+- Przelaczane i zapamietywane podpowiedzi dla pol obu kalkulatorow.
+- Czerwone oznaczanie brakujacych lub niepoprawnych pol.
+- Lokalne produkty uzytkownika dla aktywnej subskrypcji PRO.
+
+### Prywatnosc
+
+- Zbieranie Analytics i Crashlytics pozostaje wylaczone do czasu swiadomej
+  zgody i mozna je pozniej wylaczyc w aplikacji.
+- Zaktualizowano dwujezyczna polityke prywatnosci oraz instrukcje konfiguracji
+  Firebase i deklaracji Play Console.
+
 ## [1.2.19] — 2026-06-20
 
 ### Techniczne — audyt i odtwarzalny toolchain

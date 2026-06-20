@@ -14,6 +14,33 @@ ale w pełni poprawnie) — fpdf2 generuje PDF bez problemu.
 
 import os
 import re
+import json
+import shutil
+
+
+FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
+DEFAULT_FIREBASE_CONFIG = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    ".firebase",
+    "google-services.json",
+)
+
+
+def _resolve_firebase_config(config_path=None):
+    candidates = [
+        config_path,
+        os.environ.get("FIREBASE_GOOGLE_SERVICES_JSON"),
+        DEFAULT_FIREBASE_CONFIG,
+        os.path.join(os.getcwd(), ".firebase", "google-services.json"),
+    ]
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            return os.path.abspath(candidate)
+    return os.path.abspath(
+        config_path
+        or os.environ.get("FIREBASE_GOOGLE_SERVICES_JSON")
+        or DEFAULT_FIREBASE_CONFIG
+    )
 
 def _strip_fonttools_native(*roots):
     """Usuwa pliki .so z katalogów fonttools we wskazanych korzeniach."""
@@ -182,6 +209,82 @@ android {{
     print("[p4a hook] zaktualizowanych build.gradle diagnostics:", patched)
 
 
+def _firebase_config_matches_package(path):
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError, TypeError):
+        return False
+    for client in data.get("client", []):
+        package = (
+            client.get("client_info", {})
+            .get("android_client_info", {})
+            .get("package_name")
+        )
+        if package == FIREBASE_PACKAGE:
+            return True
+    return False
+
+
+def _patch_firebase_gradle(*roots, config_path=None):
+    """Konfiguruje pluginy Firebase tylko gdy dostarczono poprawny JSON."""
+    config_path = _resolve_firebase_config(config_path)
+    if not os.path.isfile(config_path):
+        print("[p4a hook] Firebase wylaczony: brak google-services.json")
+        return 0
+    if not _firebase_config_matches_package(config_path):
+        raise RuntimeError(
+            "google-services.json nie zawiera pakietu " + FIREBASE_PACKAGE
+        )
+
+    marker = "Refrigeration Calc Firebase plugins"
+    patched = 0
+    for path in _iter_files("build.gradle", *roots):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if "com.android.application" not in text or "android {" not in text:
+            continue
+
+        updated = text
+        if marker not in updated:
+            updated, classpath_count = re.subn(
+                r"(?P<agp>\s*classpath\s+['\"]com\.android\.tools\.build:gradle:[^'\"]+['\"])",
+                (
+                    r"\g<agp>\n"
+                    "        // " + marker + "\n"
+                    "        classpath 'com.google.gms:google-services:4.5.0'\n"
+                    "        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.7'"
+                ),
+                updated,
+                count=1,
+            )
+            updated, plugin_count = re.subn(
+                r"(apply plugin:\s*['\"]com\.android\.application['\"])",
+                (
+                    r"\1\n"
+                    "apply plugin: 'com.google.gms.google-services'\n"
+                    "apply plugin: 'com.google.firebase.crashlytics'"
+                ),
+                updated,
+                count=1,
+            )
+            if not classpath_count or not plugin_count:
+                raise RuntimeError("Nie rozpoznano szablonu Gradle p4a dla Firebase")
+
+        target_config = os.path.join(os.path.dirname(path), "google-services.json")
+        shutil.copyfile(config_path, target_config)
+        if updated != text:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(updated)
+        patched += 1
+        print("[p4a hook] skonfigurowano Firebase w:", path)
+    print("[p4a hook] skonfigurowanych projektow Firebase:", patched)
+    return patched
+
+
 def _append_env_flag(name, flag):
     current = os.environ.get(name, "")
     if flag not in current:
@@ -219,5 +322,6 @@ def before_apk_assemble(toolchain):
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
     _patch_python_activity_orientation(*roots)
+    _patch_firebase_gradle(*roots)
     _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)

@@ -23,6 +23,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      - name: Configure Firebase SDK (optional)
+        env:
+          FIREBASE_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$FIREBASE_GOOGLE_SERVICES_JSON_BASE64" ]; then
+            mkdir -p .firebase
+            echo "$FIREBASE_GOOGLE_SERVICES_JSON_BASE64" | base64 -d > .firebase/google-services.json
+            echo "FIREBASE_GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE/.firebase/google-services.json" >> "$GITHUB_ENV"
+            echo "Firebase Android configuration enabled."
+          else
+            echo "::notice::Firebase configuration secret is not set; telemetry will remain disabled."
+          fi
+
       - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:

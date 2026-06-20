@@ -23,8 +23,10 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # UI (dolna nawigacja) + integracja AdMob/Billing
+    ├── main.py        # UI + integracja AdMob/Billing/Firebase
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
+    ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
+    ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
 
 assets/                # zasoby aplikacji
@@ -117,6 +119,18 @@ Przycisk „tarcza" w pasku górnym pozwala później zmienić zgodę
 (`showPrivacyOptionsForm`). Komunikat o zgodzie trzeba jeszcze skonfigurować
 w panelu **AdMob → Prywatność i komunikaty** oraz uzupełnić deklaracje danych
 w Play Console.
+
+### Firebase (dobrowolna telemetria)
+
+Build obsługuje Google Analytics for Firebase, Crashlytics i Remote Config.
+Integracja jest aktywowana tylko wtedy, gdy CI otrzyma poprawny
+`google-services.json`, a samo zbieranie danych jest domyślnie wyłączone do
+czasu zgody użytkownika. Zdarzenia opisują użycie funkcji; nie zawierają
+wartości obliczeń, nazw własnych produktów ani treści PDF.
+
+Workflow debug może opcjonalnie przekazać APK testerom przez Firebase App
+Distribution. Pełna konfiguracja sekretów, Remote Config i zmian wymaganych w
+Play Console jest opisana w [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md).
 
 ### Artefakty diagnostyczne Google Play
 

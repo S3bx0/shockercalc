@@ -37,6 +37,8 @@ from tpof.core import (
 )
 from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
 from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
+from tpof.mobile import telemetry
+from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +62,11 @@ SURFACE_DARK = (0.05, 0.08, 0.11, 1)
 SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
 
 _FONTTOOLS_SO_PURGED = False
+
+
+def _numeric_input_filter(value: str, _from_undo: bool = False) -> str:
+    """Pozwala wpisywac liczby z polskim przecinkiem i znakiem minus."""
+    return "".join(char for char in str(value) if char in "0123456789-.,")
 
 
 def _purge_host_arch_fonttools_so() -> None:
@@ -111,6 +118,27 @@ I18N = {
         "product": "Produkt",
         "choose_category": "Wybierz kategorię",
         "choose_product": "Wybierz produkt",
+        "product_hint": "Najpierw wybierz kategorię, potem produkt. Przycisk + dodaje własny produkt w PRO.",
+        "add_custom_product": "Dodaj własny produkt",
+        "custom_product_pro": "Własne produkty są dostępne w aktywnej wersji PRO.",
+        "custom_product_title": "Własny produkt",
+        "custom_product_saved": "Produkt zapisany lokalnie i dodany do listy.",
+        "custom_product_limit": "Osiągnięto limit własnych produktów ({limit}).",
+        "custom_name": "Nazwa produktu",
+        "custom_category": "Kategoria",
+        "custom_moisture": "Wilgotność [%]",
+        "custom_protein": "Białko [%] (opcjonalnie)",
+        "custom_fat": "Tłuszcz [%] (opcjonalnie)",
+        "custom_carbs": "Węglowodany [%] (opcjonalnie)",
+        "custom_fiber": "Błonnik [%] (opcjonalnie)",
+        "custom_ash": "Popiół [%] (opcjonalnie)",
+        "custom_tzam": "Punkt zamarzania [°C]",
+        "custom_c1": "c1 powyżej zamarzania [kJ/kg·K]",
+        "custom_c2": "c2 poniżej zamarzania [kJ/kg·K]",
+        "custom_l1": "Ciepło topnienia L1 [kJ/kg]",
+        "custom_required": "Uzupełnij poprawnie zaznaczone pole.",
+        "save": "Zapisz",
+        "cancel": "Anuluj",
         "image_placeholder": "Zdjęcie produktu pojawi się po wyborze",
         "params": "Parametry",
         "mass": "Masa",
@@ -148,6 +176,23 @@ I18N = {
         "field_temp_start": "temperatura początkowa",
         "field_temp_end": "temperatura końcowa",
         "field_time": "czas",
+        "field_required": "To pole jest wymagane.",
+        "hints_on": "Podpowiedzi włączone",
+        "hints_off": "Podpowiedzi wyłączone",
+        "hint_mass": "Wpisz masę partii; jednostkę zmienisz przyciskiem kg/t.",
+        "hint_temp_start": "Temperatura produktu przed rozpoczęciem procesu.",
+        "hint_temp_end": "Docelowa temperatura produktu po procesie.",
+        "hint_time": "Łączny czas osiągnięcia temperatury końcowej.",
+        "telemetry_title": "Pomóż ulepszać aplikację",
+        "telemetry_text": "Dobrowolne statystyki użycia, raporty błędów i zdalna konfiguracja pomagają ulepszać aplikację. Google może przetwarzać identyfikator instalacji i dane techniczne urządzenia. Wartości obliczeń, nazwy własnych produktów i pliki PDF nie są wysyłane.",
+        "telemetry_enable": "Włącz",
+        "telemetry_disable": "Wyłącz",
+        "telemetry_not_now": "Nie teraz",
+        "telemetry_on": "Statystyki i raporty błędów: włączone",
+        "telemetry_off": "Statystyki i raporty błędów: wyłączone",
+        "privacy_title": "Prywatność",
+        "ad_privacy": "Ustawienia reklam",
+        "close": "Zamknij",
         "estimated": "  (szacowane)",
         "trial_active": "Wersja próbna: pozostało {days} dni",
         "trial_last_day": "Wersja próbna: ostatni dzień",
@@ -178,6 +223,14 @@ I18N = {
         "valve_flow_per": "Przepływ na 1 chłodnicę [m³/h]",
         "valve_coolers_min": "Ilość chłodnic musi być co najmniej 1.",
         "valve_flow_positive": "Przepływ na 1 chłodnicę musi być większy od zera.",
+        "hint_valve_volume": "Podaj kubaturę netto komory w m³.",
+        "hint_valve_length": "Wewnętrzna długość komory w metrach.",
+        "hint_valve_width": "Wewnętrzna szerokość komory w metrach.",
+        "hint_valve_height": "Wewnętrzna wysokość komory w metrach.",
+        "hint_valve_temp_before": "Temperatura powietrza przed chłodnicą.",
+        "hint_valve_temp_after": "Temperatura powietrza za chłodnicą.",
+        "hint_valve_coolers": "Liczba pracujących chłodnic w komorze.",
+        "hint_valve_flow": "Nominalny przepływ jednej chłodnicy w m³/h.",
         "valve_calculate": "Oblicz zawory",
         "valve_result": "Wynik",
         "valve_delta_t": "Tempo zmian ΔT: {value} °C/min",
@@ -196,6 +249,27 @@ I18N = {
         "product": "Product",
         "choose_category": "Choose category",
         "choose_product": "Choose product",
+        "product_hint": "Choose a category first, then a product. The + button adds a custom PRO product.",
+        "add_custom_product": "Add custom product",
+        "custom_product_pro": "Custom products require an active PRO subscription.",
+        "custom_product_title": "Custom product",
+        "custom_product_saved": "Product saved locally and added to the list.",
+        "custom_product_limit": "Custom product limit reached ({limit}).",
+        "custom_name": "Product name",
+        "custom_category": "Category",
+        "custom_moisture": "Moisture [%]",
+        "custom_protein": "Protein [%] (optional)",
+        "custom_fat": "Fat [%] (optional)",
+        "custom_carbs": "Carbohydrates [%] (optional)",
+        "custom_fiber": "Fiber [%] (optional)",
+        "custom_ash": "Ash [%] (optional)",
+        "custom_tzam": "Freezing point [°C]",
+        "custom_c1": "c1 above freezing [kJ/kg·K]",
+        "custom_c2": "c2 below freezing [kJ/kg·K]",
+        "custom_l1": "Latent heat L1 [kJ/kg]",
+        "custom_required": "Complete the highlighted field correctly.",
+        "save": "Save",
+        "cancel": "Cancel",
         "image_placeholder": "Product image appears after selection",
         "params": "Parameters",
         "mass": "Mass",
@@ -233,6 +307,23 @@ I18N = {
         "field_temp_start": "initial temperature",
         "field_temp_end": "final temperature",
         "field_time": "time",
+        "field_required": "This field is required.",
+        "hints_on": "Hints enabled",
+        "hints_off": "Hints disabled",
+        "hint_mass": "Enter the batch mass; use the kg/t button to change units.",
+        "hint_temp_start": "Product temperature before the process starts.",
+        "hint_temp_end": "Target product temperature after the process.",
+        "hint_time": "Total time required to reach the final temperature.",
+        "telemetry_title": "Help improve the app",
+        "telemetry_text": "Optional usage statistics, crash reports, and remote configuration help improve the app. Google may process an installation identifier and technical device data. Calculation values, custom product names, and PDF files are never sent.",
+        "telemetry_enable": "Enable",
+        "telemetry_disable": "Disable",
+        "telemetry_not_now": "Not now",
+        "telemetry_on": "Usage statistics and crash reports: enabled",
+        "telemetry_off": "Usage statistics and crash reports: disabled",
+        "privacy_title": "Privacy",
+        "ad_privacy": "Ad privacy settings",
+        "close": "Close",
         "estimated": "  (estimated)",
         "trial_active": "Trial: {days} days left",
         "trial_last_day": "Trial: last day",
@@ -263,6 +354,14 @@ I18N = {
         "valve_flow_per": "Flow per cooler [m³/h]",
         "valve_coolers_min": "Number of coolers must be at least 1.",
         "valve_flow_positive": "Flow per cooler must be greater than zero.",
+        "hint_valve_volume": "Enter the chamber net volume in m³.",
+        "hint_valve_length": "Internal chamber length in metres.",
+        "hint_valve_width": "Internal chamber width in metres.",
+        "hint_valve_height": "Internal chamber height in metres.",
+        "hint_valve_temp_before": "Air temperature before the cooler.",
+        "hint_valve_temp_after": "Air temperature after the cooler.",
+        "hint_valve_coolers": "Number of operating coolers in the chamber.",
+        "hint_valve_flow": "Nominal airflow of one cooler in m³/h.",
         "valve_calculate": "Calculate valves",
         "valve_result": "Result",
         "valve_delta_t": "Change rate ΔT: {value} °C/min",
@@ -370,7 +469,10 @@ def main() -> None:
     except Exception:  # pragma: no cover
         log.exception("Nie udało się zarejestrować fontu DejaVuSans")
 
+    telemetry.install_exception_hook()
     catalog: Dict[str, List[Product]] = load_products(DATA_PATH)
+    custom_products = CustomProductStore()
+    custom_products.merge_into(catalog)
     categories = list_categories(catalog)
 
     class ShockerCalcApp(MDApp):
@@ -394,6 +496,12 @@ def main() -> None:
             self._last_results = None
             self._themed_cards = []
             self._language = "pl"
+            self._preferences = UiPreferences()
+            self._hints_enabled = self._preferences.hints_enabled
+            self._custom_product_dialog = None
+            self._privacy_dialog = None
+            self._telemetry_dialog = None
+            self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
             self._pro_thanks_shown = False
@@ -466,6 +574,9 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 1.0)
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
+            Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
+            Clock.schedule_once(lambda *_: self._prompt_telemetry_consent(), 2.0)
+            telemetry.log_event("app_started", {"language": self._language})
             return root
 
         # --- tekst / stan aplikacji -------------------------------------
@@ -476,6 +587,109 @@ def main() -> None:
         def _toggle_language(self):
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
+
+        def _toggle_hints(self):
+            self._hints_enabled = not self._hints_enabled
+            self._preferences.set_hints_enabled(self._hints_enabled)
+            self._apply_hints()
+            self._apply_responsive_layout()
+            self._show_error(self._t("hints_on" if self._hints_enabled else "hints_off"))
+            telemetry.log_event("hints_toggled", {"enabled": self._hints_enabled})
+
+        def _hint_field_items(self):
+            return [
+                (getattr(self, "in_m", None), "hint_mass"),
+                (getattr(self, "in_T1", None), "hint_temp_start"),
+                (getattr(self, "in_T2", None), "hint_temp_end"),
+                (getattr(self, "in_t", None), "hint_time"),
+                (getattr(self, "valve_in_V", None), "hint_valve_volume"),
+                (getattr(self, "valve_in_L", None), "hint_valve_length"),
+                (getattr(self, "valve_in_W", None), "hint_valve_width"),
+                (getattr(self, "valve_in_H", None), "hint_valve_height"),
+                (getattr(self, "valve_in_tp", None), "hint_valve_temp_before"),
+                (getattr(self, "valve_in_tz", None), "hint_valve_temp_after"),
+                (getattr(self, "valve_in_n", None), "hint_valve_coolers"),
+                (getattr(self, "valve_in_q", None), "hint_valve_flow"),
+            ]
+
+        def _apply_hints(self):
+            if hasattr(self, "btn_hints"):
+                self.btn_hints.icon = (
+                    "lightbulb-on-outline"
+                    if self._hints_enabled
+                    else "lightbulb-off-outline"
+                )
+            if hasattr(self, "lbl_product_hint"):
+                self.lbl_product_hint.text = self._t("product_hint")
+            for field, hint_key in self._hint_field_items():
+                if field is None:
+                    continue
+                field_id = id(field)
+                if field_id not in self._validation_bound_fields:
+                    field.bind(text=lambda widget, _value: self._clear_field_error(widget))
+                    self._validation_bound_fields.add(field_id)
+                if not getattr(field, "error", False):
+                    field.helper_text = self._t(hint_key) if self._hints_enabled else ""
+                    field.helper_text_mode = "on_focus" if self._hints_enabled else "none"
+
+        def _clear_field_error(self, field):
+            if not getattr(field, "error", False):
+                return
+            field.error = False
+            hint_key = next(
+                (key for candidate, key in self._hint_field_items() if candidate is field),
+                None,
+            )
+            field.helper_text = (
+                self._t(hint_key) if self._hints_enabled and hint_key else ""
+            )
+            field.helper_text_mode = "on_focus" if field.helper_text else "none"
+
+        def _mark_field_error(self, field, message: Optional[str] = None):
+            field.error = True
+            field.helper_text = message or self._t("field_required")
+            field.helper_text_mode = "on_error"
+
+        def _parse_required_field(self, field, name: str) -> float:
+            raw = (getattr(field, "text", "") or "").strip()
+            if not raw:
+                self._mark_field_error(field)
+                raise ValueError(self._t("invalid_field", name=name))
+            try:
+                return float(raw.replace(",", "."))
+            except (TypeError, ValueError, AttributeError) as exc:
+                self._mark_field_error(field, self._t("invalid_field", name=name))
+                raise ValueError(self._t("invalid_field", name=name)) from exc
+
+        def _clear_main_validation(self):
+            for line in (
+                getattr(self, "category_error_line", None),
+                getattr(self, "product_error_line", None),
+            ):
+                if line is not None:
+                    line.opacity = 0
+            for field in (
+                getattr(self, "in_m", None),
+                getattr(self, "in_T1", None),
+                getattr(self, "in_T2", None),
+                getattr(self, "in_t", None),
+            ):
+                if field is not None:
+                    self._clear_field_error(field)
+
+        def _clear_valve_validation(self):
+            for field in (
+                getattr(self, "valve_in_V", None),
+                getattr(self, "valve_in_L", None),
+                getattr(self, "valve_in_W", None),
+                getattr(self, "valve_in_H", None),
+                getattr(self, "valve_in_tp", None),
+                getattr(self, "valve_in_tz", None),
+                getattr(self, "valve_in_n", None),
+                getattr(self, "valve_in_q", None),
+            ):
+                if field is not None:
+                    self._clear_field_error(field)
 
         def _total_text(self, total: Optional[float] = None) -> str:
             value = "—" if total is None else f"{total:.2f}"
@@ -513,6 +727,7 @@ def main() -> None:
             short = height_dp < 720
             text_scale = self._clamp(width_dp / 412.0, 0.88, 1.06)
             product_horizontal = width_dp >= 370
+            product_hint_h = 30 if self._hints_enabled else 0
 
             card_pad = 10 if narrow else 12 if compact else 14
             card_pad_x = card_pad
@@ -552,14 +767,20 @@ def main() -> None:
 
             if product_horizontal:
                 product_body_h = 180 if compact else 202
-                product_card_h = product_body_h + title_h + card_pad_top + card_pad_bottom + 12
+                product_card_h = (
+                    product_body_h + title_h + product_hint_h
+                    + card_pad_top + card_pad_bottom + 12
+                )
                 product_controls_h = product_body_h
                 product_image_h = product_body_h
             else:
-                product_controls_h = 116
+                product_controls_h = 130
                 product_image_h = 162
                 product_body_h = product_controls_h + product_image_h + 12
-                product_card_h = product_body_h + title_h + card_pad_top + card_pad_bottom + 12
+                product_card_h = (
+                    product_body_h + title_h + product_hint_h
+                    + card_pad_top + card_pad_bottom + 12
+                )
 
             return {
                 "width_dp": width_dp,
@@ -596,6 +817,7 @@ def main() -> None:
                 "product_body_h": dp(product_body_h),
                 "product_controls_h": dp(product_controls_h),
                 "product_image_h": dp(product_image_h),
+                "product_hint_h": dp(product_hint_h),
                 "product_body_spacing": dp(12 if compact else 14),
                 "placeholder_top": dp(32 if compact else 44),
                 "placeholder_bottom": dp(20 if compact else 28),
@@ -649,7 +871,12 @@ def main() -> None:
                 self.toolbar_snowflake.font_size = f'{m["toolbar_icon_sp"]}sp'
             if hasattr(self, "lbl_toolbar_title"):
                 self.lbl_toolbar_title.font_size = f'{m["toolbar_title_sp"]}sp'
-            for btn in (getattr(self, "btn_lang", None), getattr(self, "btn_theme", None)):
+            for btn in (
+                getattr(self, "btn_hints", None),
+                getattr(self, "btn_lang", None),
+                getattr(self, "btn_theme", None),
+                getattr(self, "btn_privacy", None),
+            ):
                 if btn is not None:
                     btn.width = m["toolbar_btn_w"]
                     btn.icon_size = f'{m["toolbar_btn_sp"]}sp'
@@ -661,6 +888,15 @@ def main() -> None:
             if hasattr(self, "lbl_product_title"):
                 self.lbl_product_title.height = m["title_h"]
                 self.lbl_product_title.font_size = f'{m["title_sp"]}sp'
+            if hasattr(self, "product_title_row"):
+                self.product_title_row.height = m["title_h"]
+            if hasattr(self, "btn_add_product"):
+                self.btn_add_product.width = m["toolbar_btn_w"]
+                self.btn_add_product.icon_size = f'{m["toolbar_btn_sp"]}sp'
+            if hasattr(self, "lbl_product_hint"):
+                self.lbl_product_hint.height = m["product_hint_h"]
+                self.lbl_product_hint.opacity = 1 if self._hints_enabled else 0
+                self.lbl_product_hint.font_size = f'{m["caption_sp"]}sp'
             if hasattr(self, "product_body"):
                 self.product_body.orientation = "horizontal" if m["product_horizontal"] else "vertical"
                 self.product_body.height = m["product_body_h"]
@@ -691,6 +927,12 @@ def main() -> None:
                 if btn is not None:
                     btn.height = m["button_h"]
                     btn.font_size = f'{m["button_sp"]}sp'
+            for box in (
+                getattr(self, "category_field_box", None),
+                getattr(self, "product_field_box", None),
+            ):
+                if box is not None:
+                    box.height = m["button_h"] + dp(2)
 
             if hasattr(self, "params_card"):
                 self.params_card.padding = card_padding
@@ -785,6 +1027,8 @@ def main() -> None:
                 self.btn_product.text = self._selected_product or self._t("choose_product")
             if hasattr(self, "image_placeholder_label"):
                 self.image_placeholder_label.text = self._t("image_placeholder")
+            if hasattr(self, "lbl_product_hint"):
+                self.lbl_product_hint.text = self._t("product_hint")
             if hasattr(self, "lbl_params_title"):
                 self.lbl_params_title.text = self._t("params")
             if hasattr(self, "in_m"):
@@ -842,6 +1086,7 @@ def main() -> None:
                     self.valve_lbl_flow.text = self._t("valve_flow", value="—")
                     self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value="—")
             self._set_pro_status(self._pro_no_ads)
+            self._apply_hints()
 
         def _display_category(self, category: Optional[str]) -> str:
             if not category:
@@ -922,6 +1167,15 @@ def main() -> None:
                 text_color=(1, 1, 1, 1),
             )
             bar.add_widget(self.lbl_toolbar_title)
+            self.btn_hints = MDIconButton(
+                icon="lightbulb-on-outline" if self._hints_enabled else "lightbulb-off-outline",
+                size_hint_x=None,
+                width=dp(48),
+                icon_size="26sp",
+                theme_text_color="Custom",
+                text_color=(1, 1, 1, 1),
+                on_release=lambda *_: self._toggle_hints(),
+            )
             self.btn_lang = MDIconButton(
                 icon="translate",
                 size_hint_x=None,
@@ -940,6 +1194,7 @@ def main() -> None:
                 text_color=(1, 1, 1, 1),
                 on_release=lambda *_: self._toggle_theme(),
             )
+            bar.add_widget(self.btn_hints)
             bar.add_widget(self.btn_lang)
             bar.add_widget(self.btn_theme)
             self.btn_privacy = MDIconButton(
@@ -987,25 +1242,50 @@ def main() -> None:
                 self._set_mass_unit(self._mass_unit)
 
         def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
+            from kivymd.uix.button import MDIconButton
+
             card = MDCard(
                 orientation="vertical",
                 padding=dp(14),
                 spacing=dp(12),
                 size_hint_y=None,
-                height=dp(292),
+                height=dp(322 if self._hints_enabled else 292),
                 radius=[16, 16, 16, 16],
                 elevation=3,
                 md_bg_color=self._card_bg(),
             )
             self.product_card = card
             self._themed_cards.append(card)
+            title_row = MDBoxLayout(
+                orientation="horizontal", size_hint_y=None, height=dp(30)
+            )
+            self.product_title_row = title_row
             self.lbl_product_title = MDLabel(
                 text=self._t("product"),
                 font_style="H6",
-                size_hint_y=None,
-                height=dp(30),
             )
-            card.add_widget(self.lbl_product_title)
+            title_row.add_widget(self.lbl_product_title)
+            self.btn_add_product = MDIconButton(
+                icon="plus-circle-outline",
+                size_hint_x=None,
+                width=dp(44),
+                icon_size="26sp",
+                theme_text_color="Custom",
+                text_color=(0.18, 0.68, 0.95, 1),
+                on_release=lambda *_: self._open_custom_product_dialog(),
+            )
+            title_row.add_widget(self.btn_add_product)
+            card.add_widget(title_row)
+
+            self.lbl_product_hint = MDLabel(
+                text=self._t("product_hint"),
+                size_hint_y=None,
+                height=dp(30 if self._hints_enabled else 0),
+                opacity=1 if self._hints_enabled else 0,
+                font_style="Caption",
+                theme_text_color="Hint",
+            )
+            card.add_widget(self.lbl_product_hint)
 
             body = MDBoxLayout(
                 orientation="horizontal",
@@ -1029,7 +1309,18 @@ def main() -> None:
                 font_size="15sp",
                 on_release=lambda btn: self._open_category_menu(btn),
             )
-            controls.add_widget(self.btn_category)
+            self.category_field_box = MDBoxLayout(
+                orientation="vertical", size_hint_y=None, height=dp(54), spacing=0
+            )
+            self.category_field_box.add_widget(self.btn_category)
+            self.category_error_line = MDBoxLayout(
+                size_hint_y=None,
+                height=dp(2),
+                opacity=0,
+                md_bg_color=(0.94, 0.20, 0.26, 1),
+            )
+            self.category_field_box.add_widget(self.category_error_line)
+            controls.add_widget(self.category_field_box)
 
             self.btn_product = MDRaisedButton(
                 text=self._t("choose_product"),
@@ -1040,7 +1331,18 @@ def main() -> None:
                 disabled=True,
                 on_release=lambda btn: self._open_product_menu(btn),
             )
-            controls.add_widget(self.btn_product)
+            self.product_field_box = MDBoxLayout(
+                orientation="vertical", size_hint_y=None, height=dp(54), spacing=0
+            )
+            self.product_field_box.add_widget(self.btn_product)
+            self.product_error_line = MDBoxLayout(
+                size_hint_y=None,
+                height=dp(2),
+                opacity=0,
+                md_bg_color=(0.94, 0.20, 0.26, 1),
+            )
+            self.product_field_box.add_widget(self.product_error_line)
+            controls.add_widget(self.product_field_box)
 
             body.add_widget(controls)
             self.image_box = MDBoxLayout(
@@ -1103,7 +1405,7 @@ def main() -> None:
             self.row_mass = row_mass
             self.in_m = MDTextField(
                 hint_text=self._t("mass"),
-                input_filter="float",
+                input_filter=_numeric_input_filter,
                 size_hint_x=1,
                 size_hint_y=None,
                 height=dp(60),
@@ -1126,12 +1428,14 @@ def main() -> None:
             self._set_mass_unit(self._mass_unit)
 
             self.in_T1 = MDTextField(
-                hint_text=self._t("temperature_start"), input_filter="float"
+                hint_text=self._t("temperature_start"), input_filter=_numeric_input_filter
             )
             self.in_T2 = MDTextField(
-                hint_text=self._t("temperature_end"), input_filter="float"
+                hint_text=self._t("temperature_end"), input_filter=_numeric_input_filter
             )
-            self.in_t = MDTextField(hint_text=self._t("work_time"), input_filter="float")
+            self.in_t = MDTextField(
+                hint_text=self._t("work_time"), input_filter=_numeric_input_filter
+            )
             for w in (self.in_T1, self.in_T2, self.in_t):
                 w.size_hint_y = None
                 w.height = dp(60)
@@ -1458,7 +1762,9 @@ def main() -> None:
             card.add_widget(mode_box)
 
             # Pole objętości (tryb Kubatura).
-            self.valve_in_V = MDTextField(hint_text=self._t("valve_volume"), input_filter="float")
+            self.valve_in_V = MDTextField(
+                hint_text=self._t("valve_volume"), input_filter=_numeric_input_filter
+            )
             self.valve_in_V.size_hint_y = None
             self.valve_in_V.height = dp(60)
             self.valve_vol_box = MDBoxLayout(
@@ -1468,9 +1774,15 @@ def main() -> None:
             card.add_widget(self.valve_vol_box)
 
             # Pola wymiarów (tryb Wymiary): objętość = L × Sz × W.
-            self.valve_in_L = MDTextField(hint_text=self._t("valve_length"), input_filter="float")
-            self.valve_in_W = MDTextField(hint_text=self._t("valve_width"), input_filter="float")
-            self.valve_in_H = MDTextField(hint_text=self._t("valve_height"), input_filter="float")
+            self.valve_in_L = MDTextField(
+                hint_text=self._t("valve_length"), input_filter=_numeric_input_filter
+            )
+            self.valve_in_W = MDTextField(
+                hint_text=self._t("valve_width"), input_filter=_numeric_input_filter
+            )
+            self.valve_in_H = MDTextField(
+                hint_text=self._t("valve_height"), input_filter=_numeric_input_filter
+            )
             self.valve_dim_box = MDBoxLayout(
                 orientation="vertical", size_hint_y=None, height=dp(180)
             )
@@ -1481,10 +1793,16 @@ def main() -> None:
             card.add_widget(self.valve_dim_box)
 
             # Temperatury, ilość chłodnic, przepływ na 1 chłodnicę.
-            self.valve_in_tp = MDTextField(hint_text=self._t("valve_temp_before"), input_filter="float")
-            self.valve_in_tz = MDTextField(hint_text=self._t("valve_temp_after"), input_filter="float")
+            self.valve_in_tp = MDTextField(
+                hint_text=self._t("valve_temp_before"), input_filter=_numeric_input_filter
+            )
+            self.valve_in_tz = MDTextField(
+                hint_text=self._t("valve_temp_after"), input_filter=_numeric_input_filter
+            )
             self.valve_in_n = MDTextField(hint_text=self._t("valve_coolers"), input_filter="int")
-            self.valve_in_q = MDTextField(hint_text=self._t("valve_flow_per"), input_filter="float")
+            self.valve_in_q = MDTextField(
+                hint_text=self._t("valve_flow_per"), input_filter=_numeric_input_filter
+            )
             for w in (self.valve_in_tp, self.valve_in_tz, self.valve_in_n, self.valve_in_q):
                 w.size_hint_y = None
                 w.height = dp(60)
@@ -1619,21 +1937,54 @@ def main() -> None:
             if not self._valve_module_available():
                 self._refresh_valve_lock_ui()
                 return
+            self._clear_valve_validation()
+            telemetry.log_event("calculation_started", {"calculator": "valves"})
             try:
                 if self._valve_input_mode == "W":
-                    L = self._parse_float(self.valve_in_L.text, self._t("valve_length"))
-                    Wd = self._parse_float(self.valve_in_W.text, self._t("valve_width"))
-                    H = self._parse_float(self.valve_in_H.text, self._t("valve_height"))
+                    L = self._parse_required_field(
+                        self.valve_in_L, self._t("valve_length")
+                    )
+                    Wd = self._parse_required_field(
+                        self.valve_in_W, self._t("valve_width")
+                    )
+                    H = self._parse_required_field(
+                        self.valve_in_H, self._t("valve_height")
+                    )
                     V = L * Wd * H
                 else:
-                    V = self._parse_float(self.valve_in_V.text, self._t("valve_volume"))
-                tp = self._parse_float(self.valve_in_tp.text, self._t("valve_temp_before"))
-                tz = self._parse_float(self.valve_in_tz.text, self._t("valve_temp_after"))
-                n = self._parse_int(self.valve_in_n.text, self._t("valve_coolers"))
+                    V = self._parse_required_field(
+                        self.valve_in_V, self._t("valve_volume")
+                    )
+                tp = self._parse_required_field(
+                    self.valve_in_tp, self._t("valve_temp_before")
+                )
+                tz = self._parse_required_field(
+                    self.valve_in_tz, self._t("valve_temp_after")
+                )
+                n_value = self._parse_required_field(
+                    self.valve_in_n, self._t("valve_coolers")
+                )
+                if not float(n_value).is_integer():
+                    self._mark_field_error(
+                        self.valve_in_n,
+                        self._t("invalid_field", name=self._t("valve_coolers")),
+                    )
+                    raise ValueError(
+                        self._t("invalid_field", name=self._t("valve_coolers"))
+                    )
+                n = int(n_value)
                 if n < 1:
+                    self._mark_field_error(
+                        self.valve_in_n, self._t("valve_coolers_min")
+                    )
                     raise ValueError(self._t("valve_coolers_min"))
-                q = self._parse_float(self.valve_in_q.text, self._t("valve_flow_per"))
+                q = self._parse_required_field(
+                    self.valve_in_q, self._t("valve_flow_per")
+                )
                 if q <= 0:
+                    self._mark_field_error(
+                        self.valve_in_q, self._t("valve_flow_positive")
+                    )
                     raise ValueError(self._t("valve_flow_positive"))
                 # Całkowity przepływ = przepływ na 1 chłodnicę × liczba chłodnic.
                 F_total = q * n
@@ -1641,9 +1992,13 @@ def main() -> None:
                 self._last_valve_results = results
                 self._last_valve_total_flow = F_total
                 self._render_valve_results(results)
+                telemetry.log_event(
+                    "calculation_finished", {"calculator": "valves"}
+                )
             except ValueError as exc:
                 self._show_error(str(exc))
             except Exception as exc:  # pragma: no cover - UI feedback
+                telemetry.record_exception(exc, "calculate_valves")
                 log.exception("Obliczenia zaworów")
                 self._show_error(self._t("calc_error", error=exc))
 
@@ -1740,6 +2095,7 @@ def main() -> None:
             if name is None:
                 return
             self._set_active_ad_tab(name)
+            telemetry.set_screen(name)
             if name == "valves":
                 self._refresh_valve_lock_ui()
 
@@ -1826,6 +2182,8 @@ def main() -> None:
                 self.ad_slot.disabled = active
             if hasattr(self, "footer_label"):
                 self.footer_label.text = self._status_footer_text()
+            if hasattr(self, "btn_add_product"):
+                self.btn_add_product.opacity = 1.0 if active else 0.72
 
         def _buy_pro(self):
             if self._pro_no_ads:
@@ -1834,11 +2192,13 @@ def main() -> None:
                 self._show_error(self._t("pro_google_play_only"))
                 return
             try:
+                telemetry.log_event("pro_purchase_started")
                 self._android_activity().launchProPurchase()
                 Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 1.0)
                 Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 4.0)
                 Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 10.0)
-            except Exception:  # pragma: no cover - Android only
+            except Exception as exc:  # pragma: no cover - Android only
+                telemetry.record_exception(exc, "buy_pro")
                 log.exception("Zakup PRO")
                 self._show_error(self._t("pro_unavailable"))
 
@@ -1887,27 +2247,249 @@ def main() -> None:
             self._refresh_valve_lock_ui()
 
         def _refresh_privacy_button(self):
-            """Pokazuje przycisk prywatności tylko gdy UMP wymaga opcji zgody."""
+            """Pokazuje wspolne ustawienia UMP i dobrowolnej telemetrii."""
             btn = getattr(self, "btn_privacy", None)
             if btn is None:
                 return
-            required = False
+            ad_options_required = False
             if IS_ANDROID:
                 try:
-                    required = bool(self._android_activity().isPrivacyOptionsRequired())
+                    ad_options_required = bool(
+                        self._android_activity().isPrivacyOptionsRequired()
+                    )
                 except Exception:  # pragma: no cover - Android only
                     log.debug("Nie udało się sprawdzić opcji prywatności", exc_info=True)
-            btn.disabled = not required
-            btn.opacity = 1 if required else 0
+            visible = ad_options_required or telemetry.is_available()
+            btn.disabled = not visible
+            btn.opacity = 1 if visible else 0
+            from kivy.metrics import dp
+
+            btn.width = dp(48) if visible else 0
+
+        def _prompt_telemetry_consent(self):
+            if not telemetry.is_available() or telemetry.has_preference():
+                self._refresh_privacy_button()
+                return
+            try:
+                from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.dialog import MDDialog
+
+                self._telemetry_dialog = MDDialog(
+                    title=self._t("telemetry_title"),
+                    text=self._t("telemetry_text"),
+                    buttons=[
+                        MDFlatButton(
+                            text=self._t("telemetry_not_now"),
+                            on_release=lambda *_: self._set_telemetry_consent(False),
+                        ),
+                        MDRaisedButton(
+                            text=self._t("telemetry_enable"),
+                            on_release=lambda *_: self._set_telemetry_consent(True),
+                        ),
+                    ],
+                )
+                self._telemetry_dialog.open()
+            except Exception:
+                log.exception("Nie udało się pokazać zgody Firebase")
+
+        def _set_telemetry_consent(self, enabled: bool):
+            telemetry.set_enabled(enabled)
+            dialog = getattr(self, "_telemetry_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._telemetry_dialog = None
+            self._refresh_privacy_button()
+            if enabled:
+                telemetry.log_event("telemetry_enabled")
+
+        def _close_privacy_dialog(self):
+            dialog = getattr(self, "_privacy_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._privacy_dialog = None
 
         def _open_privacy_options(self):
-            """Otwiera formularz zgody UMP (zmiana zgody na reklamy / RODO)."""
+            """Otwiera ustawienia telemetrii i, gdy trzeba, zgody reklamowej."""
             if not IS_ANDROID:
                 return
             try:
+                from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.dialog import MDDialog
+
+                analytics_available = telemetry.is_available()
+                enabled = telemetry.is_enabled()
+                text = self._t("telemetry_on" if enabled else "telemetry_off")
+                buttons = []
+                if analytics_available:
+                    buttons.append(
+                        MDRaisedButton(
+                            text=self._t(
+                                "telemetry_disable" if enabled else "telemetry_enable"
+                            ),
+                            on_release=lambda *_: self._change_telemetry_from_settings(
+                                not enabled
+                            ),
+                        )
+                    )
+                if bool(self._android_activity().isPrivacyOptionsRequired()):
+                    buttons.append(
+                        MDFlatButton(
+                            text=self._t("ad_privacy"),
+                            on_release=lambda *_: self._open_ad_privacy_options(),
+                        )
+                    )
+                buttons.append(
+                    MDFlatButton(
+                        text=self._t("close"),
+                        on_release=lambda *_: self._close_privacy_dialog(),
+                    )
+                )
+                self._privacy_dialog = MDDialog(
+                    title=self._t("privacy_title"),
+                    text=text,
+                    buttons=buttons,
+                )
+                self._privacy_dialog.open()
+                telemetry.log_event("settings_opened", {"section": "privacy"})
+            except Exception:  # pragma: no cover - Android only
+                log.exception("Ustawienia prywatności")
+
+        def _change_telemetry_from_settings(self, enabled: bool):
+            telemetry.set_enabled(enabled)
+            self._close_privacy_dialog()
+            if enabled:
+                telemetry.log_event("telemetry_enabled")
+
+        def _open_ad_privacy_options(self):
+            self._close_privacy_dialog()
+            try:
                 self._android_activity().showPrivacyOptionsForm()
             except Exception:  # pragma: no cover - Android only
-                log.exception("Formularz prywatności")
+                log.exception("Formularz prywatności reklam")
+
+        def _open_custom_product_dialog(self):
+            if not self._pro_no_ads:
+                self._show_error(self._t("custom_product_pro"))
+                return
+            limit = max(1, telemetry.remote_int("custom_products_limit", 250))
+            if custom_products.count() >= limit:
+                self._show_error(self._t("custom_product_limit", limit=limit))
+                return
+            try:
+                from kivy.metrics import dp
+                from kivy.uix.scrollview import ScrollView
+                from kivymd.uix.boxlayout import MDBoxLayout
+                from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.dialog import MDDialog
+                from kivymd.uix.textfield import MDTextField
+
+                outer = MDBoxLayout(
+                    orientation="vertical",
+                    size_hint_y=None,
+                    height=dp(520),
+                )
+                scroll = ScrollView()
+                form = MDBoxLayout(
+                    orientation="vertical",
+                    spacing=dp(8),
+                    padding=[0, dp(4), dp(8), dp(8)],
+                    size_hint_y=None,
+                )
+                form.bind(minimum_height=form.setter("height"))
+                field_specs = [
+                    ("nazwa", "custom_name", None, ""),
+                    (
+                        "kategoria",
+                        "custom_category",
+                        None,
+                        self._selected_category or "",
+                    ),
+                    ("wilgotnosc", "custom_moisture", _numeric_input_filter, ""),
+                    ("t_zam", "custom_tzam", _numeric_input_filter, ""),
+                    ("c1", "custom_c1", _numeric_input_filter, ""),
+                    ("c2", "custom_c2", _numeric_input_filter, ""),
+                    ("l1", "custom_l1", _numeric_input_filter, ""),
+                    ("bialko", "custom_protein", _numeric_input_filter, ""),
+                    ("tluszcz", "custom_fat", _numeric_input_filter, ""),
+                    ("weglowodany", "custom_carbs", _numeric_input_filter, ""),
+                    ("blonnik", "custom_fiber", _numeric_input_filter, ""),
+                    ("popiol", "custom_ash", _numeric_input_filter, ""),
+                ]
+                self._custom_product_fields = {}
+                for key, label_key, input_filter, value in field_specs:
+                    field = MDTextField(
+                        hint_text=self._t(label_key),
+                        text=value,
+                        input_filter=input_filter,
+                        size_hint_y=None,
+                        height=dp(62),
+                    )
+                    field.bind(
+                        text=lambda widget, _value: self._clear_field_error(widget)
+                    )
+                    self._custom_product_fields[key] = field
+                    form.add_widget(field)
+                scroll.add_widget(form)
+                outer.add_widget(scroll)
+
+                self._custom_product_dialog = MDDialog(
+                    title=self._t("custom_product_title"),
+                    type="custom",
+                    content_cls=outer,
+                    buttons=[
+                        MDFlatButton(
+                            text=self._t("cancel"),
+                            on_release=lambda *_: self._close_custom_product_dialog(),
+                        ),
+                        MDRaisedButton(
+                            text=self._t("save"),
+                            on_release=lambda *_: self._save_custom_product(),
+                        ),
+                    ],
+                )
+                self._custom_product_dialog.open()
+                telemetry.log_event("settings_opened", {"section": "custom_product"})
+            except Exception as exc:
+                telemetry.record_exception(exc, "open_custom_product")
+                log.exception("Formularz własnego produktu")
+                self._show_error(self._t("calc_error", error=exc))
+
+        def _close_custom_product_dialog(self):
+            dialog = getattr(self, "_custom_product_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._custom_product_dialog = None
+
+        def _save_custom_product(self):
+            fields = getattr(self, "_custom_product_fields", {})
+            values = {key: field.text for key, field in fields.items()}
+            try:
+                product = create_custom_product(values)
+                custom_products.upsert(product)
+            except ValueError as exc:
+                field = fields.get(str(exc))
+                if field is not None:
+                    self._mark_field_error(field, self._t("custom_required"))
+                self._show_error(self._t("custom_required"))
+                return
+            except OSError as exc:
+                telemetry.record_exception(exc, "save_custom_product")
+                self._show_error(self._t("calc_error", error=exc))
+                return
+
+            custom_products.merge_into(catalog)
+            categories[:] = list_categories(catalog)
+            self._selected_category = product.kategoria
+            self._selected_product = product.nazwa
+            self.btn_category.text = self._display_category(product.kategoria)
+            self.btn_product.text = product.nazwa
+            self.btn_product.disabled = False
+            self.category_error_line.opacity = 0
+            self.product_error_line.opacity = 0
+            self._show_product_image(None)
+            self._close_custom_product_dialog()
+            self._show_error(self._t("custom_product_saved"))
+            telemetry.log_event("custom_product_saved")
 
         def _open_category_menu(self, caller):
             from kivy.metrics import dp
@@ -1934,6 +2516,8 @@ def main() -> None:
             self.btn_category.text = self._display_category(category)
             self.btn_product.text = self._t("choose_product")
             self.btn_product.disabled = False
+            self.category_error_line.opacity = 0
+            self.product_error_line.opacity = 0
             self._show_product_image(None)
             if self._cat_menu:
                 self._cat_menu.dismiss()
@@ -1982,6 +2566,7 @@ def main() -> None:
         def _pick_product(self, name: str):
             self._selected_product = name
             self.btn_product.text = name
+            self.product_error_line.opacity = 0
             img = _safe_image_path(name)
             self._show_product_image(img)
             if self._prod_menu:
@@ -2015,6 +2600,7 @@ def main() -> None:
                 entry["value_label"].text = "—"
             self.props_grid.clear_widgets()
             self._last_results = None
+            self._clear_main_validation()
 
         def _build_pdf_bytes(self) -> Optional[bytes]:
             """Buduje PDF: pełny reportlab (desktop) lub fpdf2 (Android)."""
@@ -2052,6 +2638,7 @@ def main() -> None:
                 nazwa = self._last_results.produkt.nazwa.replace(" ", "_")
                 out_path = out_dir / f"RefrigerationCalc_{nazwa}_{ts}.pdf"
                 out_path.write_bytes(pdf_bytes)
+                telemetry.log_event("pdf_generated", {"calculator": "freezing"})
                 if IS_ANDROID:
                     try:
                         self._android_activity().shareFile(
@@ -2060,12 +2647,16 @@ def main() -> None:
                             self._t("pdf_share_subject"),
                             self._t("pdf_share_text"),
                         )
+                        telemetry.log_event(
+                            "report_shared", {"calculator": "freezing"}
+                        )
                     except Exception:  # pragma: no cover - Android only
                         log.exception("Udostępnianie PDF")
                         self._show_error(self._t("saved", path=out_path))
                 else:
                     self._show_error(self._t("saved", path=out_path))
             except Exception as exc:  # pragma: no cover - UI feedback
+                telemetry.record_exception(exc, "export_pdf")
                 log.exception("Eksport PDF")
                 self._show_error(self._t("pdf_error", error=exc))
 
@@ -2105,12 +2696,23 @@ def main() -> None:
             return int(value)
 
         def _calculate(self):
+            self._clear_main_validation()
+            telemetry.log_event("calculation_started", {"calculator": "freezing"})
             try:
-                if not self._selected_category or not self._selected_product:
+                if not self._selected_category:
+                    self.category_error_line.opacity = 1
+                    self.product_error_line.opacity = 1
+                    self.scroll.scroll_y = 1
+                    self._show_error(self._t("pick_product_error"))
+                    return
+                if not self._selected_product:
+                    self.product_error_line.opacity = 1
+                    self.scroll.scroll_y = 1
                     self._show_error(self._t("pick_product_error"))
                     return
                 product = find_product(catalog, self._selected_category, self._selected_product)
                 if product is None:
+                    self.product_error_line.opacity = 1
                     self._show_error(self._t("missing_product_error"))
                     return
 
@@ -2131,20 +2733,51 @@ def main() -> None:
                             self._offer_reward_ad()
                             return
 
-                masa = self._parse_float(self.in_m.text, self._t("field_mass"))
+                masa = self._parse_required_field(self.in_m, self._t("field_mass"))
+                if masa <= 0:
+                    self._mark_field_error(
+                        self.in_m,
+                        self._t("invalid_field", name=self._t("field_mass")),
+                    )
+                    raise ValueError(
+                        self._t("invalid_field", name=self._t("field_mass"))
+                    )
                 if self._mass_unit == "t":
                     masa *= 1000.0
-                T1 = self._parse_float(self.in_T1.text, self._t("field_temp_start"))
-                T2 = self._parse_float(self.in_T2.text, self._t("field_temp_end"))
-                czas = self._parse_float(self.in_t.text, self._t("field_time"))
+                T1 = self._parse_required_field(
+                    self.in_T1, self._t("field_temp_start")
+                )
+                T2 = self._parse_required_field(
+                    self.in_T2, self._t("field_temp_end")
+                )
+                czas = self._parse_required_field(self.in_t, self._t("field_time"))
+                if czas <= 0:
+                    self._mark_field_error(
+                        self.in_t,
+                        self._t("invalid_field", name=self._t("field_time")),
+                    )
+                    raise ValueError(
+                        self._t("invalid_field", name=self._t("field_time"))
+                    )
 
                 inputs = FreezingInputs(masa_kg=masa, T_pocz_C=T1, T_konc_C=T2, czas_h=czas)
                 results = calculate_freezing(inputs, product)
                 self._last_results = results
                 self._render_results(results)
+                telemetry.log_event(
+                    "calculation_finished",
+                    {
+                        "calculator": "freezing",
+                        "mass_unit": self._mass_unit,
+                        "custom_product": custom_products.contains(
+                            product.kategoria, product.nazwa
+                        ),
+                    },
+                )
             except ValueError as exc:
                 self._show_error(str(exc))
             except Exception as exc:  # pragma: no cover
+                telemetry.record_exception(exc, "calculate_freezing")
                 log.exception("Błąd obliczeń")
                 self._show_error(self._t("calc_error", error=exc))
 

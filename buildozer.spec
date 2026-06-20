@@ -11,10 +11,10 @@ package.domain = pl.smilczarek
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,webp,ttf,json,kv,atlas
 source.include_patterns = assets/*,assets/**/*,tpof/**/*
-source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
+source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.19
+version = 1.3.0
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -25,7 +25,7 @@ android.release_artifact = aab
 
 # Autor / metadane (komentarz; widoczne w stopce aplikacji oraz w meta-data AndroidManifest)
 # author: Sebastian Milczarek
-android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek,com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-7481054652344026~2716191071
+android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczarek,com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-7481054652344026~2716191071,firebase_analytics_collection_enabled=false,firebase_crashlytics_collection_enabled=false,google_analytics_default_allow_ad_personalization_signals=false
 
 # Zależności (uwaga: kivymd musi być w wersji kompatybilnej z kivy)
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
@@ -59,7 +59,7 @@ android.extra_ldflags = -Wl,-z,max-page-size=16384
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.1.0, com.google.android.ump:user-messaging-platform:4.0.0, androidx.core:core:1.18.0, androidx.fragment:fragment:1.8.9
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.1.0, com.google.android.ump:user-messaging-platform:4.0.0, androidx.core:core:1.18.0, androidx.fragment:fragment:1.8.9, com.google.firebase:firebase-analytics:23.2.0, com.google.firebase:firebase-crashlytics:20.0.6, com.google.firebase:firebase-config:23.1.0
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Stabilny, odtwarzalny python-for-android. Ten release dostarcza AGP 8.11.0

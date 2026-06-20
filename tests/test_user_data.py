@@ -1,0 +1,88 @@
+import json
+
+import pytest
+
+from tpof.mobile.user_data import (
+    CustomProductStore,
+    UiPreferences,
+    create_custom_product,
+)
+from tpof.mobile.main import _numeric_input_filter
+
+
+VALID_PRODUCT = {
+    "nazwa": "Produkt testowy",
+    "kategoria": "Moje produkty",
+    "wilgotnosc": "72,5",
+    "bialko": "12",
+    "tluszcz": "4",
+    "weglowodany": "8",
+    "blonnik": "2",
+    "popiol": "1",
+    "t_zam": "-1,2",
+    "c1": "3,7",
+    "c2": "1,9",
+    "l1": "240",
+}
+
+
+def test_hints_are_enabled_by_default_and_persist(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    assert preferences.hints_enabled is True
+    preferences.set_hints_enabled(False)
+
+    assert UiPreferences(path).hints_enabled is False
+
+
+def test_numeric_filter_accepts_polish_decimal_comma_and_minus():
+    assert _numeric_input_filter("-12,5 kg") == "-12,5"
+
+
+def test_custom_product_uses_decimal_comma_and_normalizes_category():
+    product = create_custom_product(VALID_PRODUCT)
+
+    assert product.kategoria == "moje_produkty"
+    assert product.wodaprocent == 72.5
+    assert product.T_zam == -1.2
+    assert product.c1 == 3.7
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("nazwa", ""),
+        ("kategoria", ""),
+        ("wilgotnosc", "101"),
+        ("c1", "0"),
+        ("c2", "bad"),
+        ("l1", "-1"),
+    ],
+)
+def test_custom_product_rejects_invalid_required_values(field, value):
+    data = dict(VALID_PRODUCT)
+    data[field] = value
+
+    with pytest.raises(ValueError, match=field):
+        create_custom_product(data)
+
+
+def test_store_upserts_and_merges_products(tmp_path):
+    path = tmp_path / "custom_products.json"
+    store = CustomProductStore(path)
+    product = create_custom_product(VALID_PRODUCT)
+    store.upsert(product)
+
+    changed = dict(VALID_PRODUCT, c1="4.1")
+    store.upsert(create_custom_product(changed))
+
+    catalog = {}
+    store.merge_into(catalog)
+
+    assert len(catalog["moje_produkty"]) == 1
+    assert catalog["moje_produkty"][0].c1 == 4.1
+    assert store.contains("Moje produkty", "produkt TESTOWY") is True
+    assert store.contains("Moje produkty", "inny produkt") is False
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    assert raw["zywnosc"]["moje_produkty"][0]["nazwa"] == "Produkt testowy"

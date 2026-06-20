@@ -38,6 +38,9 @@ bin/
 *.apk
 *.aab
 
+# Firebase configuration is supplied through GitHub Actions secrets.
+.firebase/google-services.json
+
 # OS
 Thumbs.db
 .DS_Store
