@@ -4,6 +4,19 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.19] — 2026-06-20
+
+### Techniczne — audyt i odtwarzalny toolchain
+
+- Przypieto stabilne wersje Buildozer `1.6.0`, python-for-android
+  `v2026.05.09`, Rust `1.96.0` oraz bezposrednie pakiety Python.
+- Zaktualizowano Billing do `9.1.0`, UMP do `4.0.0` i AndroidX Core do
+  najwyzszej wersji zgodnej z AGP 8.11 (`1.18.0`).
+- Zaktualizowano i przypieto SHA oficjalnych GitHub Actions, eliminujac
+  ostrzezenia o wycofaniu runtime Node 20.
+- Dodano tygodniowy monitoring aktualizacji Dependabot bez automatycznego
+  scalania oraz dokument audytu toolchainu z torem migracji AGP 9.x.
+
 ## [1.2.18] — 2026-06-20
 
 ### Naprawione — build Android

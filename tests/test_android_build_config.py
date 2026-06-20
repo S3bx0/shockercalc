@@ -21,7 +21,22 @@ def test_build_config_supports_rotation_and_current_android_libraries():
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "com.google.android.gms:play-services-ads:25.4.0" in spec
-    assert "androidx.core:core:1.17.0" in spec
+    assert "com.android.billingclient:billing:9.1.0" in spec
+    assert "com.google.android.ump:user-messaging-platform:4.0.0" in spec
+    assert "androidx.core:core:1.18.0" in spec
+    assert "p4a.branch = master" in spec
+    assert "p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831" in spec
+
+
+def test_workflows_pin_reproducible_build_tools():
+    for name in ("android.yml", "android-release.yml"):
+        workflow = (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
+        assert "buildozer==1.6.0" in workflow
+        assert "legacy-cgi==2.6.4" in workflow
+        assert "git+https://github.com/kivy/buildozer" not in workflow
+        assert "actions/checkout@v4" not in workflow
+        assert "actions/cache@v4" not in workflow
+        assert "actions/upload-artifact@v4" not in workflow
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

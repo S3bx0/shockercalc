@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.18
+version = 1.2.19
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -31,7 +31,7 @@ android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczare
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
 # pod Pythonem Androidowym wybieranym przez python-for-android.
 # PDF na Androidzie generujemy czysto-pythonowym fpdf2 (+ fonttools, defusedxml).
-requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow,fpdf2,fonttools,defusedxml
+requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow==11.3.0,fpdf2==2.8.7,fonttools==4.63.0,defusedxml==0.7.1
 
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
@@ -59,13 +59,14 @@ android.extra_ldflags = -Wl,-z,max-page-size=16384
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0, androidx.core:core:1.17.0, androidx.fragment:fragment:1.8.9
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.1.0, com.google.android.ump:user-messaging-platform:4.0.0, androidx.core:core:1.18.0, androidx.fragment:fragment:1.8.9
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
-# Aktualny tor python-for-android wymagany do zgodnosci z Google Play
-# (16 KB page size, API 36, NDK 29).
+# Stabilny, odtwarzalny python-for-android. Ten release dostarcza AGP 8.11.0
+# i Gradle 8.14.3 oraz obsluguje API 36, Python 3.13/3.14 i 16 KB pages.
 p4a.fork = kivy
-p4a.branch = develop
+p4a.branch = master
+p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831
 
 # Hook p4a: usuwa błędne (host-arch) rozszerzenia .so fonttools z bundla,
 # by na arm64 nie padało dlopen (bezierTools.so EM_X86_64 vs EM_AARCH64).

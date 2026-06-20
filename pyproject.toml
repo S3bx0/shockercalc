@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools==82.0.1", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "shocker-calc"
-version = "1.2.18"
+version = "1.2.19"
 description = "Refrigeration Calc — kalkulator zapotrzebowania chłodu dla procesu zamrażania (desktop + mobile)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,15 +20,15 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "Pillow>=10.0",
-  "reportlab>=4.0",
-  "pypdf>=4.0",
+  "Pillow==12.2.0",
+  "reportlab==5.0.0",
+  "pypdf==6.13.3",
 ]
 
 [project.optional-dependencies]
-desktop = ["ttkbootstrap>=1.10"]
-mobile = ["kivy>=2.3", "kivymd>=1.2"]
-dev = ["pytest>=8.0", "pytest-cov>=5.0"]
+desktop = ["ttkbootstrap==1.20.3"]
+mobile = ["kivy==2.3.1", "kivymd==1.2.0"]
+dev = ["pytest==9.1.1", "pytest-cov==7.1.0"]
 
 [project.scripts]
 shocker-calc = "tpof.desktop.app:main"
