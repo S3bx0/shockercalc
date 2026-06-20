@@ -5,7 +5,6 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -119,12 +118,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
      * widok, więc zabezpieczamy caly content paddingiem z system bars/cutout.
      */
     private void configureEdgeToEdge() {
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-        getWindow().setNavigationBarColor(Color.TRANSPARENT);
-        if (Build.VERSION.SDK_INT >= 29) {
-            getWindow().setNavigationBarContrastEnforced(false);
-        }
+        WindowCompat.enableEdgeToEdge(getWindow());
 
         View root = findViewById(android.R.id.content);
         if (root == null) {

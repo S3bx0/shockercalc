@@ -14,7 +14,7 @@ source.include_patterns = assets/*,assets/**/*,tpof/**/*
 source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.2.16
+version = 1.2.17
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -37,9 +37,10 @@ requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,p
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
 
 # Orientacja / duże ekrany
-# Buildozer wymaga poprawnej wartosci orientacji. Finalny AndroidManifest jest
-# czyszczony w p4a_hooks.py z screenOrientation i ograniczen duzych ekranow.
-orientation = portrait
+# Przekazujemy oba kierunki wraz z ich odwrotnymi wariantami, aby SDL/Kivy nie
+# blokowalo orientacji w runtime. Finalny AndroidManifest jest dodatkowo
+# czyszczony w p4a_hooks.py z ograniczen duzych ekranow.
+orientation = portrait, landscape, portrait-reverse, landscape-reverse
 fullscreen = 0
 
 # Uprawnienia Android
@@ -58,7 +59,7 @@ android.extra_ldflags = -Wl,-z,max-page-size=16384
 android.add_src = %(source.dir)s/android/src
 android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
-android.gradle_dependencies = com.google.android.gms:play-services-ads:25.3.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0, androidx.core:core:1.15.0, androidx.fragment:fragment:1.8.9
+android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.0.0, com.google.android.ump:user-messaging-platform:3.0.0, androidx.core:core:1.19.0, androidx.fragment:fragment:1.8.9
 android.add_gradle_repositories = "google()", "mavenCentral()"
 
 # Aktualny tor python-for-android wymagany do zgodnosci z Google Play

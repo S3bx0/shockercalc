@@ -97,6 +97,51 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
+def _patch_python_activity_orientation(*roots):
+    """Usuwa odziedziczona blokade orientacji z launchera p4a.
+
+    Zwykla aplikacja nie korzysta z galezi ``org.kivy.LAUNCH``, ale skaner
+    Google Play analizuje bytecode i wykrywa tam ``setRequestedOrientation``.
+    Android 16 ignoruje to ograniczenie na duzych ekranach, dlatego usuwamy je
+    jeszcze przed kompilacja Javy.
+    """
+    orientation_block = re.compile(
+        r"""
+        \s*if\s*\(p\s*!=\s*null\)\s*\{\s*
+        if\s*\(p\.landscape\)\s*\{\s*
+        setRequestedOrientation\(ActivityInfo\.SCREEN_ORIENTATION_LANDSCAPE\);\s*
+        \}\s*else\s*\{\s*
+        setRequestedOrientation\(ActivityInfo\.SCREEN_ORIENTATION_PORTRAIT\);\s*
+        \}\s*
+        \}
+        """,
+        re.VERBOSE,
+    )
+    patched = 0
+    for path in _iter_files("PythonActivity.java", *roots):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        updated, replacements = orientation_block.subn("", text)
+        if not replacements:
+            continue
+        if "ActivityInfo." not in updated:
+            updated = re.sub(
+                r"^import android\.content\.pm\.ActivityInfo;\s*\n",
+                "",
+                updated,
+                flags=re.MULTILINE,
+            )
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(updated)
+        patched += 1
+        print("[p4a hook] usunieto blokade orientacji:", path)
+    print("[p4a hook] zaktualizowanych PythonActivity:", patched)
+
+
 def _patch_release_gradle_diagnostics(*roots):
     """Dodaje bezpieczne ustawienia release dla ostrzezen Google Play."""
     marker = "Refrigeration Calc release diagnostics"
@@ -173,5 +218,6 @@ def before_apk_assemble(toolchain):
     roots = _candidate_roots(toolchain)
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
+    _patch_python_activity_orientation(*roots)
     _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)

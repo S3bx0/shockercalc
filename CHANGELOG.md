@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.17] — 2026-06-20
+
+### Naprawione — Android 15/16 i Google Play
+
+- Zastapiono wycofane wywolania `setStatusBarColor`,
+  `setNavigationBarColor` i reczne `setDecorFitsSystemWindows` przez
+  `WindowCompat.enableEdgeToEdge()`, pozostawiajac obsluge wciec paskow
+  systemowych i wyciecia ekranu.
+- Rozszerzono konfiguracje SDL/Kivy na orientacje pionowa i pozioma (wraz z
+  wariantami odwrotnymi), aby uklad mogl adaptowac sie na tabletach i
+  urzadzeniach skladanych.
+- Hook buildu usuwa odziedziczone `setRequestedOrientation()` z
+  `PythonActivity.UnpackFilesTask`, wskazywane przez Play Console jako
+  ograniczenie duzych ekranow w Androidzie 16.
+- Zaktualizowano Google Mobile Ads SDK do `25.4.0` oraz AndroidX Core do
+  `1.19.0`, zgodnego z aktualnym toolchainem p4a/AGP.
+
 ## [1.2.16] — 2026-06-19
 
 ### Techniczne — Google Play Console
