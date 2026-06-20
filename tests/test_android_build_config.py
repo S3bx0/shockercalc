@@ -21,7 +21,7 @@ def test_build_config_supports_rotation_and_current_android_libraries():
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "com.google.android.gms:play-services-ads:25.4.0" in spec
-    assert "androidx.core:core:1.19.0" in spec
+    assert "androidx.core:core:1.17.0" in spec
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

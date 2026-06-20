@@ -4,6 +4,14 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.2.18] — 2026-06-20
+
+### Naprawione — build Android
+
+- Ustawiono AndroidX Core `1.17.0`, czyli pierwsza stabilna wersje z
+  `WindowCompat.enableEdgeToEdge()` zgodna z Android Gradle Plugin `8.11`
+  dostarczanym przez aktualny python-for-android.
+
 ## [1.2.17] — 2026-06-20
 
 ### Naprawione — Android 15/16 i Google Play
@@ -19,7 +27,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
   `PythonActivity.UnpackFilesTask`, wskazywane przez Play Console jako
   ograniczenie duzych ekranow w Androidzie 16.
 - Zaktualizowano Google Mobile Ads SDK do `25.4.0` oraz AndroidX Core do
-  `1.19.0`, zgodnego z aktualnym toolchainem p4a/AGP.
+  wersji zawierajacej nowy interfejs edge-to-edge.
 
 ## [1.2.16] — 2026-06-19
 
