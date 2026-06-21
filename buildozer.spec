@@ -11,10 +11,11 @@ package.domain = pl.smilczarek
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,webp,ttf,json,kv,atlas
 source.include_patterns = assets/*,assets/**/*,tpof/**/*
-source.exclude_dirs = tests, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
+source.exclude_patterns = assets/brand/**,assets/store/play-icon-512.png
+source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.3.2
+version = 1.4.0
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -74,8 +75,8 @@ p4a.hook = p4a_hooks.py
 
 # Ikona i splash
 icon.filename = %(source.dir)s/assets/icon.png
-presplash.filename = %(source.dir)s/assets/icon.png
-android.presplash_color = #031427
+presplash.filename = %(source.dir)s/assets/presplash.png
+android.presplash_color = #FFFFFF
 
 # Logowanie
 log_level = 2

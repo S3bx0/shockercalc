@@ -39,9 +39,16 @@ def test_native_splash_is_lightweight_and_started_by_activity():
 
     assert "showAnimatedIntro();" in activity
     assert "removeAnimatedIntro();" in activity
-    assert "ANIMATION_DURATION_MS = 1800L" in splash
+    assert "ANIMATION_DURATION_MS = 4600L" in splash
     assert "drawSnowflake" in splash
-    assert "drawFrostTrail" in splash
+    assert "drawRadialSnowflakes" in splash
+    assert "drawOrbitComets" in splash
+    assert "POLYGON_SIDES = 8" in splash
+    assert "RADIAL_PARTICLE_COUNT = 22" in splash
+    assert "RADIAL_SPEEDS" in splash
+    assert "ORBIT_SPEEDS = {1.93f, 2.21f, 2.49f}" in splash
+    assert "255f * reveal" in splash
+    assert "ValueAnimator.areAnimatorsEnabled()" in splash
     assert "com.airbnb.lottie" not in splash
 
 
@@ -49,8 +56,10 @@ def test_launcher_uses_current_icon_as_static_presplash():
     spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
 
     assert "icon.filename = %(source.dir)s/assets/icon.png" in spec
-    assert "presplash.filename = %(source.dir)s/assets/icon.png" in spec
-    assert "android.presplash_color = #031427" in spec
+    assert "presplash.filename = %(source.dir)s/assets/presplash.png" in spec
+    assert "android.presplash_color = #FFFFFF" in spec
+    assert "source.exclude_patterns = assets/brand/**,assets/store/play-icon-512.png" in spec
+    assert "source.exclude_dirs = tests, tools," in spec
 
 
 def test_build_config_supports_rotation_and_current_android_libraries():

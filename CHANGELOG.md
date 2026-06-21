@@ -4,6 +4,29 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.0] - 2026-06-21
+
+### Dodane
+
+- Nowa, zatwierdzona identyfikacja wizualna Refrigeration Calc: warstwowy
+  lodowy emblemat, centralny płatek oraz napis `REFRIGERATION CALC`.
+- Natywne intro Android trwające 4,6 sekundy z 22 płatkami o różnych
+  kierunkach, fazach, rozmiarach i prędkościach. Płatki rosną podczas lotu od
+  środka, tworząc efekt głębi.
+- Trzy zewnętrzne komety poruszające się po niewidocznych, przesuniętych
+  orbitach 8-kątnych. Ich końcowa prędkość została zmniejszona o 30%.
+- Gotowe zasoby ikony dla programu uruchamiającego i Google Play oraz podglądy
+  najczęstszych masek adaptacyjnych.
+
+### Zmienione
+
+- Systemowy presplash i ikony aplikacji korzystają z jednego zatwierdzonego
+  pliku wzorcowego, bez przybliżonych zamienników SVG.
+- Zewnętrzne warstwy emblematu zachowują pełne kolory przez całe intro, a
+  ścieżki komet nie są rysowane.
+- Dokumentacja wydania zawiera aktualną checklistę Play Console, deklaracji
+  Firebase i gotowe informacje o wersji w języku polskim i angielskim.
+
 ## [1.3.2] - 2026-06-21
 
 ### Naprawione

@@ -134,11 +134,13 @@ Play Console jest opisana w [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md).
 
 ### Warstwa wizualna Android
 
-Przy zimnym starcie system pokazuje aktualna ikone platka, a nastepnie natywne
-intro Java (ok. 1,8 s) z obracajacym sie platkiem i lodowym sladem. Glowny
-interfejs ma lekki gradient oraz 18 bardzo wolno poruszajacych sie refleksow
-rysowanych pod kartami z limitem 15 klatek/s. Animacje nie wymagaja Lottie ani
-dodatkowych zaleznosci.
+Przy zimnym starcie system pokazuje zatwierdzony emblemat Refrigeration Calc,
+a następnie natywne intro Java trwające 4,6 sekundy. W szerokim pierścieniu
+22 płatki lecą promieniście z różnymi prędkościami i rosną wraz z pozornym
+zbliżaniem się do użytkownika. Trzy wolniejsze komety obiegają emblemat po
+niewidocznych, przesuniętych orbitach 8-kątnych. Główny interfejs zachowuje
+lekki gradient i wolno poruszające się refleksy. Animacje nie wymagają Lottie
+ani dodatkowych zależności i respektują systemowe ograniczenie ruchu.
 
 ### Artefakty diagnostyczne Google Play
 
@@ -157,14 +159,6 @@ wyłączony dla release p4a/Kivy, dlatego brak `mapping.txt` jest oczekiwany.
 
 ## Plany rozwoju
 
-- Rozważyć inspirowany dynamicznym emblematem Android 17 wariant intro:
-  centralny płatek, napis `REFRIGERATION` na górnym łuku i `CALC` na dolnym,
-  a pomiędzy pierścieniami małe płatki przyspieszające promieniście na zewnątrz
-  z efektem szybkiego przelotu. Tuż poza zewnętrznym pierścieniem trzy
-  obrócone względem siebie obwiednie 10-12-kątne mają stykać się z nim w trzech
-  różnych punktach. Po każdej obwiedni szybko krąży mały płatek, zostawiając
-  krótki, zanikający warkocz jak kometa. Animacja musi respektować ograniczenie
-  ruchu, utrzymywać płynność na słabszych telefonach i mieć lekki fallback.
 - Po testach wizualnych rozwazyc wariant splash Lottie przygotowany w After
   Effects: skladanie platka z krysztalkow i bardziej organiczny slad mrozu.
   Warunki wdrozenia: maks. 2 s, maly plik animacji, brak regresji czasu startu
