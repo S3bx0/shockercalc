@@ -111,6 +111,10 @@ jobs:
           echo -e "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a" > ~/.buildozer/android/platform/android-sdk/licenses/google-android-sdk-arm-dbt-license
 
       - name: Build debug APK
+        env:
+          # APK packaging compresses the bundled Python runtime in memory. The
+          # Gradle default heap is too small for this project on GitHub runners.
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.workers.max=1"
         run: |
           set -o pipefail
           export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384"
