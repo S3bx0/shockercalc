@@ -355,7 +355,30 @@ jobs:
           report.write_text("\n".join(lines) + "\n", encoding="utf-8")
           PY
 
-      - name: Upload buildozer log (on failure)
+      - name: Sanitize buildozer log (on failure)
+        if: failure()
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("buildozer.log")
+          if not path.exists():
+              raise SystemExit(0)
+          text = path.read_text(encoding="utf-8", errors="replace")
+          for name in ("STORE_PASSWORD", "KEY_PASSWORD", "KEY_ALIAS"):
+              value = os.environ.get(name, "")
+              if value:
+                  text = text.replace(value, "***")
+          path.write_text(text, encoding="utf-8")
+          print("Sanitized buildozer.log before artifact upload.")
+          PY
+
+      - name: Upload sanitized buildozer log (on failure)
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

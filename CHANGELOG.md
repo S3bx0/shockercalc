@@ -27,6 +27,13 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dokumentacja wydania zawiera aktualną checklistę Play Console, deklaracji
   Firebase i gotowe informacje o wersji w języku polskim i angielskim.
 
+### Naprawione
+
+- Hook Firebase pomija pomocnicze szablony Gradle p4a i konfiguruje wyłącznie
+  właściwy projekt aplikacji.
+- Log Buildozera jest anonimizowany przed awaryjnym przesłaniem do artefaktów
+  GitHub Actions, aby nie zawierał wartości używanych do podpisywania.
+
 ## [1.3.2] - 2026-06-21
 
 ### Naprawione

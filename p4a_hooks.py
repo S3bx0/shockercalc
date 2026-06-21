@@ -250,7 +250,7 @@ def _patch_firebase_gradle(*roots, config_path=None):
 
         updated = text
         if marker not in updated:
-            updated, classpath_count = re.subn(
+            with_classpath, classpath_count = re.subn(
                 r"(?P<agp>\s*classpath\s+['\"]com\.android\.tools\.build:gradle:[^'\"]+['\"])",
                 (
                     r"\g<agp>\n"
@@ -258,7 +258,7 @@ def _patch_firebase_gradle(*roots, config_path=None):
                     "        classpath 'com.google.gms:google-services:4.5.0'\n"
                     "        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.7'"
                 ),
-                updated,
+                text,
                 count=1,
             )
             updated, plugin_count = re.subn(
@@ -268,11 +268,15 @@ def _patch_firebase_gradle(*roots, config_path=None):
                     "apply plugin: 'com.google.gms.google-services'\n"
                     "apply plugin: 'com.google.firebase.crashlytics'"
                 ),
-                updated,
+                with_classpath,
                 count=1,
             )
             if not classpath_count or not plugin_count:
-                raise RuntimeError("Nie rozpoznano szablonu Gradle p4a dla Firebase")
+                print(
+                    "[p4a hook] pominieto pomocniczy build.gradle Firebase:",
+                    path,
+                )
+                continue
 
         target_config = os.path.join(os.path.dirname(path), "google-services.json")
         shutil.copyfile(config_path, target_config)
@@ -281,6 +285,8 @@ def _patch_firebase_gradle(*roots, config_path=None):
                 fh.write(updated)
         patched += 1
         print("[p4a hook] skonfigurowano Firebase w:", path)
+    if not patched:
+        raise RuntimeError("Nie znaleziono glownego build.gradle aplikacji Firebase")
     print("[p4a hook] skonfigurowanych projektow Firebase:", patched)
     return patched
 

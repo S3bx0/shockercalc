@@ -141,6 +141,52 @@ android {}
     assert (project / "google-services.json").exists()
 
 
+def test_p4a_hook_skips_auxiliary_gradle_templates(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    main_gradle = project / "build.gradle"
+    main_gradle.write_text(
+        """buildscript {
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.0'
+    }
+}
+apply plugin: 'com.android.application'
+android {}
+""",
+        encoding="utf-8",
+    )
+    auxiliary = project / "src" / "sample" / "build.gradle"
+    auxiliary.parent.mkdir(parents=True)
+    auxiliary.write_text(
+        """apply plugin: 'com.android.application'
+android {}
+""",
+        encoding="utf-8",
+    )
+    config = tmp_path / "google-services.json"
+    config.write_text(
+        json.dumps(
+            {
+                "client": [
+                    {
+                        "client_info": {
+                            "android_client_info": {
+                                "package_name": "pl.smilczarek.refrigerationcalc"
+                            }
+                        }
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_firebase_gradle(project, config_path=config) == 1
+    assert "com.google.gms.google-services" in main_gradle.read_text(encoding="utf-8")
+    assert "com.google.gms.google-services" not in auxiliary.read_text(encoding="utf-8")
+
+
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):
     source_dir = tmp_path / "src/main/java/org/kivy/android"
     source_dir.mkdir(parents=True)
