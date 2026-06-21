@@ -21,9 +21,10 @@ from __future__ import annotations
 import logging
 import math
 import os
+import unicodedata
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from tpof.core import (
     ZAWORY,
@@ -401,6 +402,46 @@ CATEGORY_LABELS_EN = {
     "różne": "miscellaneous",
 }
 
+FEATURED_MOBILE_CATEGORIES = ("owoce", "warzywa")
+_POLISH_SORT_TRANSLATION = str.maketrans({"ł": "l", "Ł": "L"})
+
+
+def _mobile_sort_key(value: str) -> str:
+    """Zwraca stabilny klucz sortowania nazw polskich i angielskich."""
+    normalized = unicodedata.normalize("NFKD", value.translate(_POLISH_SORT_TRANSLATION))
+    return "".join(
+        char for char in normalized if not unicodedata.combining(char)
+    ).casefold()
+
+
+def _ordered_mobile_categories(
+    categories: List[str], display_name: Optional[Callable[[str], str]] = None
+) -> tuple[List[str], List[str]]:
+    """Umieszcza owoce i warzywa na początku, resztę sortuje alfabetycznie."""
+    display_name = display_name or (lambda category: category.replace("_", " "))
+    available = list(dict.fromkeys(categories))
+    featured = [category for category in FEATURED_MOBILE_CATEGORIES if category in available]
+    remaining = sorted(
+        (category for category in available if category not in featured),
+        key=lambda category: _mobile_sort_key(display_name(category)),
+    )
+    return featured, remaining
+
+
+def _is_mobile_hidden_product(category: str, product_name: str) -> bool:
+    """Ukrywa techniczne rekordy CTP wyłącznie w mobilnym selektorze."""
+    return category.casefold() == "różne" and product_name.casefold().endswith(
+        "_ctp aldi"
+    )
+
+
+def _mobile_product_names(catalog: Dict[str, List[Product]], category: str) -> List[str]:
+    return [
+        name
+        for name in list_products(catalog, category)
+        if not _is_mobile_hidden_product(category, name)
+    ]
+
 
 def _safe_image_path(nazwa: str) -> Optional[str]:
     """Zwraca ścieżkę do .webp/.png/.jpg dla produktu albo None."""
@@ -744,7 +785,9 @@ def main() -> None:
                     self._validation_bound_fields.add(field_id)
                 if not getattr(field, "error", False):
                     field.helper_text = self._t(hint_key) if self._hints_enabled else ""
-                    field.helper_text_mode = "on_focus" if self._hints_enabled else "none"
+                    # KivyMD 1.2.0 nie obsluguje trybu "none". Pusty tekst w
+                    # prawidlowym trybie on_focus daje ten sam efekt wizualny.
+                    field.helper_text_mode = "on_focus"
 
         def _clear_field_error(self, field):
             if not getattr(field, "error", False):
@@ -757,7 +800,7 @@ def main() -> None:
             field.helper_text = (
                 self._t(hint_key) if self._hints_enabled and hint_key else ""
             )
-            field.helper_text_mode = "on_focus" if field.helper_text else "none"
+            field.helper_text_mode = "on_focus"
 
         def _mark_field_error(self, field, message: Optional[str] = None):
             field.error = True
@@ -2614,6 +2657,10 @@ def main() -> None:
             from kivymd.uix.menu import MDDropdownMenu
 
             item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
+            featured, remaining = _ordered_mobile_categories(
+                categories, self._display_category
+            )
+            ordered = featured + remaining
             items = [
                 {
                     "text": self._display_category(cat),
@@ -2623,8 +2670,17 @@ def main() -> None:
                     "text_color": self._menu_text_color(),
                     "on_release": lambda c=cat: self._pick_category(c),
                 }
-                for cat in categories
+                for cat in ordered
             ]
+            if featured and remaining:
+                items.insert(
+                    len(featured),
+                    {
+                        "viewclass": "MDSeparator",
+                        "height": dp(1),
+                        "color": self.theme_cls.divider_color,
+                    },
+                )
             self._cat_menu = self._menu(caller, items, 3.7, dp(390), dp, MDDropdownMenu)
             self._cat_menu.open()
 
@@ -2649,7 +2705,9 @@ def main() -> None:
             item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
             unlocked = self._entitlements.is_unlocked(self._pro_no_ads)
             items = []
-            for idx, name in enumerate(list_products(catalog, self._selected_category)):
+            for idx, name in enumerate(
+                _mobile_product_names(catalog, self._selected_category)
+            ):
                 allowed = unlocked or idx < FREE_PRODUCTS_PER_CATEGORY
                 if allowed:
                     items.append(

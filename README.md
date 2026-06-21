@@ -157,6 +157,11 @@ wyłączony dla release p4a/Kivy, dlatego brak `mapping.txt` jest oczekiwany.
 
 ## Plany rozwoju
 
+- Rozważyć inspirowany dynamicznym emblematem Android 17 wariant intro:
+  centralny płatek, napis `REFRIGERATION` na górnym łuku i `CALC` na dolnym,
+  a pomiędzy pierścieniami małe płatki przyspieszające promieniście na zewnątrz
+  z efektem szybkiego przelotu. Animacja musi respektować ograniczenie ruchu,
+  utrzymywać płynność na słabszych telefonach i mieć lekki fallback.
 - Po testach wizualnych rozwazyc wariant splash Lottie przygotowany w After
   Effects: skladanie platka z krysztalkow i bardziej organiczny slad mrozu.
   Warunki wdrozenia: maks. 2 s, maly plik animacji, brak regresji czasu startu

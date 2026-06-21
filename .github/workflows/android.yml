@@ -112,14 +112,40 @@ jobs:
 
       - name: Build debug APK
         run: |
-          set -eo pipefail
+          set -o pipefail
           export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384"
           export APP_LDFLAGS="${APP_LDFLAGS:-} -Wl,-z,max-page-size=16384"
           export CFLAGS="${CFLAGS:-} -Dban_ALooper_pollAll=ALooper_pollOnce -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
           export CXXFLAGS="${CXXFLAGS:-} -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type"
           # `yes` ko\u0144czy si\u0119 SIGPIPE (141) gdy buildozer si\u0119 zamknie \u2014 nie jest to b\u0142\u0105d builda.
           # Akceptujemy exit code 0 lub 141; reszta = realny b\u0142\u0105d.
+          set +e
           ( yes || true ) | buildozer android debug 2>&1 | tee buildozer.log
+          build_status=${PIPESTATUS[1]}
+          set -e
+
+          if [ "$build_status" -ne 0 ]; then
+            echo "::warning::Buildozer failed; retrying the generated Gradle project with a full stack trace."
+            DIST_GRADLEW="$(find .buildozer -type f -path '*/dists/*/gradlew' -print -quit)"
+            if [ -z "$DIST_GRADLEW" ]; then
+              echo "::error::Generated Gradle wrapper was not found."
+              exit "$build_status"
+            fi
+            DIST_DIR="$(dirname "$DIST_GRADLEW")"
+            chmod +x "$DIST_GRADLEW"
+            (
+              cd "$DIST_DIR"
+              ./gradlew clean assembleDebug --stacktrace --no-daemon 2>&1
+            ) | tee -a "$GITHUB_WORKSPACE/buildozer.log"
+
+            APK_PATH="$(find "$DIST_DIR/build/outputs/apk/debug" -name '*.apk' -print -quit)"
+            if [ -z "$APK_PATH" ]; then
+              echo "::error::Gradle completed but no debug APK was found."
+              exit 1
+            fi
+            mkdir -p bin
+            cp "$APK_PATH" bin/refrigerationcalc-debug.apk
+          fi
 
       - name: Upload buildozer log (on failure)
         if: failure()

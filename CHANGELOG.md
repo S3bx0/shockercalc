@@ -4,6 +4,27 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.3.2] - 2026-06-21
+
+### Naprawione
+
+- Przełącznik podpowiedzi nie używa już nieobsługiwanej wartości
+  `helper_text_mode="none"` w KivyMD 1.2.0, która zamykała aplikację po
+  dotknięciu ikony żarówki.
+- Skorygowano błędnie przesunięte kolumny danych cieplnych produktów po
+  porównaniu wszystkich 206 wierszy z tabelą ASHRAE.
+- Workflow debug APK ponawia końcowe pakowanie Gradle z pełnym stack trace,
+  jeśli Buildozer zakończy się błędem w `packageDebug`.
+
+### Zmienione
+
+- Techniczne rekordy `*_CTP ALDI` są ukryte wyłącznie na mobilnej liście
+  produktów; pozostają dostępne w JSON i aplikacji desktopowej.
+- Mobilne menu kategorii pokazuje najpierw owoce i warzywa, następnie
+  separator i pozostałe kategorie w kolejności alfabetycznej.
+- Uzupełniono katalog o brakujące pozycje ASHRAE i rozdzielono sklejone
+  rekordy selera. Szczegóły zawiera `docs/THERMAL_DATA_AUDIT_2026-06-21.md`.
+
 ## [1.3.1] - 2026-06-21
 
 ### Dodane
