@@ -19,6 +19,7 @@ Build APK:
 from __future__ import annotations
 
 import logging
+import math
 import os
 from datetime import datetime
 from pathlib import Path
@@ -436,8 +437,12 @@ def main() -> None:
     try:
         from kivy.clock import Clock
         from kivy.core.window import Window
+        from kivy.graphics import Color, Line, Rectangle
+        from kivy.graphics.texture import Texture
         from kivy.metrics import dp
         from kivy.uix.image import AsyncImage
+        from kivy.uix.floatlayout import FloatLayout
+        from kivy.uix.widget import Widget
         from kivymd.app import MDApp
         from kivymd.uix.bottomnavigation import (
             MDBottomNavigation,
@@ -474,6 +479,107 @@ def main() -> None:
     custom_products = CustomProductStore()
     custom_products.merge_into(catalog)
     categories = list_categories(catalog)
+
+    class FrostBackground(Widget):
+        """Subtelne, wolno poruszajace sie lodowe refleksy pod interfejsem."""
+
+        PARTICLE_COUNT = 18
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self._elapsed = 0.0
+            self._dark = True
+            self._particles = [
+                {
+                    "x": ((index * 47) % 101) / 100.0,
+                    "y": ((index * 71 + 13) % 103) / 102.0,
+                    "speed": 0.0018 + (index % 5) * 0.00035,
+                    "phase": index * 1.73,
+                    "size": dp(1.6 + (index % 4) * 0.45),
+                }
+                for index in range(self.PARTICLE_COUNT)
+            ]
+
+            with self.canvas.before:
+                Color(1, 1, 1, 1)
+                self._background = Rectangle(pos=self.pos, size=self.size)
+
+            self._particle_graphics = []
+            with self.canvas:
+                for _particle in self._particles:
+                    color = Color(0.48, 0.86, 1.0, 0.14)
+                    horizontal = Line(width=0.65)
+                    vertical = Line(width=0.65)
+                    diagonal = Line(width=0.45)
+                    self._particle_graphics.append(
+                        (color, horizontal, vertical, diagonal)
+                    )
+
+            self.bind(pos=self._sync_background, size=self._sync_background)
+            self.set_dark(True)
+            self._animation_event = Clock.schedule_interval(
+                self._animate_particles, 1.0 / 15.0
+            )
+
+        def set_dark(self, dark: bool):
+            self._dark = bool(dark)
+            top = (5, 20, 38) if self._dark else (226, 244, 252)
+            bottom = (8, 52, 84) if self._dark else (184, 222, 241)
+            texture = Texture.create(size=(1, 96), colorfmt="rgba")
+            pixels = bytearray()
+            for row in range(96):
+                fraction = row / 95.0
+                eased = fraction * fraction * (3.0 - 2.0 * fraction)
+                pixels.extend(
+                    int(bottom[channel] * (1.0 - eased) + top[channel] * eased)
+                    for channel in range(3)
+                )
+                pixels.append(255)
+            texture.blit_buffer(bytes(pixels), colorfmt="rgba", bufferfmt="ubyte")
+            texture.mag_filter = "linear"
+            texture.min_filter = "linear"
+            self._background.texture = texture
+            self._gradient_texture = texture
+            for color, *_lines in self._particle_graphics:
+                color.rgba = (
+                    (0.48, 0.86, 1.0, 0.14)
+                    if self._dark
+                    else (0.12, 0.48, 0.68, 0.12)
+                )
+            self._sync_background()
+
+        def _sync_background(self, *_args):
+            self._background.pos = self.pos
+            self._background.size = self.size
+            self._position_particles()
+
+        def _animate_particles(self, dt):
+            self._elapsed += min(float(dt), 0.2)
+            for particle in self._particles:
+                particle["y"] += particle["speed"] * min(float(dt), 0.2) * 15.0
+                if particle["y"] > 1.04:
+                    particle["y"] = -0.04
+            self._position_particles()
+
+        def _position_particles(self):
+            if self.width <= 0 or self.height <= 0:
+                return
+            for particle, graphics in zip(
+                self._particles, self._particle_graphics
+            ):
+                _color, horizontal, vertical, diagonal = graphics
+                drift = math.sin(self._elapsed * 0.32 + particle["phase"]) * dp(5)
+                x = self.x + particle["x"] * self.width + drift
+                y = self.y + particle["y"] * self.height
+                size = particle["size"]
+                horizontal.points = [x - size, y, x + size, y]
+                vertical.points = [x, y - size, x, y + size]
+                diagonal.points = [
+                    x - size * 0.55,
+                    y - size * 0.55,
+                    x + size * 0.55,
+                    y + size * 0.55,
+                ]
 
     class ShockerCalcApp(MDApp):
         def build(self):
@@ -512,7 +618,15 @@ def main() -> None:
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
 
-            self.root_layout = MDBoxLayout(orientation="vertical", md_bg_color=SURFACE_DARK)
+            self.root_host = FloatLayout()
+            self.frost_background = FrostBackground()
+            self.root_layout = MDBoxLayout(
+                orientation="vertical",
+                md_bg_color=(0, 0, 0, 0),
+                size_hint=(1, 1),
+            )
+            self.root_host.add_widget(self.frost_background)
+            self.root_host.add_widget(self.root_layout)
             root = self.root_layout
 
             self.toolbar = self._build_toolbar(dp, MDBoxLayout, MDIcon, MDIconButton, MDLabel)
@@ -577,7 +691,7 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
             Clock.schedule_once(lambda *_: self._prompt_telemetry_consent(), 2.0)
             telemetry.log_event("app_started", {"language": self._language})
-            return root
+            return self.root_host
 
         # --- tekst / stan aplikacji -------------------------------------
         def _t(self, key: str, **kwargs) -> str:
@@ -1219,7 +1333,11 @@ def main() -> None:
         def _sync_theme_surfaces(self):
             surface = self._surface_bg()
             Window.clearcolor = surface
-            self.root_layout.md_bg_color = surface
+            self.root_layout.md_bg_color = (0, 0, 0, 0)
+            if hasattr(self, "frost_background"):
+                self.frost_background.set_dark(
+                    self.theme_cls.theme_style == "Dark"
+                )
             if hasattr(self, "toolbar"):
                 self.toolbar.md_bg_color = (0.12, 0.55, 0.86, 1)
             for card in self._themed_cards:

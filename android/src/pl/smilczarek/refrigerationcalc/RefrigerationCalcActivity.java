@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.Insets;
@@ -119,14 +120,74 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private FirebaseCrashlytics firebaseCrashlytics;
     private FirebaseRemoteConfig firebaseRemoteConfig;
     private boolean firebaseTelemetryAvailable;
+    private FrameLayout splashOverlay;
+    private RefrigerationSplashView splashView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         configureEdgeToEdge();
+        showAnimatedIntro();
         initializeFirebaseTelemetry();
         initializeBilling();
         initializeAds();
+    }
+
+    private void showAnimatedIntro() {
+        final View decor = getWindow().getDecorView();
+        if (!(decor instanceof ViewGroup)) {
+            return;
+        }
+
+        splashOverlay = new FrameLayout(this);
+        splashOverlay.setClickable(true);
+        splashOverlay.setFocusable(true);
+        splashOverlay.setImportantForAccessibility(
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        splashView = new RefrigerationSplashView(this);
+        splashOverlay.addView(
+                splashView,
+                new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+        ((ViewGroup) decor).addView(
+                splashOverlay,
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+        splashOverlay.bringToFront();
+        final RefrigerationSplashView introView = splashView;
+        splashOverlay.post(() -> {
+            if (splashView == introView) {
+                introView.start(this::fadeOutAnimatedIntro);
+            }
+        });
+    }
+
+    private void fadeOutAnimatedIntro() {
+        final FrameLayout overlay = splashOverlay;
+        if (overlay == null) {
+            return;
+        }
+        overlay.animate()
+                .alpha(0f)
+                .setDuration(240L)
+                .withEndAction(this::removeAnimatedIntro)
+                .start();
+    }
+
+    private void removeAnimatedIntro() {
+        if (splashView != null) {
+            splashView.stop();
+            splashView = null;
+        }
+        if (splashOverlay != null) {
+            ViewParent parent = splashOverlay.getParent();
+            if (parent instanceof ViewGroup) {
+                ((ViewGroup) parent).removeView(splashOverlay);
+            }
+            splashOverlay = null;
+        }
     }
 
     /**
@@ -1178,6 +1239,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
 
     @Override
     protected void onDestroy() {
+        removeAnimatedIntro();
         hideBanner();
         if (billingClient != null) {
             billingClient.endConnection();

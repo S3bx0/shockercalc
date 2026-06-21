@@ -6,6 +6,7 @@ import p4a_hooks
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalcActivity.java"
+SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationSplashView.java"
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -25,6 +26,26 @@ def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
     assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in source
     assert "recordPythonException" in source
     assert "custom_products_limit" in source
+
+
+def test_native_splash_is_lightweight_and_started_by_activity():
+    activity = ACTIVITY.read_text(encoding="utf-8")
+    splash = SPLASH_VIEW.read_text(encoding="utf-8")
+
+    assert "showAnimatedIntro();" in activity
+    assert "removeAnimatedIntro();" in activity
+    assert "ANIMATION_DURATION_MS = 1800L" in splash
+    assert "drawSnowflake" in splash
+    assert "drawFrostTrail" in splash
+    assert "com.airbnb.lottie" not in splash
+
+
+def test_launcher_uses_current_icon_as_static_presplash():
+    spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
+
+    assert "icon.filename = %(source.dir)s/assets/icon.png" in spec
+    assert "presplash.filename = %(source.dir)s/assets/icon.png" in spec
+    assert "android.presplash_color = #031427" in spec
 
 
 def test_build_config_supports_rotation_and_current_android_libraries():

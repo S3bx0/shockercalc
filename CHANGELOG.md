@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.3.1] - 2026-06-21
+
+### Dodane
+
+- Natywne, responsywne intro Android z animowanym platkiem sniegu, delikatnym
+  wirem drobinek, nazwa aplikacji i plynnym przejsciem do interfejsu.
+- Intro nie wymaga Lottie ani dodatkowych bibliotek i trwa okolo 1,8 sekundy.
+- Subtelne dynamiczne tlo aplikacji: lodowy gradient i wolno dryfujace
+  refleksy, zoptymalizowane do 15 klatek na sekunde.
+- Nowa ikona aplikacji z przestrzennym lodowo-metalicznym platkiem, przygotowana
+  w rozmiarach 512, 192 i 48 px.
+
+### Zmienione
+
+- Systemowy presplash uzywa aktualnej ikony platka i nowego granatowego tla,
+  dzieki czemu podczas zimnego startu nie pojawia sie stara nazwa Shocker Calc.
+
 ## [1.3.0] - 2026-06-20
 
 ### Dodane

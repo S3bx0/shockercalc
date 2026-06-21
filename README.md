@@ -132,6 +132,14 @@ Workflow debug może opcjonalnie przekazać APK testerom przez Firebase App
 Distribution. Pełna konfiguracja sekretów, Remote Config i zmian wymaganych w
 Play Console jest opisana w [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md).
 
+### Warstwa wizualna Android
+
+Przy zimnym starcie system pokazuje aktualna ikone platka, a nastepnie natywne
+intro Java (ok. 1,8 s) z obracajacym sie platkiem i lodowym sladem. Glowny
+interfejs ma lekki gradient oraz 18 bardzo wolno poruszajacych sie refleksow
+rysowanych pod kartami z limitem 15 klatek/s. Animacje nie wymagaja Lottie ani
+dodatkowych zaleznosci.
+
 ### Artefakty diagnostyczne Google Play
 
 Release workflow generuje dodatkowy artefakt `play-console-diagnostics`.
@@ -149,6 +157,11 @@ wyłączony dla release p4a/Kivy, dlatego brak `mapping.txt` jest oczekiwany.
 
 ## Plany rozwoju
 
+- Po testach wizualnych rozwazyc wariant splash Lottie przygotowany w After
+  Effects: skladanie platka z krysztalkow i bardziej organiczny slad mrozu.
+  Warunki wdrozenia: maks. 2 s, maly plik animacji, brak regresji czasu startu
+  oraz zachowanie obecnej animacji natywnej jako lekkiego fallbacku.
+- Kafelkowy ekran glowny dla kolejnych kalkulatorow i modulow.
 - Kolejna płatna karta funkcyjna: izolacja (`module_insulation`) jako
   niezależny produkt IAP.
 - Dalsze testy zamknięte i publikacja w Google Play.
