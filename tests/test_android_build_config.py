@@ -12,7 +12,12 @@ SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationS
 def test_activity_uses_modern_edge_to_edge_api():
     source = ACTIVITY.read_text(encoding="utf-8")
 
-    assert "WindowCompat.enableEdgeToEdge(getWindow())" in source
+    assert "Build.VERSION.SDK_INT >= 35" in source
+    assert "applyPlatformEdgeToEdgeInsets()" in source
+    assert "WindowInsets.Type.systemBars()" in source
+    assert "WindowInsets.Type.displayCutout()" in source
+    assert "import androidx.core.view.WindowCompat;" not in source
+    assert "WindowCompat.enableEdgeToEdge(getWindow())" not in source
     assert "setStatusBarColor" not in source
     assert "setNavigationBarColor" not in source
     assert "WindowCompat.setDecorFitsSystemWindows" not in source

@@ -5,6 +5,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,12 +18,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
-
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.android.billingclient.api.AcknowledgePurchaseParams;
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
@@ -357,13 +354,20 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                                 + (message == null ? "" : message)));
     }
 
-    /**
-     * Android 15 wymusza edge-to-edge dla targetSdk 35. Kivy rysuje jeden duzy
-     * widok, więc zabezpieczamy caly content paddingiem z system bars/cutout.
-     */
+    /** Android 15 wymusza edge-to-edge dla targetSdk 35. */
     private void configureEdgeToEdge() {
-        WindowCompat.enableEdgeToEdge(getWindow());
+        if (Build.VERSION.SDK_INT >= 35) {
+            applyPlatformEdgeToEdgeInsets();
+        }
+    }
 
+    /**
+     * Android 15+ sam wlacza edge-to-edge. Odczytujemy jedynie bezpieczne
+     * wciecia platformowym API, bez wycofanych metod kolorowania paskow ani
+     * kompatybilnosciowego shimu WindowCompat.enableEdgeToEdge().
+     */
+    @android.annotation.TargetApi(35)
+    private void applyPlatformEdgeToEdgeInsets() {
         View root = findViewById(android.R.id.content);
         if (root == null) {
             root = getWindow().getDecorView();
@@ -373,28 +377,22 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         final int initialRight = root.getPaddingRight();
         final int initialBottom = root.getPaddingBottom();
 
-        ViewCompat.setOnApplyWindowInsetsListener(
-                root,
-                new androidx.core.view.OnApplyWindowInsetsListener() {
-                    @Override
-                    public WindowInsetsCompat onApplyWindowInsets(
-                            View view,
-                            WindowInsetsCompat windowInsets) {
-                        Insets bars = windowInsets.getInsets(
-                                WindowInsetsCompat.Type.systemBars()
-                                        | WindowInsetsCompat.Type.displayCutout()
-                        );
-                        view.setPadding(
-                                initialLeft + bars.left,
-                                initialTop + bars.top,
-                                initialRight + bars.right,
-                                initialBottom + bars.bottom
-                        );
-                        return WindowInsetsCompat.CONSUMED;
-                    }
+        root.setOnApplyWindowInsetsListener(
+                (view, windowInsets) -> {
+                    Insets bars = windowInsets.getInsets(
+                            WindowInsets.Type.systemBars()
+                                    | WindowInsets.Type.displayCutout()
+                    );
+                    view.setPadding(
+                            initialLeft + bars.left,
+                            initialTop + bars.top,
+                            initialRight + bars.right,
+                            initialBottom + bars.bottom
+                    );
+                    return windowInsets;
                 }
         );
-        ViewCompat.requestApplyInsets(root);
+        root.requestApplyInsets();
     }
 
     private void initializeAds() {

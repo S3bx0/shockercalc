@@ -20,6 +20,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 - Systemowy presplash uzywa aktualnej ikony platka i nowego granatowego tla,
   dzieki czemu podczas zimnego startu nie pojawia sie stara nazwa Shocker Calc.
+- Obsluga edge-to-edge na Androidzie 15+ korzysta z wymuszanego przez system
+  trybu i platformowego `WindowInsets`. Kod aplikacji nie wywoluje juz
+  `WindowCompat.enableEdgeToEdge()`, ktory wewnetrznie uzywal wycofanych metod
+  kolorowania paskow systemowych.
 
 ## [1.3.0] - 2026-06-20
 

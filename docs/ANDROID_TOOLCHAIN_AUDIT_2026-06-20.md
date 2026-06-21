@@ -39,6 +39,29 @@ Core 1.19.0 nie jest obecnie dopuszczony do toru produkcyjnego, poniewaz jego
 metadane AAR wymagaja AGP 9.1.0. Core 1.18.0 zachowuje nowy interfejs
 `WindowCompat.enableEdgeToEdge()` i jest kompatybilny z AGP 8.11.
 
+### Raport Play Console: wycofane API edge-to-edge
+
+Raport dla wersji 29 (1.2.19) wskazal trzy miejsca:
+
+- `androidx.core.view.WindowCompat.enableEdgeToEdge`,
+- `com.google.android.gms.ads.internal.overlay.zzm.zzj`,
+- `com.google.android.play.core.hsdp.service.HsdpShimActivity.onCreate`.
+
+Pierwsze miejsce bylo wywolywane przez aplikacje. Od 1.3.1 Android 15+ korzysta
+z edge-to-edge wymuszanego przez system, a bezpieczne wciecia sa obslugiwane
+bezposrednio przez platformowy `WindowInsets`. Aplikacja nie wywoluje juz shimu
+`WindowCompat.enableEdgeToEdge()` ani metod `setStatusBarColor`,
+`setNavigationBarColor` czy parametru `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`.
+
+Dwa pozostale miejsca naleza do Google Mobile Ads / jego zaleznosci Google Play.
+Nie sa wywolywane przez kod aplikacji i nie mozna ich usunac bez usuniecia
+AdMob. Wersja 25.4.0 jest aktualna wersja przyjeta w tym torze. Ostrzezenie jest
+nieblokujace; nalezy je ponownie sprawdzic po analizie AAB 1.3.1 i aktualizowac
+SDK reklamowe, gdy Google opublikuje wersje bez tych wywolan.
+
+Dokumentacja zachowania Androida 15:
+https://developer.android.com/about/versions/15/behavior-changes-15#edge-to-edge
+
 ## Biblioteki Python
 
 Pakiety bezposrednie zostaly przypiete, aby kolejny build nie pobral innych
