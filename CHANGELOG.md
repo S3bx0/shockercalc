@@ -4,6 +4,21 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.1] - 2026-06-22
+
+### Naprawione
+
+- Intro odtwarza teraz zatwierdzony GIF 1:1 przez natywny dekoder Androida,
+  bez ponownego rysowania i deformacji logo.
+- Pierwsza klatka intro i jego kontener są nieprzezroczyste, dzięki czemu
+  interfejs aplikacji nie prześwituje podczas uruchamiania.
+
+### Dodane
+
+- Wydanie testowe działa do końca 15 lipca 2026; po tym terminie blokuje
+  funkcje i kieruje do aktualnego wydania w Google Play.
+- Dodano finalną grafikę promocyjną Google Play w formacie 1024 x 500 px.
+
 ## [1.4.0] - 2026-06-21
 
 ### Dodane

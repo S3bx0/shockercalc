@@ -9,13 +9,13 @@ package.domain = pl.smilczarek
 
 # Katalogi źródłowe
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,webp,ttf,json,kv,atlas
+source.include_exts = py,png,jpg,jpeg,gif,webp,ttf,json,kv,atlas
 source.include_patterns = assets/*,assets/**/*,tpof/**/*
-source.exclude_patterns = assets/brand/**,assets/store/play-icon-512.png
+source.exclude_patterns = assets/brand/**,assets/store/**
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.4.0
+version = 1.4.1
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -58,6 +58,7 @@ android.extra_ldflags = -Wl,-z,max-page-size=16384
 
 # AdMob / Google Mobile Ads SDK + Google Play Billing (PRO: no ads)
 android.add_src = %(source.dir)s/android/src
+android.add_resources = %(source.dir)s/android/res
 android.activity_class_name = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.entrypoint = pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity
 android.gradle_dependencies = com.google.android.gms:play-services-ads:25.4.0, com.android.billingclient:billing:9.1.0, com.google.android.ump:user-messaging-platform:4.0.0, androidx.core:core:1.18.0, androidx.fragment:fragment:1.8.9, com.google.firebase:firebase-analytics:23.2.0, com.google.firebase:firebase-crashlytics:20.0.6, com.google.firebase:firebase-config:23.1.0

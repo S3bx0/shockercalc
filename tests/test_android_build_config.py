@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import p4a_hooks
+from PIL import Image, ImageChops, ImageStat
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,17 +40,48 @@ def test_native_splash_is_lightweight_and_started_by_activity():
 
     assert "showAnimatedIntro();" in activity
     assert "removeAnimatedIntro();" in activity
-    assert "ANIMATION_DURATION_MS = 4600L" in splash
-    assert "drawSnowflake" in splash
-    assert "drawRadialSnowflakes" in splash
-    assert "drawOrbitComets" in splash
-    assert "POLYGON_SIDES = 8" in splash
-    assert "RADIAL_PARTICLE_COUNT = 22" in splash
-    assert "RADIAL_SPEEDS" in splash
-    assert "ORBIT_SPEEDS = {1.93f, 2.21f, 2.49f}" in splash
-    assert "255f * reveal" in splash
+    assert "ANIMATION_DURATION_MS = 4900L" in splash
+    assert '\"refrigeration_intro\", \"raw\"' in splash
+    assert "AnimatedImageDrawable" in splash
+    assert "Movie.decodeStream" in splash
+    assert "ScaleType.FIT_CENTER" in splash
+    assert "setBackgroundColor(Color.WHITE)" in splash
+    assert "splashOverlay.setBackgroundColor(Color.WHITE)" in activity
+    assert "getWindow().setBackgroundDrawableResource(android.R.color.white)" in activity
     assert "ValueAnimator.areAnimatorsEnabled()" in splash
     assert "com.airbnb.lottie" not in splash
+    assert "drawPolygon" not in splash
+
+    intro = ROOT / "android/res/raw/refrigeration_intro.gif"
+    assert intro.exists()
+    assert intro.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+
+
+def test_closed_test_build_expires_and_only_links_to_google_play():
+    source = ACTIVITY.read_text(encoding="utf-8")
+
+    assert "TEST_BUILD_EXPIRES_AT_EPOCH_MS = 1784152800000L" in source
+    assert "if (isClosedTestBuildExpired())" in source
+    assert "showExpiredBuildGate();" in source
+    assert "market://details?id=" in source
+    assert "https://play.google.com/store/apps/details?id=" in source
+    assert "Ta wersja testowa działała do 15 lipca 2026" in source
+    assert "public void onBackPressed()" in source
+
+
+def test_intro_final_frame_matches_approved_emblem():
+    intro_path = ROOT / "android/res/raw/refrigeration_intro.gif"
+    reference_path = ROOT / "assets/brand/approved-emblem-reference.png"
+
+    with Image.open(intro_path) as animation, Image.open(reference_path) as reference:
+        animation.seek(animation.n_frames - 1)
+        frame = animation.convert("RGB")
+        resized_reference = reference.convert("RGB").resize(
+            frame.size, Image.Resampling.LANCZOS
+        )
+        difference = ImageStat.Stat(ImageChops.difference(frame, resized_reference))
+
+    assert max(difference.mean) < 3.0
 
 
 def test_launcher_uses_current_icon_as_static_presplash():
@@ -58,7 +90,9 @@ def test_launcher_uses_current_icon_as_static_presplash():
     assert "icon.filename = %(source.dir)s/assets/icon.png" in spec
     assert "presplash.filename = %(source.dir)s/assets/presplash.png" in spec
     assert "android.presplash_color = #FFFFFF" in spec
-    assert "source.exclude_patterns = assets/brand/**,assets/store/play-icon-512.png" in spec
+    assert "android.add_resources = %(source.dir)s/android/res" in spec
+    assert "source.include_exts = py,png,jpg,jpeg,gif,webp" in spec
+    assert "source.exclude_patterns = assets/brand/**,assets/store/**" in spec
     assert "source.exclude_dirs = tests, tools," in spec
 
 
