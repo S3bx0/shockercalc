@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -495,19 +496,32 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                                 + (message == null ? "" : message)));
     }
 
-    /** Android 15 wymusza edge-to-edge dla targetSdk 35. */
+    /** Jawnie wlacza edge-to-edge na platformach, ktore maja natywne API okna. */
     private void configureEdgeToEdge() {
-        if (Build.VERSION.SDK_INT >= 35) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            enablePlatformEdgeToEdge();
             applyPlatformEdgeToEdgeInsets();
         }
     }
 
     /**
-     * Android 15+ sam wlacza edge-to-edge. Odczytujemy jedynie bezpieczne
-     * wciecia platformowym API, bez wycofanych metod kolorowania paskow ani
-     * kompatybilnosciowego shimu WindowCompat.enableEdgeToEdge().
+     * Uzywamy bezposrednio aktualnego API platformy. AndroidX EdgeToEdge nadal
+     * zawiera SHORT_EDGES dla starszych wersji systemu, co Play Console zglasza
+     * jako wycofany parametr nawet wtedy, gdy Android 15 go nie wykonuje.
      */
-    @android.annotation.TargetApi(35)
+    @android.annotation.TargetApi(30)
+    private void enablePlatformEdgeToEdge() {
+        getWindow().setDecorFitsSystemWindows(false);
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        if (attributes.layoutInDisplayCutoutMode
+                != WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS) {
+            attributes.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+            getWindow().setAttributes(attributes);
+        }
+    }
+
+    @android.annotation.TargetApi(30)
     private void applyPlatformEdgeToEdgeInsets() {
         View root = findViewById(android.R.id.content);
         if (root == null) {

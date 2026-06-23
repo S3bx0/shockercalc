@@ -4,6 +4,17 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.2] - 2026-06-23
+
+### Naprawione
+
+- Skrócono nazwę wyświetlaną pod ikoną do `Refrig Calc`; pełna nazwa marki
+  pozostaje bez zmian w aplikacji i Google Play.
+- Jawnie włączono edge-to-edge przez aktualne API platformy Android 11+ oraz
+  ustawiono bezpieczny tryb wycięcia ekranu `ALWAYS`.
+- Zachowano obsługę wcięć pasków systemowych i aparatu bez używania helpera
+  AndroidX zawierającego wycofany parametr `SHORT_EDGES`.
+
 ## [1.4.1] - 2026-06-22
 
 ### Naprawione

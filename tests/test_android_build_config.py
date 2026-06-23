@@ -13,8 +13,12 @@ SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationS
 def test_activity_uses_modern_edge_to_edge_api():
     source = ACTIVITY.read_text(encoding="utf-8")
 
-    assert "Build.VERSION.SDK_INT >= 35" in source
+    assert "Build.VERSION.SDK_INT >= 30" in source
+    assert "enablePlatformEdgeToEdge()" in source
     assert "applyPlatformEdgeToEdgeInsets()" in source
+    assert "getWindow().setDecorFitsSystemWindows(false)" in source
+    assert "LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS" in source
+    assert "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" not in source
     assert "WindowInsets.Type.systemBars()" in source
     assert "WindowInsets.Type.displayCutout()" in source
     assert "import androidx.core.view.WindowCompat;" not in source
@@ -87,6 +91,7 @@ def test_intro_final_frame_matches_approved_emblem():
 def test_launcher_uses_current_icon_as_static_presplash():
     spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
 
+    assert "title = Refrig Calc" in spec
     assert "icon.filename = %(source.dir)s/assets/icon.png" in spec
     assert "presplash.filename = %(source.dir)s/assets/presplash.png" in spec
     assert "android.presplash_color = #FFFFFF" in spec

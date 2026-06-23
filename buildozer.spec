@@ -1,7 +1,7 @@
 [app]
 
 # Nazwa aplikacji widoczna na ekranie urządzenia
-title = Refrigeration Calc
+title = Refrig Calc
 
 # Nazwa pakietu (musi być unikalna w Google Play)
 package.name = refrigerationcalc
@@ -15,7 +15,7 @@ source.exclude_patterns = assets/brand/**,assets/store/**
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.4.1
+version = 1.4.2
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
