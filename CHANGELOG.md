@@ -4,6 +4,19 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.3] - 2026-06-23
+
+### Dodano
+
+- Wyszukiwarkę produktów w nowym, przewijanym oknie wyboru.
+- Wyszukiwanie bez rozróżniania wielkości liter i polskich znaków.
+- Lokalną sekcję ostatnio używanych produktów dla każdej kategorii.
+
+### Zmieniono
+
+- Długa lista produktów nie jest już klasycznym menu rozwijanym; blokady PRO
+  zachowują dotychczasowe zasady i pozycje produktów.
+
 ## [1.4.2] - 2026-06-23
 
 ### Naprawione

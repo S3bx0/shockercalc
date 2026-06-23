@@ -65,6 +65,74 @@ class UiPreferences:
 
     def set_hints_enabled(self, enabled: bool) -> None:
         self._data["hints_enabled"] = bool(enabled)
+        self._save()
+
+    @property
+    def recent_products(self) -> List[tuple[str, str]]:
+        """Zwraca ostatnio wybrane produkty od najnowszego."""
+        result: List[tuple[str, str]] = []
+        raw_items = self._data.get("recent_products", [])
+        if not isinstance(raw_items, list):
+            return result
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            category = str(item.get("category", "")).strip()
+            name = str(item.get("name", "")).strip()
+            if category and name:
+                result.append((category, name))
+        return result
+
+    def recent_products_for_category(
+        self,
+        category: str,
+        available_names: Optional[List[str]] = None,
+    ) -> List[str]:
+        """Filtruje historię do kategorii i aktualnie dostępnej listy."""
+        wanted_category = str(category or "").casefold()
+        canonical = {
+            name.casefold(): name for name in (available_names or []) if name
+        }
+        result: List[str] = []
+        for stored_category, stored_name in self.recent_products:
+            if stored_category.casefold() != wanted_category:
+                continue
+            if canonical:
+                name = canonical.get(stored_name.casefold())
+                if name is None:
+                    continue
+            else:
+                name = stored_name
+            if name not in result:
+                result.append(name)
+        return result
+
+    def add_recent_product(
+        self,
+        category: str,
+        name: str,
+        *,
+        limit: int = 24,
+    ) -> None:
+        """Dodaje produkt na początek historii i usuwa duplikaty."""
+        category = str(category or "").strip()
+        name = str(name or "").strip()
+        if not category or not name:
+            return
+        key = (category.casefold(), name.casefold())
+        recent = [
+            (stored_category, stored_name)
+            for stored_category, stored_name in self.recent_products
+            if (stored_category.casefold(), stored_name.casefold()) != key
+        ]
+        recent.insert(0, (category, name))
+        self._data["recent_products"] = [
+            {"category": stored_category, "name": stored_name}
+            for stored_category, stored_name in recent[: max(1, int(limit))]
+        ]
+        self._save()
+
+    def _save(self) -> None:
         try:
             _write_json(self.path, self._data)
         except OSError:

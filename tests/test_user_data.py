@@ -36,6 +36,33 @@ def test_hints_are_enabled_by_default_and_persist(tmp_path):
     assert UiPreferences(path).hints_enabled is False
 
 
+def test_recent_products_are_deduplicated_limited_and_persisted(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    preferences.add_recent_product("owoce", "Banany", limit=3)
+    preferences.add_recent_product("warzywa", "Brokuły", limit=3)
+    preferences.add_recent_product("owoce", "Ananas", limit=3)
+    preferences.add_recent_product("owoce", "Banany", limit=3)
+
+    restored = UiPreferences(path)
+    assert restored.recent_products == [
+        ("owoce", "Banany"),
+        ("owoce", "Ananas"),
+        ("warzywa", "Brokuły"),
+    ]
+    assert restored.recent_products_for_category(
+        "OWOCE", ["Ananas", "Banany", "Arbuz"]
+    ) == ["Banany", "Ananas"]
+
+
+def test_recent_products_ignore_missing_catalog_entries(tmp_path):
+    preferences = UiPreferences(tmp_path / "preferences.json")
+    preferences.add_recent_product("owoce", "Usunięty produkt")
+
+    assert preferences.recent_products_for_category("owoce", ["Banany"]) == []
+
+
 def test_numeric_filter_accepts_polish_decimal_comma_and_minus():
     assert _numeric_input_filter("-12,5 kg") == "-12,5"
 

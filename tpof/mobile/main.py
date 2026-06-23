@@ -71,6 +71,35 @@ def _numeric_input_filter(value: str, _from_undo: bool = False) -> str:
     return "".join(char for char in str(value) if char in "0123456789-.,")
 
 
+def _search_key(value: str) -> str:
+    """Normalizuje tekst do wyszukiwania bez wielkości liter i akcentów."""
+    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
+    text = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return text.replace("ł", "l")
+
+
+def _search_product_names(names: List[str], query: str) -> List[str]:
+    """Filtruje produkty, preferując początek nazwy i początek słowa."""
+    normalized_query = _search_key(query).strip()
+    if not normalized_query:
+        return list(names)
+    tokens = normalized_query.split()
+    matches = []
+    for index, name in enumerate(names):
+        normalized_name = _search_key(name)
+        if not all(token in normalized_name for token in tokens):
+            continue
+        words = normalized_name.split()
+        if normalized_name.startswith(normalized_query):
+            rank = 0
+        elif any(word.startswith(tokens[0]) for word in words):
+            rank = 1
+        else:
+            rank = 2
+        matches.append((rank, index, name))
+    return [name for _rank, _index, name in sorted(matches)]
+
+
 def _purge_host_arch_fonttools_so() -> None:
     """Usuwa host-arch (.so) rozszerzenia fonttools z rozpakowanego bundla.
 
@@ -120,7 +149,12 @@ I18N = {
         "product": "Produkt",
         "choose_category": "Wybierz kategorię",
         "choose_product": "Wybierz produkt",
-        "product_hint": "Najpierw wybierz kategorię, potem produkt. Przycisk + dodaje własny produkt w PRO.",
+        "product_hint": "Wybierz kategorię, a produkt znajdź przez wyszukiwarkę lub ostatnie wybory. Przycisk + dodaje własny produkt w PRO.",
+        "product_picker_title": "Wybierz produkt",
+        "search_products": "Szukaj produktu",
+        "recent_products": "Ostatnio używane",
+        "all_products": "Wszystkie produkty",
+        "no_products_found": "Brak produktów pasujących do wyszukiwania",
         "add_custom_product": "Dodaj własny produkt",
         "custom_product_pro": "Własne produkty są dostępne w aktywnej wersji PRO.",
         "custom_product_title": "Własny produkt",
@@ -251,7 +285,12 @@ I18N = {
         "product": "Product",
         "choose_category": "Choose category",
         "choose_product": "Choose product",
-        "product_hint": "Choose a category first, then a product. The + button adds a custom PRO product.",
+        "product_hint": "Choose a category, then find a product using search or recent selections. The + button adds a custom PRO product.",
+        "product_picker_title": "Choose product",
+        "search_products": "Search products",
+        "recent_products": "Recently used",
+        "all_products": "All products",
+        "no_products_found": "No matching products",
         "add_custom_product": "Add custom product",
         "custom_product_pro": "Custom products require an active PRO subscription.",
         "custom_product_title": "Custom product",
@@ -640,6 +679,11 @@ def main() -> None:
             self._mass_unit: str = "kg"
             self._cat_menu: Optional[MDDropdownMenu] = None
             self._prod_menu: Optional[MDDropdownMenu] = None
+            self._product_dialog = None
+            self._product_search_field = None
+            self._product_results_list = None
+            self._product_dialog_names: List[str] = []
+            self._product_dialog_indexes: Dict[str, int] = {}
             self._last_results = None
             self._themed_cards = []
             self._language = "pl"
@@ -740,6 +784,7 @@ def main() -> None:
             return text.format(**kwargs) if kwargs else text
 
         def _toggle_language(self):
+            self._close_product_dialog()
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
 
@@ -2642,6 +2687,7 @@ def main() -> None:
             categories[:] = list_categories(catalog)
             self._selected_category = product.kategoria
             self._selected_product = product.nazwa
+            self._preferences.add_recent_product(product.kategoria, product.nazwa)
             self.btn_category.text = self._display_category(product.kategoria)
             self.btn_product.text = product.nazwa
             self.btn_product.disabled = False
@@ -2698,55 +2744,148 @@ def main() -> None:
 
         def _open_product_menu(self, caller):
             from kivy.metrics import dp
-            from kivymd.uix.menu import MDDropdownMenu
+            from kivy.uix.scrollview import ScrollView
+            from kivymd.uix.boxlayout import MDBoxLayout
+            from kivymd.uix.button import MDFlatButton
+            from kivymd.uix.dialog import MDDialog
+            from kivymd.uix.list import MDList
+            from kivymd.uix.textfield import MDTextField
 
             if not self._selected_category:
                 return
-            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
+            self._close_product_dialog()
+            self._product_dialog_names = _mobile_product_names(
+                catalog, self._selected_category
+            )
+            self._product_dialog_indexes = {
+                name: index for index, name in enumerate(self._product_dialog_names)
+            }
+
+            outer = MDBoxLayout(
+                orientation="vertical",
+                spacing=dp(8),
+                size_hint_y=None,
+                height=min(dp(520), max(dp(340), Window.height * 0.66)),
+            )
+            self._product_search_field = MDTextField(
+                hint_text=self._t("search_products"),
+                icon_right="magnify",
+                mode="rectangle",
+                size_hint_y=None,
+                height=dp(58),
+            )
+            outer.add_widget(self._product_search_field)
+            results_scroll = ScrollView(do_scroll_x=False)
+            self._product_results_list = MDList()
+            results_scroll.add_widget(self._product_results_list)
+            outer.add_widget(results_scroll)
+
+            self._product_dialog = MDDialog(
+                title=self._t("product_picker_title"),
+                type="custom",
+                content_cls=outer,
+                buttons=[
+                    MDFlatButton(
+                        text=self._t("close"),
+                        on_release=lambda *_: self._close_product_dialog(),
+                    )
+                ],
+            )
+            self._product_search_field.bind(
+                text=lambda _field, value: self._refresh_product_search_results(value)
+            )
+            self._refresh_product_search_results("")
+            self._product_dialog.open()
+
+        def _add_product_search_item(self, name: str, item_height) -> None:
+            from kivymd.uix.list import OneLineListItem
+
+            index = self._product_dialog_indexes.get(name, 10**9)
             unlocked = self._entitlements.is_unlocked(self._pro_no_ads)
-            items = []
-            for idx, name in enumerate(
-                _mobile_product_names(catalog, self._selected_category)
-            ):
-                allowed = unlocked or idx < FREE_PRODUCTS_PER_CATEGORY
-                if allowed:
-                    items.append(
-                        {
-                            "text": name,
-                            "viewclass": "OneLineListItem",
-                            "height": item_height,
-                            "theme_text_color": "Custom",
-                            "text_color": self._menu_text_color(),
-                            "on_release": lambda n=name: self._pick_product(n),
-                        }
-                    )
-                else:
-                    items.append(
-                        {
-                            "text": f"{name}{self._t('locked_suffix')}",
-                            "viewclass": "OneLineListItem",
-                            "height": item_height,
-                            "theme_text_color": "Custom",
-                            "text_color": (0.55, 0.58, 0.62, 1),
-                            "on_release": lambda *_: self._on_locked_product(),
-                        }
-                    )
-            self._prod_menu = self._menu(caller, items, 4.4, dp(420), dp, MDDropdownMenu)
-            self._prod_menu.open()
+            allowed = unlocked or index < FREE_PRODUCTS_PER_CATEGORY
+            item = OneLineListItem(
+                text=name if allowed else f"{name}{self._t('locked_suffix')}",
+                height=item_height,
+                theme_text_color="Custom",
+                text_color=(
+                    self._menu_text_color()
+                    if allowed
+                    else (0.55, 0.58, 0.62, 1)
+                ),
+                on_release=(
+                    (lambda *_args, n=name: self._pick_product(n))
+                    if allowed
+                    else (lambda *_args: self._on_locked_product())
+                ),
+            )
+            self._product_results_list.add_widget(item)
+
+        def _add_product_search_heading(self, text: str, dp) -> None:
+            from kivymd.uix.label import MDLabel
+
+            self._product_results_list.add_widget(
+                MDLabel(
+                    text=text,
+                    size_hint_y=None,
+                    height=dp(34),
+                    font_style="Caption",
+                    theme_text_color="Secondary",
+                    padding=(dp(12), 0),
+                )
+            )
+
+        def _refresh_product_search_results(self, query: str) -> None:
+            from kivy.metrics import dp
+
+            if self._product_results_list is None:
+                return
+            self._product_results_list.clear_widgets()
+            names = _search_product_names(self._product_dialog_names, query)
+            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
+            if not names:
+                self._add_product_search_heading(self._t("no_products_found"), dp)
+                return
+
+            if not str(query or "").strip():
+                recent = self._preferences.recent_products_for_category(
+                    self._selected_category or "",
+                    self._product_dialog_names,
+                )[:4]
+                if recent:
+                    self._add_product_search_heading(self._t("recent_products"), dp)
+                    for name in recent:
+                        self._add_product_search_item(name, item_height)
+                    self._add_product_search_heading(self._t("all_products"), dp)
+
+            for name in names:
+                self._add_product_search_item(name, item_height)
+
+        def _close_product_dialog(self) -> None:
+            dialog = getattr(self, "_product_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+            self._product_dialog = None
+            self._product_search_field = None
+            self._product_results_list = None
 
         def _on_locked_product(self):
             if self._prod_menu:
                 self._prod_menu.dismiss()
+            self._close_product_dialog()
             self._show_error(self._t("product_locked"))
 
         def _pick_product(self, name: str):
             self._selected_product = name
+            self._preferences.add_recent_product(
+                self._selected_category or "", name
+            )
             self.btn_product.text = name
             self.product_error_line.opacity = 0
             img = _safe_image_path(name)
             self._show_product_image(img)
             if self._prod_menu:
                 self._prod_menu.dismiss()
+            self._close_product_dialog()
 
         # --- akcje -------------------------------------------------------
         def _toggle_mass_unit(self):
@@ -2761,6 +2900,7 @@ def main() -> None:
                 self.btn_unit.text_color = (1, 1, 1, 1)
 
         def _toggle_theme(self):
+            self._close_product_dialog()
             is_dark = self.theme_cls.theme_style == "Dark"
             self.theme_cls.theme_style = "Light" if is_dark else "Dark"
             self._sync_theme_surfaces()

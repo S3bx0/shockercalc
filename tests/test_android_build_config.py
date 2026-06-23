@@ -10,6 +10,16 @@ ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalc
 SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationSplashView.java"
 
 
+def test_release_version_is_consistent():
+    spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
+    package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert "version = 1.4.3" in spec
+    assert '__version__ = "1.4.3"' in package_init
+    assert 'version = "1.4.3"' in pyproject
+
+
 def test_activity_uses_modern_edge_to_edge_api():
     source = ACTIVITY.read_text(encoding="utf-8")
 

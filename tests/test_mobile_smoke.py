@@ -64,6 +64,29 @@ def test_kolejnosc_kategorii_mobilnych_ma_wyrozniony_poczatek():
     assert remaining == ["drób", "ryby", "sery"]
 
 
+def test_wyszukiwanie_produktow_ignoruje_polskie_znaki_i_wielkosc_liter():
+    from tpof.mobile.main import _search_product_names
+
+    names = ["Śliwki suszone", "Mleko", "Łosoś", "Śliwki świeże"]
+
+    assert _search_product_names(names, "SLIWKI") == [
+        "Śliwki suszone",
+        "Śliwki świeże",
+    ]
+    assert _search_product_names(names, "losos") == ["Łosoś"]
+
+
+def test_wyszukiwanie_produktow_preferuje_poczatek_nazwy():
+    from tpof.mobile.main import _search_product_names
+
+    names = ["Brzoskwinie suszone", "Suszone morele", "Morele suszone"]
+
+    assert _search_product_names(names, "morele") == [
+        "Morele suszone",
+        "Suszone morele",
+    ]
+
+
 def test_paths_wskazuja_na_istniejace_zasoby():
     from tpof.mobile.paths import DATA_PATH, IMAGES_DIR
 
