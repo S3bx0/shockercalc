@@ -1,4 +1,7 @@
 import json
+import gzip
+import io
+import tarfile
 from pathlib import Path
 
 import p4a_hooks
@@ -15,9 +18,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.4.3" in spec
-    assert '__version__ = "1.4.3"' in package_init
-    assert 'version = "1.4.3"' in pyproject
+    assert "version = 1.4.4" in spec
+    assert '__version__ = "1.4.4"' in package_init
+    assert 'version = "1.4.4"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -107,8 +110,26 @@ def test_launcher_uses_current_icon_as_static_presplash():
     assert "android.presplash_color = #FFFFFF" in spec
     assert "android.add_resources = %(source.dir)s/android/res" in spec
     assert "source.include_exts = py,png,jpg,jpeg,gif,webp" in spec
-    assert "source.exclude_patterns = assets/brand/**,assets/store/**" in spec
+    assert "source.include_patterns =\n" in spec
+    assert "assets/watermark.png" in spec
+    assert "assets/fonts/**" in spec
+    assert "assets/icon.png" in spec
+    assert "assets/presplash.png" in spec
+    assert "android/**" in spec
+    assert "tpof/desktop/**" in spec
     assert "source.exclude_dirs = tests, tools," in spec
+
+
+def test_product_images_are_mobile_sized_and_bounded():
+    image_dir = ROOT / "assets" / "images"
+    images = sorted(image_dir.glob("*.webp"))
+
+    assert len(images) >= 200
+    assert sum(path.stat().st_size for path in images) < 9 * 1024 * 1024
+    for path in images:
+        with Image.open(path) as image:
+            assert image.width <= 512, path.name
+            assert image.height <= 512, path.name
 
 
 def test_build_config_supports_rotation_and_current_android_libraries():
@@ -139,6 +160,7 @@ def test_workflows_pin_reproducible_build_tools():
         assert "actions/upload-artifact@v4" not in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON_BASE64" in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE" in workflow
+        assert "tools/android_size_report.py" in workflow
 
     debug_workflow = (ROOT / ".github/workflows/android.yml").read_text(
         encoding="utf-8"
@@ -263,3 +285,29 @@ class PythonActivity {
 
     assert "setRequestedOrientation" not in patched
     assert "ActivityInfo" not in patched
+
+
+def test_p4a_hook_strips_only_fonttools_build_payload(tmp_path):
+    bundle = tmp_path / "libpybundle.so"
+    raw = io.BytesIO()
+    with tarfile.open(fileobj=raw, mode="w") as archive:
+        for name, data in {
+            "_python_bundle/site-packages/fontTools/misc/bezierTools.c": b"c" * 100,
+            "_python_bundle/site-packages/fontTools/misc/bezierTools.so": b"so" * 100,
+            "_python_bundle/site-packages/fontTools/misc/bezierTools.pyc": b"pyc",
+            "_python_bundle/site-packages/fpdf/fpdf.pyc": b"fpdf",
+        }.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    bundle.write_bytes(gzip.compress(raw.getvalue(), mtime=0))
+
+    p4a_hooks._strip_python_bundle_payload(tmp_path)
+
+    unpacked = gzip.decompress(bundle.read_bytes())
+    with tarfile.open(fileobj=io.BytesIO(unpacked), mode="r:") as archive:
+        names = set(archive.getnames())
+    assert not any(name.endswith(".c") for name in names)
+    assert not any(name.endswith(".so") for name in names)
+    assert any(name.endswith("bezierTools.pyc") for name in names)
+    assert any(name.endswith("fpdf.pyc") for name in names)

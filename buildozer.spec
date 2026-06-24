@@ -10,12 +10,12 @@ package.domain = pl.smilczarek
 # Katalogi źródłowe
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,gif,webp,ttf,json,kv,atlas
-source.include_patterns = assets/*,assets/**/*,tpof/**/*
-source.exclude_patterns = assets/brand/**,assets/store/**
+source.include_patterns =
+source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets/watermark.png,assets/icon.png,assets/icon-192.png,assets/icon-48.png,assets/presplash.png,android/**,tpof/desktop/**
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.4.3
+version = 1.4.4
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.

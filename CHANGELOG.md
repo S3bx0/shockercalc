@@ -4,6 +4,25 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.4] - 2026-06-24
+
+### Zmieniono
+
+- Usunięto właściwości cieplne produktu z mobilnej karty wyników i mobilnego
+  PDF. Dane pozostają wewnętrznym wejściem obliczeń i nadal są dostępne w
+  aplikacji desktopowej.
+- Zmniejszono 39 nadmiarowych grafik produktów z 1024 x 1024 do 512 x 512;
+  katalog grafik zmalał z 23,56 do 8,48 MiB.
+- Mobilna paczka nie zawiera już materiałów marki i sklepu, znaku wodnego,
+  kopii zasobów Androida, kodu desktopowego ani drugiej kopii fontu DejaVu.
+- Hook p4a usuwa ze skompresowanego bundla Pythona źródła C i niezgodne
+  rozszerzenia natywne `fontTools`, pozostawiając bezpieczny fallback Python.
+
+### Dodano
+
+- Automatyczny raport rozmiaru APK/AAB w artefaktach GitHub Actions.
+- Audyt rozmiaru Androida z pomiarami i dalszym planem optymalizacji.
+
 ## [1.4.3] - 2026-06-23
 
 ### Dodano

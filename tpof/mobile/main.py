@@ -5,7 +5,6 @@ UI w parytecie z desktopem:
   • kaskadowy wybór Kategoria → Produkt
   • masa z przełącznikiem jednostek kg/t
   • paski mocy (schładzanie / zamrożenie / domrażanie) + SUMA
-  • tabela właściwości produktu
   • opcjonalne zdjęcie produktu z assets/images
   • Snackbar dla błędów walidacji
 
@@ -38,7 +37,7 @@ from tpof.core import (
     load_products,
 )
 from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
-from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR, WATERMARK_PATH
+from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR
 from tpof.mobile import telemetry
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 
@@ -64,6 +63,19 @@ SURFACE_DARK = (0.05, 0.08, 0.11, 1)
 SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
 
 _FONTTOOLS_SO_PURGED = False
+
+
+def _runtime_font_path() -> Optional[Path]:
+    """Używa fontu aplikacji albo kopii DejaVu dostarczanej przez Kivy."""
+    if FONT_PATH.exists():
+        return FONT_PATH
+    try:
+        from kivy.resources import resource_find
+
+        found = resource_find("data/fonts/DejaVuSans.ttf")
+        return Path(found) if found else None
+    except ImportError:
+        return None
 
 
 def _numeric_input_filter(value: str, _from_undo: bool = False) -> str:
@@ -531,7 +543,6 @@ def main() -> None:
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDIconButton, MDRaisedButton
         from kivymd.uix.card import MDCard
-        from kivymd.uix.gridlayout import MDGridLayout
         from kivymd.uix.label import MDIcon, MDLabel
         from kivymd.uix.menu import MDDropdownMenu
         from kivymd.uix.progressbar import MDProgressBar
@@ -543,14 +554,14 @@ def main() -> None:
             "    python -m pip install -r requirements-mobile.txt"
         ) from exc
 
-    # Rejestracja fontu DejaVuSans (pełen Unicode — subscripty, symbole)
-    # — działa zarówno na desktopie jak i na Androidzie (font jest w assets/).
+    # Rejestracja fontu DejaVuSans (pełen Unicode — subscripty, symbole).
     try:
         from kivy.core.text import LabelBase
 
-        if FONT_PATH.exists():
-            LabelBase.register(name="DejaVuSans", fn_regular=str(FONT_PATH))
-            log.info("Zarejestrowano font DejaVuSans z %s", FONT_PATH)
+        runtime_font = _runtime_font_path()
+        if runtime_font is not None:
+            LabelBase.register(name="DejaVuSans", fn_regular=str(runtime_font))
+            log.info("Zarejestrowano font DejaVuSans z %s", runtime_font)
     except Exception:  # pragma: no cover
         log.exception("Nie udało się zarejestrować fontu DejaVuSans")
 
@@ -732,7 +743,7 @@ def main() -> None:
             )
             content.add_widget(self._build_params_card(dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton))
             self.results_card = self._build_results_card(
-                dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout, MDRaisedButton
+                dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDRaisedButton
             )
             content.add_widget(self.results_card)
 
@@ -937,8 +948,6 @@ def main() -> None:
             card_pad_bottom = card_pad + (5 if compact else 6)
             content_pad = 10 if narrow else 14 if compact else 16
             stage_row_h = 56 if compact or short else 62
-            props_row_h = 22 if compact or short else 24
-            props_title_h = 24 if compact or short else 26
             action_h = 64 if compact else 68
             title_h = 42 if compact else 46
             total_h = 44 if compact else 50
@@ -954,9 +963,7 @@ def main() -> None:
                 + action_h
                 + total_h
                 + (stage_row_h * 3)
-                + props_title_h
-                + (props_row_h * 6)
-                + (result_space * 7)
+                + (result_space * 5)
             )
             params_h = (
                 card_pad_top
@@ -1035,8 +1042,6 @@ def main() -> None:
                 "stage_head_h": dp(26 if compact else 28),
                 "stage_icon_w": dp(24 if compact else 28),
                 "stage_icon_sp": 24 if compact else 28,
-                "props_title_h": dp(props_title_h),
-                "props_row_h": dp(props_row_h),
                 "unit_w": dp(64 if compact else 72),
                 "unit_h": dp(38 if compact else 42),
                 "footer_h": dp(48 if compact else 54),
@@ -1190,12 +1195,6 @@ def main() -> None:
                 entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
                 entry["name_label"].font_size = f'{m["body_sp"]}sp'
                 entry["value_label"].font_size = f'{m["body_sp"]}sp'
-            if hasattr(self, "lbl_props_title"):
-                self.lbl_props_title.height = m["props_title_h"]
-                self.lbl_props_title.font_size = f'{m["body_sp"]}sp'
-            if hasattr(self, "props_grid"):
-                self.props_grid.row_default_height = m["props_row_h"]
-
             if hasattr(self, "footer_bar"):
                 self.footer_bar.height = m["footer_h"]
                 self.footer_bar.padding = [m["content_pad"], dp(4), m["content_pad"], dp(4)]
@@ -1243,7 +1242,6 @@ def main() -> None:
                 self.btn_clear.text = self._t("clear")
             if hasattr(self, "lbl_results_title"):
                 self.lbl_results_title.text = self._t("result")
-                self.lbl_props_title.text = self._t("product_properties")
                 for key, label_key in [
                     ("schladzanie", "cooling"),
                     ("zamrozenie", "freezing"),
@@ -1695,13 +1693,13 @@ def main() -> None:
             wrapper.add_widget(self.btn_clear)
             return wrapper
 
-        def _build_results_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDGridLayout, MDRaisedButton):
+        def _build_results_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDRaisedButton):
             card = MDCard(
                 orientation="vertical",
                 padding=dp(14),
                 spacing=dp(8),
                 size_hint_y=None,
-                height=dp(574),
+                height=dp(390),
                 radius=[16, 16, 16, 16],
                 elevation=3,
                 md_bg_color=self._card_bg(),
@@ -1740,28 +1738,7 @@ def main() -> None:
                     card, key, self._t(label_key), icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar
                 )
 
-            card.add_widget(
-                self._make_props_title(MDLabel, dp)
-            )
-            self.props_grid = MDGridLayout(
-                cols=2,
-                size_hint_y=None,
-                spacing=dp(5),
-                row_default_height=dp(24),
-                row_force_default=True,
-            )
-            self.props_grid.bind(minimum_height=self.props_grid.setter("height"))
-            card.add_widget(self.props_grid)
             return card
-
-        def _make_props_title(self, MDLabel, dp):
-            self.lbl_props_title = MDLabel(
-                text=self._t("product_properties"),
-                font_style="Subtitle1",
-                size_hint_y=None,
-                height=dp(24),
-            )
-            return self.lbl_props_title
 
         def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
             row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(62), spacing=dp(4))
@@ -2914,21 +2891,21 @@ def main() -> None:
             for entry in self.bars.values():
                 entry["bar"].value = 0
                 entry["value_label"].text = "—"
-            self.props_grid.clear_widgets()
             self._last_results = None
             self._clear_main_validation()
 
         def _build_pdf_bytes(self) -> Optional[bytes]:
-            """Buduje PDF: pełny reportlab (desktop) lub fpdf2 (Android)."""
+            """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
+            runtime_font = _runtime_font_path()
             try:
                 from tpof.core.pdf_report import build_pdf
 
                 img_path = _safe_image_path(self._last_results.produkt.nazwa)
                 return build_pdf(
                     self._last_results,
-                    font_path=FONT_PATH,
+                    font_path=runtime_font,
                     product_image_path=Path(img_path) if img_path else None,
-                    watermark_image_path=WATERMARK_PATH if WATERMARK_PATH.exists() else None,
+                    watermark_image_path=None,
                 )
             except ImportError:
                 pass
@@ -2937,7 +2914,7 @@ def main() -> None:
                 from tpof.core.pdf_report_mobile import build_pdf_simple
             except ImportError:
                 return None
-            return build_pdf_simple(self._last_results, font_path=FONT_PATH)
+            return build_pdf_simple(self._last_results, font_path=runtime_font)
 
         def _export_pdf(self):
             if self._last_results is None:
@@ -3110,26 +3087,6 @@ def main() -> None:
                 pct = (value / total * 100.0) if total > 0 else 0.0
                 self.bars[key]["bar"].value = pct
                 self.bars[key]["value_label"].text = f"{value:.2f} kW ({pct:.0f}%)"
-
-            from kivymd.uix.label import MDLabel
-
-            self.props_grid.clear_widgets()
-            p = results.produkt
-            warn = self._t("estimated") if results.T_zam_szacunkowy else ""
-            # Subscripty przez Kivy markup (Roboto nie ma ₁₂).
-            rows = [
-                (self._t("category"), p.kategoria or "—"),
-                ("c[sub]1[/sub] [kJ/kg·K]:", f"{p.c1:.2f}" if p.c1 is not None else "—"),
-                ("c[sub]2[/sub] [kJ/kg·K]:", f"{p.c2:.2f}" if p.c2 is not None else "—"),
-                ("L[sub]1[/sub] [kJ/kg]:", f"{p.L1:.0f}" if p.L1 is not None else "—"),
-                (self._t("water"), f"{p.wodaprocent:.1f}" if p.wodaprocent is not None else "—"),
-                ("T[sub]zam[/sub] [°C]:", f"{results.T_zam_uzyte_C:.2f}{warn}"),
-            ]
-            for label, value in rows:
-                self.props_grid.add_widget(
-                    MDLabel(text=label, theme_text_color="Secondary", markup=True)
-                )
-                self.props_grid.add_widget(MDLabel(text=value))
 
             # Auto-scroll do wyników po obliczeniu — żeby nie chowały się pod akcjami.
             if scroll:

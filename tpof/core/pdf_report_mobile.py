@@ -51,7 +51,7 @@ def build_pdf_simple(
     pdf.ln(2)
 
     pdf.set_font(font_name, size=11)
-    body = format_results_text(results)
+    body = format_results_text(results, include_product_properties=False)
     for line in body.splitlines():
         pdf.multi_cell(0, 7, _txt(line), new_x="LMARGIN", new_y="NEXT")
 

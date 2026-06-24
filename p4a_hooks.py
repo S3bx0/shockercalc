@@ -16,6 +16,9 @@ import os
 import re
 import json
 import shutil
+import gzip
+import io
+import tarfile
 
 
 FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
@@ -67,6 +70,71 @@ def _strip_fonttools_native(*roots):
                     except OSError as exc:  # pragma: no cover - build only
                         print("[p4a hook] nie udalo sie usunac:", target, exc)
     print("[p4a hook] usunieto plikow fonttools .so:", removed)
+
+
+def _strip_python_bundle_payload(*roots):
+    """Usuwa z libpybundle pliki fontTools zbędne na Androidzie.
+
+    Rozszerzenia ``.so`` są kompilowane dla hosta CI, a źródła ``.c`` służą
+    wyłącznie do ich budowania. FPDF korzysta na Androidzie z implementacji
+    czysto-pythonowej, więc oba typy można usunąć przed podpisaniem paczki.
+    """
+    processed = set()
+    removed_files = 0
+    removed_bytes = 0
+    for path in _iter_files("libpybundle.so", *roots):
+        real_path = os.path.realpath(path)
+        if real_path in processed:
+            continue
+        processed.add(real_path)
+        try:
+            with open(path, "rb") as fh:
+                payload = fh.read()
+            if not payload.startswith(b"\x1f\x8b"):
+                continue
+            raw_tar = gzip.decompress(payload)
+            source = tarfile.open(fileobj=io.BytesIO(raw_tar), mode="r:")
+        except (OSError, EOFError, tarfile.TarError):
+            continue
+
+        output = io.BytesIO()
+        changed = False
+        with source, tarfile.open(fileobj=output, mode="w") as target:
+            for member in source.getmembers():
+                normalized = member.name.replace("\\", "/").lower()
+                remove = (
+                    "/fonttools/" in normalized
+                    and normalized.endswith((".c", ".so"))
+                )
+                if remove and member.isfile():
+                    removed_files += 1
+                    removed_bytes += member.size
+                    changed = True
+                    continue
+                fileobj = source.extractfile(member) if member.isfile() else None
+                target.addfile(member, fileobj)
+
+        if not changed:
+            continue
+        compressed = gzip.compress(output.getvalue(), compresslevel=9, mtime=0)
+        temp_path = path + ".optimized"
+        with open(temp_path, "wb") as fh:
+            fh.write(compressed)
+        os.replace(temp_path, path)
+        print(
+            "[p4a hook] odchudzono libpybundle:",
+            path,
+            len(payload),
+            "->",
+            len(compressed),
+        )
+    print(
+        "[p4a hook] usunieto z libpybundle:",
+        removed_files,
+        "plikow,",
+        removed_bytes,
+        "bajtow",
+    )
 
 
 def _candidate_roots(toolchain):
@@ -331,3 +399,4 @@ def before_apk_assemble(toolchain):
     _patch_firebase_gradle(*roots)
     _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)
+    _strip_python_bundle_payload(*roots)

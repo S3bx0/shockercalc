@@ -160,6 +160,23 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      - name: Generate package size report
+        if: always()
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          if [ -n "$APK_PATH" ]; then
+            python tools/android_size_report.py "$APK_PATH" --output package-size-report.txt
+          fi
+
+      - name: Upload package size report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apk-size-report
+          path: package-size-report.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload APK artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

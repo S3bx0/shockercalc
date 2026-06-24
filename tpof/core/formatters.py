@@ -11,7 +11,9 @@ def _fmt(value, suffix: str = "", precision: int = 2) -> str:
     return f"{float(value):.{precision}f}{suffix}"
 
 
-def format_results_text(results: FreezingResults) -> str:
+def format_results_text(
+    results: FreezingResults, *, include_product_properties: bool = True
+) -> str:
     """Zwraca wieloliniowy raport tekstowy gotowy do pokazania w UI."""
     p = results.produkt
     i = results.inputs
@@ -22,17 +24,33 @@ def format_results_text(results: FreezingResults) -> str:
         "--- Wyniki obliczeń ---",
         f"Nazwa produktu: {p.nazwa}",
         f"Masa [kg]: {i.masa_kg:.2f}",
-        f"Ciepło właściwe powyżej zamrażania [kJ/kg·K]: {_fmt(p.c1)}",
-        f"Ciepło właściwe poniżej zamrażania [kJ/kg·K]: {_fmt(p.c2)}",
-        f"Zawartość wody [%]: {_fmt(p.wodaprocent)}",
-        f"Ciepło topnienia [kJ/kg]: {_fmt(p.L1)}",
-        f"Temperatura początkowa [°C]: {i.T_pocz_C:.2f}",
-        f"Temperatura końcowa [°C]: {i.T_konc_C:.2f}",
-        f"Temperatura początkowego zamarzania [°C]: {results.T_zam_uzyte_C:.2f}{T_zam_warning}",
-        f"Czas pracy [h]: {i.czas_h:.2f}",
-        f"Moc potrzebna do schłodzenia [kW]: {results.P_schladzanie_kW:.2f}",
-        f"Moc potrzebna do zamrożenia [kW]: {results.P_zamrozenie_kW:.2f}",
-        f"Moc potrzebna do domrożenia [kW]: {results.P_domrozenie_kW:.2f}",
-        f"Suma mocy potrzebnej [kW]: {results.P_total_kW:.2f}",
     ]
+    if include_product_properties:
+        lines.extend(
+            [
+                f"Ciepło właściwe powyżej zamrażania [kJ/kg·K]: {_fmt(p.c1)}",
+                f"Ciepło właściwe poniżej zamrażania [kJ/kg·K]: {_fmt(p.c2)}",
+                f"Zawartość wody [%]: {_fmt(p.wodaprocent)}",
+                f"Ciepło topnienia [kJ/kg]: {_fmt(p.L1)}",
+            ]
+        )
+    lines.extend(
+        [
+            f"Temperatura początkowa [°C]: {i.T_pocz_C:.2f}",
+            f"Temperatura końcowa [°C]: {i.T_konc_C:.2f}",
+        ]
+    )
+    if include_product_properties:
+        lines.append(
+            f"Temperatura początkowego zamarzania [°C]: {results.T_zam_uzyte_C:.2f}{T_zam_warning}"
+        )
+    lines.extend(
+        [
+            f"Czas pracy [h]: {i.czas_h:.2f}",
+            f"Moc potrzebna do schłodzenia [kW]: {results.P_schladzanie_kW:.2f}",
+            f"Moc potrzebna do zamrożenia [kW]: {results.P_zamrozenie_kW:.2f}",
+            f"Moc potrzebna do domrożenia [kW]: {results.P_domrozenie_kW:.2f}",
+            f"Suma mocy potrzebnej [kW]: {results.P_total_kW:.2f}",
+        ]
+    )
     return "\n".join(lines) + "\n"

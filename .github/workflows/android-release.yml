@@ -378,6 +378,23 @@ jobs:
           print("Sanitized buildozer.log before artifact upload.")
           PY
 
+      - name: Generate package size report
+        if: always()
+        run: |
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          if [ -n "$AAB_PATH" ]; then
+            python tools/android_size_report.py "$AAB_PATH" --output package-size-report.txt
+          fi
+
+      - name: Upload package size report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aab-size-report
+          path: package-size-report.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload sanitized buildozer log (on failure)
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

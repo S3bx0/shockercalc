@@ -20,6 +20,22 @@ def test_mobile_main_importuje_sie():
     assert callable(module.main)
 
 
+def test_mobilny_wynik_nie_ujawnia_wlasciwosci_produktu():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "self.props_grid" not in source
+    assert "lbl_props_title" not in source
+    assert "watermark_image_path=None" in source
+
+
+def test_mobilny_font_ma_fallback_do_kivy():
+    from tpof.mobile.main import _runtime_font_path
+
+    assert _runtime_font_path() is not None
+
+
 def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
     source = (
         Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
