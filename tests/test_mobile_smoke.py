@@ -45,6 +45,16 @@ def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
     assert 'field.helper_text_mode = "on_focus"' in source
 
 
+def test_mobilny_naglowek_uzywa_brandowego_gradientu():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class BrandToolbar" in source
+    assert "class FrostChip" in source
+    assert "md_bg_color=(0.12, 0.55, 0.86, 1)" not in source
+
+
 def test_mobilna_lista_ukrywa_wylacznie_techniczne_rekordy_ctp():
     from tpof.core import list_products, load_products
     from tpof.mobile.main import _mobile_product_names

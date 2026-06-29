@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.5] - 2026-06-29
+
+### Zmieniono
+
+- Odświeżono górny panel aplikacji mobilnej: brandowy gradient w kolorach
+  nowego logo, lodowa kapsuła śnieżynki oraz półprzezroczyste kapsuły ikon
+  akcji.
+- Przebudowano ikony etapów w karcie wyników na małe kolorowe badge'e,
+  spójne z nową identyfikacją wizualną.
+- Delikatnie podkręcono kolory etapów obliczeń, aby lepiej pasowały do
+  granatowo-turkusowego motywu aplikacji.
+
+### Dodano
+
+- Test źródłowy pilnujący, aby mobilny nagłówek używał brandowego gradientu,
+  a nie starego płaskiego paska.
+
 ## [1.4.4] - 2026-06-24
 
 ### Zmieniono

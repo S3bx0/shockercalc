@@ -44,11 +44,16 @@ from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_cust
 log = logging.getLogger(__name__)
 
 STAGE_COLORS = {
-    "schladzanie": (0.10, 0.48, 0.71, 1),
-    "zamrozenie": (0.42, 0.37, 0.86, 1),
-    "domrozenie": (0.00, 0.67, 0.74, 1),
+    "schladzanie": (0.11, 0.62, 0.85, 1),
+    "zamrozenie": (0.49, 0.40, 0.96, 1),
+    "domrozenie": (0.06, 0.76, 0.82, 1),
     "total": (0.05, 0.62, 0.42, 1),
 }
+
+BRAND_NAVY = (0.02, 0.07, 0.14, 1)
+BRAND_BLUE = (0.04, 0.33, 0.54, 1)
+BRAND_CYAN = (0.06, 0.72, 0.80, 1)
+BRAND_ICE = (0.62, 0.94, 1.0, 1)
 
 APP_NAME = "Refrigeration Calc"
 ADMOB_APP_ID = "ca-app-pub-7481054652344026~2716191071"
@@ -529,7 +534,7 @@ def main() -> None:
     try:
         from kivy.clock import Clock
         from kivy.core.window import Window
-        from kivy.graphics import Color, Line, Rectangle
+        from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
         from kivy.graphics.texture import Texture
         from kivy.metrics import dp
         from kivy.uix.image import AsyncImage
@@ -671,6 +676,162 @@ def main() -> None:
                     x + size * 0.55,
                     y + size * 0.55,
                 ]
+
+    class BrandToolbar(MDBoxLayout):
+        """Gradientowy pasek naglowka nawiazujacy do nowego logo."""
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.md_bg_color = (0, 0, 0, 0)
+            self._gradient_texture = self._make_gradient_texture()
+            with self.canvas.before:
+                Color(1, 1, 1, 1)
+                self._background = Rectangle(pos=self.pos, size=self.size)
+                Color(1, 1, 1, 0.10)
+                self._shine_left = Line(points=[], width=dp(16))
+                Color(1, 1, 1, 0.06)
+                self._shine_right = Line(points=[], width=dp(22))
+                Color(0, 0, 0, 0.28)
+                self._bottom_shadow = Rectangle(pos=self.pos, size=(0, 0))
+                Color(*BRAND_ICE[:3], 0.72)
+                self._bottom_accent = Rectangle(pos=self.pos, size=(0, 0))
+            self._background.texture = self._gradient_texture
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas)
+            self._sync_canvas()
+
+        @staticmethod
+        def _make_gradient_texture():
+            stops = [
+                (0.0, (3, 17, 36, 255)),
+                (0.42, (6, 78, 126, 255)),
+                (0.74, (11, 142, 182, 255)),
+                (1.0, (16, 179, 196, 255)),
+            ]
+            texture = Texture.create(size=(192, 1), colorfmt="rgba")
+            pixels = bytearray()
+            for col in range(192):
+                fraction = col / 191.0
+                color = stops[-1][1]
+                for index in range(len(stops) - 1):
+                    left_stop, left_color = stops[index]
+                    right_stop, right_color = stops[index + 1]
+                    if left_stop <= fraction <= right_stop:
+                        local = (fraction - left_stop) / (right_stop - left_stop)
+                        local = local * local * (3.0 - 2.0 * local)
+                        color = tuple(
+                            int(left_color[channel] * (1.0 - local) + right_color[channel] * local)
+                            for channel in range(4)
+                        )
+                        break
+                pixels.extend(color)
+            texture.blit_buffer(bytes(pixels), colorfmt="rgba", bufferfmt="ubyte")
+            texture.mag_filter = "linear"
+            texture.min_filter = "linear"
+            return texture
+
+        def _sync_canvas(self, *_args):
+            self._background.pos = self.pos
+            self._background.size = self.size
+            self._bottom_shadow.pos = (self.x, self.y)
+            self._bottom_shadow.size = (self.width, dp(8))
+            self._bottom_accent.pos = (self.x, self.y)
+            self._bottom_accent.size = (self.width, dp(2))
+            self._shine_left.points = [
+                self.x + self.width * 0.16,
+                self.top + dp(8),
+                self.x + self.width * 0.02,
+                self.y - dp(8),
+            ]
+            self._shine_right.points = [
+                self.x + self.width * 0.78,
+                self.top + dp(12),
+                self.x + self.width * 0.57,
+                self.y - dp(12),
+            ]
+
+    class FrostChip(MDBoxLayout):
+        """Mała półprzezroczysta kapsuła pod ikonę."""
+
+        def __init__(self, *, active: bool = False, accent=BRAND_ICE, **kwargs):
+            super().__init__(**kwargs)
+            self.orientation = "vertical"
+            self.size_hint_x = None
+            self.size_hint_y = None
+            self.pos_hint = {"center_y": 0.5}
+            self.active = active
+            self.accent = accent
+            with self.canvas.before:
+                self._outer_color = Color(1, 1, 1, 0.16)
+                self._outer = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(18)] * 4
+                )
+                self._inner_color = Color(1, 1, 1, 0.08)
+                self._inner = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(17)] * 4
+                )
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas)
+            self.set_active(active)
+
+        def set_active(self, active: bool):
+            self.active = bool(active)
+            accent = self.accent
+            self._outer_color.rgba = (
+                (accent[0], accent[1], accent[2], 0.42)
+                if self.active
+                else (1, 1, 1, 0.13)
+            )
+            self._inner_color.rgba = (
+                (1, 1, 1, 0.17)
+                if self.active
+                else (1, 1, 1, 0.075)
+            )
+
+        def _sync_canvas(self, *_args):
+            radius = [min(self.width, self.height) * 0.36] * 4
+            self._outer.pos = self.pos
+            self._outer.size = self.size
+            self._outer.radius = radius
+            inset = dp(1.15)
+            self._inner.pos = (self.x + inset, self.y + inset)
+            self._inner.size = (
+                max(0, self.width - inset * 2),
+                max(0, self.height - inset * 2),
+            )
+            self._inner.radius = [max(0, radius[0] - inset)] * 4
+
+    class StageIconBadge(MDBoxLayout):
+        """Znak etapu wyniku z subtelnym tłem i akcentem koloru."""
+
+        def __init__(self, *, accent, **kwargs):
+            super().__init__(**kwargs)
+            self.orientation = "vertical"
+            self.size_hint_x = None
+            self.size_hint_y = None
+            self.accent = accent
+            with self.canvas.before:
+                Color(1, 1, 1, 0.075)
+                self._outer = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(14)] * 4
+                )
+                Color(accent[0], accent[1], accent[2], 0.18)
+                self._inner = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(13)] * 4
+                )
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas)
+            self._sync_canvas()
+
+        def _sync_canvas(self, *_args):
+            radius = [min(self.width, self.height) * 0.32] * 4
+            self._outer.pos = self.pos
+            self._outer.size = self.size
+            self._outer.radius = radius
+            inset = dp(1.5)
+            self._inner.pos = (self.x + inset, self.y + inset)
+            self._inner.size = (
+                max(0, self.width - inset * 2),
+                max(0, self.height - inset * 2),
+            )
+            self._inner.radius = [max(0, radius[0] - inset)] * 4
 
     class ShockerCalcApp(MDApp):
         def build(self):
@@ -830,6 +991,13 @@ def main() -> None:
                     if self._hints_enabled
                     else "lightbulb-off-outline"
                 )
+                self.btn_hints.text_color = (
+                    BRAND_ICE
+                    if self._hints_enabled
+                    else (0.93, 0.98, 1.0, 0.94)
+                )
+            if hasattr(self, "btn_hints_chip"):
+                self.btn_hints_chip.set_active(self._hints_enabled)
             if hasattr(self, "lbl_product_hint"):
                 self.lbl_product_hint.text = self._t("product_hint")
             for field, hint_key in self._hint_field_items():
@@ -947,7 +1115,7 @@ def main() -> None:
             card_pad_top = card_pad + (8 if compact else 10)
             card_pad_bottom = card_pad + (5 if compact else 6)
             content_pad = 10 if narrow else 14 if compact else 16
-            stage_row_h = 56 if compact or short else 62
+            stage_row_h = 66 if compact or short else 74
             action_h = 64 if compact else 68
             title_h = 42 if compact else 46
             total_h = 44 if compact else 50
@@ -1039,9 +1207,9 @@ def main() -> None:
                 "total_h": dp(total_h),
                 "total_sp": int(20 * text_scale),
                 "stage_row_h": dp(stage_row_h),
-                "stage_head_h": dp(26 if compact else 28),
-                "stage_icon_w": dp(24 if compact else 28),
-                "stage_icon_sp": 24 if compact else 28,
+                "stage_head_h": dp(34 if compact else 38),
+                "stage_icon_w": dp(34 if compact else 38),
+                "stage_icon_sp": 22 if compact else 24,
                 "unit_w": dp(64 if compact else 72),
                 "unit_h": dp(38 if compact else 42),
                 "footer_h": dp(48 if compact else 54),
@@ -1073,11 +1241,22 @@ def main() -> None:
             if hasattr(self, "toolbar"):
                 self.toolbar.height = m["toolbar_h"]
                 self.toolbar.padding = [m["content_pad"], 0, dp(6 if m["compact"] else 8), 0]
+            if hasattr(self, "toolbar_brand_chip"):
+                self.toolbar_brand_chip.width = m["toolbar_icon_w"]
+                self.toolbar_brand_chip.height = m["toolbar_icon_w"]
             if hasattr(self, "toolbar_snowflake"):
-                self.toolbar_snowflake.width = m["toolbar_icon_w"]
                 self.toolbar_snowflake.font_size = f'{m["toolbar_icon_sp"]}sp'
             if hasattr(self, "lbl_toolbar_title"):
                 self.lbl_toolbar_title.font_size = f'{m["toolbar_title_sp"]}sp'
+            for chip in (
+                getattr(self, "btn_hints_chip", None),
+                getattr(self, "btn_lang_chip", None),
+                getattr(self, "btn_theme_chip", None),
+                getattr(self, "btn_privacy_chip", None),
+            ):
+                if chip is not None and getattr(chip, "opacity", 1) > 0:
+                    chip.width = m["toolbar_btn_w"]
+                    chip.height = m["toolbar_btn_w"]
             for btn in (
                 getattr(self, "btn_hints", None),
                 getattr(self, "btn_lang", None),
@@ -1087,6 +1266,8 @@ def main() -> None:
                 if btn is not None:
                     btn.width = m["toolbar_btn_w"]
                     btn.icon_size = f'{m["toolbar_btn_sp"]}sp'
+            if hasattr(self, "btn_privacy"):
+                self._refresh_privacy_button()
 
             if hasattr(self, "product_card"):
                 self.product_card.padding = card_padding
@@ -1191,7 +1372,8 @@ def main() -> None:
             for entry in getattr(self, "bars", {}).values():
                 entry["row"].height = m["stage_row_h"]
                 entry["head"].height = m["stage_head_h"]
-                entry["icon"].width = m["stage_icon_w"]
+                entry["icon_chip"].width = m["stage_icon_w"]
+                entry["icon_chip"].height = m["stage_icon_w"]
                 entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
                 entry["name_label"].font_size = f'{m["body_sp"]}sp'
                 entry["value_label"].font_size = f'{m["body_sp"]}sp'
@@ -1336,26 +1518,61 @@ def main() -> None:
             return menu
 
         # --- karty -------------------------------------------------------
+        def _toolbar_chip_button(
+            self,
+            dp,
+            MDIconButton,
+            *,
+            icon: str,
+            icon_size: str,
+            on_release,
+            active: bool = False,
+        ):
+            chip = FrostChip(
+                active=active,
+                size_hint_x=None,
+                size_hint_y=None,
+                width=dp(48),
+                height=dp(48),
+            )
+            button = MDIconButton(
+                icon=icon,
+                size_hint=(1, 1),
+                width=dp(48),
+                icon_size=icon_size,
+                theme_text_color="Custom",
+                text_color=BRAND_ICE if active else (0.93, 0.98, 1.0, 0.94),
+                on_release=on_release,
+            )
+            chip.add_widget(button)
+            return chip, button
+
         def _build_toolbar(self, dp, MDBoxLayout, MDIcon, MDIconButton, MDLabel):
-            bar = MDBoxLayout(
+            bar = BrandToolbar(
                 orientation="horizontal",
                 size_hint_y=None,
                 height=dp(72),
                 padding=[dp(14), 0, dp(8), 0],
-                spacing=dp(2),
-                md_bg_color=(0.12, 0.55, 0.86, 1),
+                spacing=dp(6),
+            )
+            self.toolbar_brand_chip = FrostChip(
+                active=True,
+                size_hint_x=None,
+                size_hint_y=None,
+                width=dp(44),
+                height=dp(44),
             )
             self.toolbar_snowflake = MDIcon(
                 icon="snowflake",
-                size_hint_x=None,
-                width=dp(44),
+                size_hint=(1, 1),
                 halign="center",
                 valign="middle",
                 font_size="30sp",
                 theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
+                text_color=BRAND_ICE,
             )
-            bar.add_widget(self.toolbar_snowflake)
+            self.toolbar_brand_chip.add_widget(self.toolbar_snowflake)
+            bar.add_widget(self.toolbar_brand_chip)
             self.lbl_toolbar_title = MDLabel(
                 text=APP_NAME,
                 halign="center",
@@ -1367,46 +1584,39 @@ def main() -> None:
                 text_color=(1, 1, 1, 1),
             )
             bar.add_widget(self.lbl_toolbar_title)
-            self.btn_hints = MDIconButton(
+            self.btn_hints_chip, self.btn_hints = self._toolbar_chip_button(
+                dp,
+                MDIconButton,
                 icon="lightbulb-on-outline" if self._hints_enabled else "lightbulb-off-outline",
-                size_hint_x=None,
-                width=dp(48),
                 icon_size="26sp",
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
+                active=self._hints_enabled,
                 on_release=lambda *_: self._toggle_hints(),
             )
-            self.btn_lang = MDIconButton(
+            self.btn_lang_chip, self.btn_lang = self._toolbar_chip_button(
+                dp,
+                MDIconButton,
                 icon="translate",
-                size_hint_x=None,
-                width=dp(48),
                 icon_size="28sp",
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
                 on_release=lambda *_: self._toggle_language(),
             )
-            self.btn_theme = MDIconButton(
+            self.btn_theme_chip, self.btn_theme = self._toolbar_chip_button(
+                dp,
+                MDIconButton,
                 icon="weather-night",
-                size_hint_x=None,
-                width=dp(48),
                 icon_size="28sp",
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
                 on_release=lambda *_: self._toggle_theme(),
             )
-            bar.add_widget(self.btn_hints)
-            bar.add_widget(self.btn_lang)
-            bar.add_widget(self.btn_theme)
-            self.btn_privacy = MDIconButton(
+            bar.add_widget(self.btn_hints_chip)
+            bar.add_widget(self.btn_lang_chip)
+            bar.add_widget(self.btn_theme_chip)
+            self.btn_privacy_chip, self.btn_privacy = self._toolbar_chip_button(
+                dp,
+                MDIconButton,
                 icon="shield-account",
-                size_hint_x=None,
-                width=dp(48),
                 icon_size="26sp",
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
                 on_release=lambda *_: self._open_privacy_options(),
             )
-            bar.add_widget(self.btn_privacy)
+            bar.add_widget(self.btn_privacy_chip)
             self._refresh_privacy_button()
             return bar
 
@@ -1424,8 +1634,6 @@ def main() -> None:
                 self.frost_background.set_dark(
                     self.theme_cls.theme_style == "Dark"
                 )
-            if hasattr(self, "toolbar"):
-                self.toolbar.md_bg_color = (0.12, 0.55, 0.86, 1)
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
             ad_slot = getattr(self, "ad_slot", None)
@@ -1741,17 +1949,26 @@ def main() -> None:
             return card
 
         def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
-            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(62), spacing=dp(4))
-            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(28), spacing=dp(8))
+            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(74), spacing=dp(6))
+            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(38), spacing=dp(10))
+            icon_chip = StageIconBadge(
+                accent=STAGE_COLORS[key],
+                size_hint_x=None,
+                size_hint_y=None,
+                width=dp(38),
+                height=dp(38),
+            )
             icon_widget = MDIcon(
                 icon=icon,
-                size_hint_x=None,
-                width=dp(28),
+                size_hint=(1, 1),
                 halign="center",
+                valign="middle",
                 theme_text_color="Custom",
                 text_color=STAGE_COLORS[key],
+                font_size="24sp",
             )
-            head.add_widget(icon_widget)
+            icon_chip.add_widget(icon_widget)
+            head.add_widget(icon_chip)
             lbl_name = MDLabel(text=label, size_hint_x=0.52)
             lbl_val = MDLabel(text="—", halign="right", size_hint_x=0.4)
             head.add_widget(lbl_name)
@@ -1764,6 +1981,7 @@ def main() -> None:
                 "bar": bar,
                 "head": head,
                 "icon": icon_widget,
+                "icon_chip": icon_chip,
                 "name_label": lbl_name,
                 "row": row,
                 "value_label": lbl_val,
@@ -2445,9 +2663,19 @@ def main() -> None:
             visible = ad_options_required or telemetry.is_available()
             btn.disabled = not visible
             btn.opacity = 1 if visible else 0
+            chip = getattr(self, "btn_privacy_chip", None)
             from kivy.metrics import dp
 
-            btn.width = dp(48) if visible else 0
+            try:
+                target_width = self._layout_metrics(dp)["toolbar_btn_w"]
+            except Exception:
+                target_width = dp(48)
+            btn.width = target_width if visible else 0
+            if chip is not None:
+                chip.disabled = not visible
+                chip.opacity = 1 if visible else 0
+                chip.width = target_width if visible else 0
+                chip.height = target_width
 
         def _prompt_telemetry_consent(self):
             if not telemetry.is_available() or telemetry.has_preference():
