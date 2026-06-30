@@ -4,6 +4,22 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.6] - 2026-06-30
+
+### Zmieniono
+
+- Dopasowano mobilny nagłówek do węższych ekranów: śnieżynka jest centrowana
+  jak pozostałe ikony, a tytuł aplikacji ma mniejszy font i dwie linie.
+- Rozbudowano tło aplikacji o subtelne skośne pasy w kolorach nowego brandu.
+- Zastąpiono statyczne ikonki etapów wyniku lekkimi animacjami canvas:
+  termometr schładzania, śnieżynka z efektem zamarzania i termometr
+  domrażania.
+
+### Dodano
+
+- Testy źródłowe pilnujące nowego układu nagłówka, animowanych ikon wyników
+  i brandowego tła.
+
 ## [1.4.5] - 2026-06-29
 
 ### Zmieniono

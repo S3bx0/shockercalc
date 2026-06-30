@@ -534,7 +534,7 @@ def main() -> None:
     try:
         from kivy.clock import Clock
         from kivy.core.window import Window
-        from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
+        from kivy.graphics import Color, Ellipse, Line, Rectangle, RoundedRectangle
         from kivy.graphics.texture import Texture
         from kivy.metrics import dp
         from kivy.uix.image import AsyncImage
@@ -599,6 +599,13 @@ def main() -> None:
             with self.canvas.before:
                 Color(1, 1, 1, 1)
                 self._background = Rectangle(pos=self.pos, size=self.size)
+                self._band_colors = []
+                self._bands = []
+                for _index in range(4):
+                    color = Color(1, 1, 1, 0.04)
+                    band = Line(points=[], width=dp(42), cap="none")
+                    self._band_colors.append(color)
+                    self._bands.append(band)
 
             self._particle_graphics = []
             with self.canvas:
@@ -642,12 +649,48 @@ def main() -> None:
                     if self._dark
                     else (0.12, 0.48, 0.68, 0.12)
                 )
+            band_palette = (
+                [
+                    (0.12, 0.58, 0.82, 0.08),
+                    (0.04, 0.74, 0.80, 0.055),
+                    (1.00, 1.00, 1.00, 0.045),
+                    (0.25, 0.72, 1.00, 0.035),
+                ]
+                if self._dark
+                else [
+                    (0.11, 0.59, 0.82, 0.11),
+                    (0.03, 0.70, 0.78, 0.075),
+                    (1.00, 1.00, 1.00, 0.18),
+                    (0.16, 0.58, 0.94, 0.07),
+                ]
+            )
+            for color, rgba in zip(self._band_colors, band_palette):
+                color.rgba = rgba
             self._sync_background()
 
         def _sync_background(self, *_args):
             self._background.pos = self.pos
             self._background.size = self.size
+            self._position_bands()
             self._position_particles()
+
+        def _position_bands(self):
+            if self.width <= 0 or self.height <= 0:
+                return
+            x, y, width, height = self.x, self.y, self.width, self.height
+            specs = [
+                (-0.18, 0.92, 0.44, 1.12),
+                (0.66, 1.04, 1.12, 0.76),
+                (-0.10, 0.18, 0.34, -0.08),
+                (0.60, 0.24, 1.08, -0.02),
+            ]
+            for band, (x1, y1, x2, y2) in zip(self._bands, specs):
+                band.points = [
+                    x + width * x1,
+                    y + height * y1,
+                    x + width * x2,
+                    y + height * y2,
+                ]
 
         def _animate_particles(self, dt):
             self._elapsed += min(float(dt), 0.2)
@@ -832,6 +875,144 @@ def main() -> None:
                 max(0, self.height - inset * 2),
             )
             self._inner.radius = [max(0, radius[0] - inset)] * 4
+
+    class StageMotionIcon(Widget):
+        """Lekka animacja etapu wyniku bez dokladania plikow GIF do paczki."""
+
+        def __init__(self, *, mode: str, accent, **kwargs):
+            super().__init__(**kwargs)
+            self.mode = mode
+            self.accent = accent
+            self.font_size = "24sp"
+            self._elapsed = 0.0
+            self._event = None
+            self._snow_lines = []
+            self._snow_dots = []
+            with self.canvas:
+                if self.mode == "zamrozenie":
+                    self._snow_color = Color(*accent[:3], 0.95)
+                    for _index in range(18):
+                        self._snow_lines.append(Line(points=[], width=dp(1.45), cap="round"))
+                    self._frost_color = Color(0.90, 0.98, 1.0, 0.0)
+                    for _index in range(7):
+                        self._snow_dots.append(Ellipse(pos=(0, 0), size=(0, 0)))
+                else:
+                    self._tube_bg_color = Color(1, 1, 1, 0.16)
+                    self._tube_bg = RoundedRectangle(pos=(0, 0), size=(0, 0), radius=[dp(4)] * 4)
+                    self._fill_color = Color(*accent[:3], 0.92)
+                    self._tube_fill = RoundedRectangle(pos=(0, 0), size=(0, 0), radius=[dp(4)] * 4)
+                    self._bulb_fill = Ellipse(pos=(0, 0), size=(0, 0))
+                    self._edge_color = Color(1, 1, 1, 0.34)
+                    self._tube_edge = Line(points=[], width=dp(1.1), cap="round")
+                    self._tick = Line(points=[], width=dp(0.9), cap="round")
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas)
+            self._event = Clock.schedule_interval(self._tick_motion, 1.0 / 24.0)
+            self._sync_canvas()
+
+        @staticmethod
+        def _mix(left, right, fraction):
+            fraction = max(0.0, min(1.0, float(fraction)))
+            return tuple(
+                left[index] * (1.0 - fraction) + right[index] * fraction
+                for index in range(3)
+            )
+
+        def on_parent(self, _instance, parent):
+            if parent is None and self._event is not None:
+                self._event.cancel()
+                self._event = None
+
+        def _tick_motion(self, dt):
+            self._elapsed += min(float(dt), 0.12)
+            self._sync_canvas()
+
+        def _sync_canvas(self, *_args):
+            if self.width <= 0 or self.height <= 0:
+                return
+            if self.mode == "zamrozenie":
+                self._sync_snowflake()
+            else:
+                self._sync_thermometer()
+
+        def _sync_thermometer(self):
+            size = min(self.width, self.height)
+            cx = self.x + self.width * 0.5
+            cy = self.y + self.height * 0.5
+            phase = (self._elapsed / 2.6) % 1.0
+            phase = phase * phase * (3.0 - 2.0 * phase)
+            if self.mode == "domrozenie":
+                color = self._mix((0.18, 0.86, 1.0), (0.38, 0.20, 0.92), phase)
+                level = 0.78 - 0.46 * phase
+            else:
+                color = self._mix((0.96, 0.28, 0.20), (0.08, 0.72, 0.92), phase)
+                level = 0.86 - 0.60 * phase
+            tube_w = max(dp(5), size * 0.14)
+            tube_h = size * 0.47
+            bulb = size * 0.28
+            tube_x = cx - tube_w * 0.5
+            tube_y = cy - size * 0.08
+            fill_h = max(dp(4), tube_h * level)
+            self._fill_color.rgba = (color[0], color[1], color[2], 0.94)
+            self._tube_bg.pos = (tube_x, tube_y)
+            self._tube_bg.size = (tube_w, tube_h)
+            self._tube_bg.radius = [tube_w * 0.5] * 4
+            self._tube_fill.pos = (tube_x, tube_y)
+            self._tube_fill.size = (tube_w, fill_h)
+            self._tube_fill.radius = [tube_w * 0.5] * 4
+            self._bulb_fill.pos = (cx - bulb * 0.5, tube_y - bulb * 0.58)
+            self._bulb_fill.size = (bulb, bulb)
+            self._tube_edge.points = [
+                cx,
+                tube_y,
+                cx,
+                tube_y + tube_h,
+            ]
+            self._tick.points = [
+                cx + tube_w * 0.9,
+                tube_y + tube_h * (0.25 + 0.5 * phase),
+                cx + tube_w * 1.9,
+                tube_y + tube_h * (0.25 + 0.5 * phase),
+            ]
+
+        def _sync_snowflake(self):
+            size = min(self.width, self.height)
+            cx = self.x + self.width * 0.5
+            cy = self.y + self.height * 0.5
+            phase = (math.sin(self._elapsed * 1.45) + 1.0) * 0.5
+            color = self._mix((0.18, 0.84, 0.95), self.accent[:3], phase)
+            self._snow_color.rgba = (color[0], color[1], color[2], 0.84 + 0.14 * phase)
+            radius = size * (0.26 + 0.05 * phase)
+            branch = radius * 0.34
+            lines = []
+            for arm in range(6):
+                angle = math.tau * arm / 6.0 - math.pi / 2.0
+                end_x = cx + math.cos(angle) * radius
+                end_y = cy + math.sin(angle) * radius
+                lines.append((cx, cy, end_x, end_y))
+                for side in (-1, 1):
+                    side_angle = angle + side * math.radians(42)
+                    base_x = cx + math.cos(angle) * radius * 0.58
+                    base_y = cy + math.sin(angle) * radius * 0.58
+                    lines.append(
+                        (
+                            base_x,
+                            base_y,
+                            base_x - math.cos(side_angle) * branch,
+                            base_y - math.sin(side_angle) * branch,
+                        )
+                    )
+            for line, points in zip(self._snow_lines, lines):
+                line.points = points
+            self._frost_color.rgba = (0.90, 0.98, 1.0, 0.16 + 0.34 * phase)
+            for index, dot in enumerate(self._snow_dots):
+                orbit = radius * (0.35 + (index % 3) * 0.22)
+                angle = self._elapsed * (0.8 + index * 0.08) + index * 1.37
+                dot_size = dp(1.4 + (index % 3) * 0.45)
+                dot.pos = (
+                    cx + math.cos(angle) * orbit - dot_size * 0.5,
+                    cy + math.sin(angle) * orbit - dot_size * 0.5,
+                )
+                dot.size = (dot_size, dot_size)
 
     class ShockerCalcApp(MDApp):
         def build(self):
@@ -1177,11 +1358,11 @@ def main() -> None:
                 "card_pad_bottom": dp(card_pad_bottom),
                 "card_spacing": dp(card_spacing),
                 "toolbar_h": dp(62 if narrow else 66 if compact else 72),
-                "toolbar_icon_w": dp(36 if narrow else 40 if compact else 44),
-                "toolbar_btn_w": dp(42 if narrow else 46 if compact else 48),
-                "toolbar_icon_sp": 26 if compact else 30,
-                "toolbar_btn_sp": 24 if compact else 28,
-                "toolbar_title_sp": int(18 * text_scale) if narrow else int(20 * text_scale) if compact else 22,
+                "toolbar_icon_w": dp(38 if narrow else 42 if compact else 44),
+                "toolbar_btn_w": dp(40 if narrow else 42 if compact else 44),
+                "toolbar_icon_sp": 24 if narrow else 26 if compact else 28,
+                "toolbar_btn_sp": 23 if narrow else 24 if compact else 26,
+                "toolbar_title_sp": int(14 * text_scale) if narrow else int(15 * text_scale) if compact else 16,
                 "title_h": dp(title_h),
                 "title_sp": int(20 * text_scale),
                 "body_sp": int(15 * text_scale),
@@ -1245,9 +1426,11 @@ def main() -> None:
                 self.toolbar_brand_chip.width = m["toolbar_icon_w"]
                 self.toolbar_brand_chip.height = m["toolbar_icon_w"]
             if hasattr(self, "toolbar_snowflake"):
-                self.toolbar_snowflake.font_size = f'{m["toolbar_icon_sp"]}sp'
+                self.toolbar_snowflake.width = m["toolbar_icon_w"]
+                self.toolbar_snowflake.icon_size = f'{m["toolbar_icon_sp"]}sp'
             if hasattr(self, "lbl_toolbar_title"):
                 self.lbl_toolbar_title.font_size = f'{m["toolbar_title_sp"]}sp'
+                self.lbl_toolbar_title.line_height = 0.88
             for chip in (
                 getattr(self, "btn_hints_chip", None),
                 getattr(self, "btn_lang_chip", None),
@@ -1374,7 +1557,8 @@ def main() -> None:
                 entry["head"].height = m["stage_head_h"]
                 entry["icon_chip"].width = m["stage_icon_w"]
                 entry["icon_chip"].height = m["stage_icon_w"]
-                entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
+                if hasattr(entry["icon"], "font_size"):
+                    entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
                 entry["name_label"].font_size = f'{m["body_sp"]}sp'
                 entry["value_label"].font_size = f'{m["body_sp"]}sp'
             if hasattr(self, "footer_bar"):
@@ -1395,7 +1579,7 @@ def main() -> None:
 
         def _refresh_texts(self):
             if hasattr(self, "lbl_toolbar_title"):
-                self.lbl_toolbar_title.text = APP_NAME
+                self.lbl_toolbar_title.text = "Refrigeration\nCalc"
             if hasattr(self, "btn_theme"):
                 self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
             if hasattr(self, "lbl_product_title"):
@@ -1527,18 +1711,19 @@ def main() -> None:
             icon_size: str,
             on_release,
             active: bool = False,
+            size_dp: int = 44,
         ):
             chip = FrostChip(
                 active=active,
                 size_hint_x=None,
                 size_hint_y=None,
-                width=dp(48),
-                height=dp(48),
+                width=dp(size_dp),
+                height=dp(size_dp),
             )
             button = MDIconButton(
                 icon=icon,
                 size_hint=(1, 1),
-                width=dp(48),
+                width=dp(size_dp),
                 icon_size=icon_size,
                 theme_text_color="Custom",
                 text_color=BRAND_ICE if active else (0.93, 0.98, 1.0, 0.94),
@@ -1553,7 +1738,7 @@ def main() -> None:
                 size_hint_y=None,
                 height=dp(72),
                 padding=[dp(14), 0, dp(8), 0],
-                spacing=dp(6),
+                spacing=dp(5),
             )
             self.toolbar_brand_chip = FrostChip(
                 active=True,
@@ -1562,24 +1747,24 @@ def main() -> None:
                 width=dp(44),
                 height=dp(44),
             )
-            self.toolbar_snowflake = MDIcon(
+            self.toolbar_snowflake = MDIconButton(
                 icon="snowflake",
                 size_hint=(1, 1),
-                halign="center",
-                valign="middle",
-                font_size="30sp",
+                width=dp(44),
+                icon_size="28sp",
                 theme_text_color="Custom",
                 text_color=BRAND_ICE,
             )
             self.toolbar_brand_chip.add_widget(self.toolbar_snowflake)
             bar.add_widget(self.toolbar_brand_chip)
             self.lbl_toolbar_title = MDLabel(
-                text=APP_NAME,
+                text="Refrigeration\nCalc",
                 halign="center",
                 valign="middle",
-                font_style="H6",
-                font_size="22sp",
-                shorten=True,
+                font_style="Subtitle1",
+                font_size="16sp",
+                line_height=0.88,
+                shorten=False,
                 theme_text_color="Custom",
                 text_color=(1, 1, 1, 1),
             )
@@ -1958,14 +2143,10 @@ def main() -> None:
                 width=dp(38),
                 height=dp(38),
             )
-            icon_widget = MDIcon(
-                icon=icon,
+            icon_widget = StageMotionIcon(
+                mode=key,
+                accent=STAGE_COLORS[key],
                 size_hint=(1, 1),
-                halign="center",
-                valign="middle",
-                theme_text_color="Custom",
-                text_color=STAGE_COLORS[key],
-                font_size="24sp",
             )
             icon_chip.add_widget(icon_widget)
             head.add_widget(icon_chip)

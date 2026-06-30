@@ -52,7 +52,20 @@ def test_mobilny_naglowek_uzywa_brandowego_gradientu():
 
     assert "class BrandToolbar" in source
     assert "class FrostChip" in source
+    assert 'text="Refrigeration\\nCalc"' in source
+    assert "self.toolbar_snowflake = MDIconButton" in source
     assert "md_bg_color=(0.12, 0.55, 0.86, 1)" not in source
+
+
+def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class StageMotionIcon" in source
+    assert "StageMotionIcon(" in source
+    assert "self._position_bands()" in source
+    assert "assets/images" in source
 
 
 def test_mobilna_lista_ukrywa_wylacznie_techniczne_rekordy_ctp():
