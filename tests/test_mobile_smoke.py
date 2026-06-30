@@ -68,6 +68,41 @@ def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
     assert "assets/images" in source
 
 
+def test_mobilne_tlo_ma_stabilna_warstwe_i_ciasniejsza_reklame():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
+    assert "self._root_bg_rect = Rectangle" in source
+    assert '"bottom_nav_h": dp(72 if compact else 78)' in source
+    assert "reserved_ad_h = max(64 if compact else 70" in source
+
+
+def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "ABSOLUTE_ZERO_C = -273.15" in source
+    assert "TEMP_HIGH_ERROR_C = 130.0" in source
+    assert "def _validate_temperature_input" in source
+    assert "temperature_warning_co2" in source
+
+
+def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
+    root = Path(__file__).parents[1]
+    source = (root / "tpof" / "mobile" / "main.py").read_text(encoding="utf-8")
+    languages = root / "resources" / "strings" / "languages.json"
+
+    assert "def _open_settings_dialog" in source
+    assert "self.toolbar_snowflake = MDIconButton" in source
+    assert "on_release=lambda *_: self._open_settings_dialog()" in source
+    assert "units_imperial_disabled" in source
+    assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in source
+    assert languages.exists()
+
+
 def test_mobilna_lista_ukrywa_wylacznie_techniczne_rekordy_ctp():
     from tpof.core import list_products, load_products
     from tpof.mobile.main import _mobile_product_names

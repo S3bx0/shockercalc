@@ -4,6 +4,27 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.7] - 2026-06-30
+
+### Dodano
+
+- Wstępne ustawienia pod lewą śnieżynką: struktura menu oraz wybór jednostek
+  z domyślnym trybem Metric; tryb Imperial/US jest przygotowany, ale wyłączony
+  do czasu pełnej konwersji wejść, wyjść i wzorów.
+- Walidację skrajnych temperatur z ostrzeżeniami dla nietypowych zakresów oraz
+  blokadą wartości poza bezpiecznym zakresem aplikacji.
+- Przygotowanie struktury lokalizacji dla PL, EN, ES, FR, IT, PT, JA i ZH z
+  angielskim fallbackiem dla języków oczekujących na tłumaczenia.
+
+### Zmieniono
+
+- Zmniejszono wysokość dolnej nawigacji i odstęp do reklamy, zachowując
+  minimalny obszar dotyku.
+- Ustabilizowano nieprzezroczyste tło aplikacji od pierwszej klatki renderu.
+- Poprawiono kierunek animowanego wskaźnika termometru oraz dodano subtelne
+  animacje przełączania zakładek dolnego menu.
+- Dopasowano przyciski do granatowo-błękitnego motywu aplikacji.
+
 ## [1.4.6] - 2026-06-30
 
 ### Zmieniono

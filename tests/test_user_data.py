@@ -36,6 +36,16 @@ def test_hints_are_enabled_by_default_and_persist(tmp_path):
     assert UiPreferences(path).hints_enabled is False
 
 
+def test_unit_system_defaults_to_metric_and_persists(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    assert preferences.unit_system == "metric"
+    preferences.set_unit_system("imperial")
+
+    assert UiPreferences(path).unit_system == "imperial"
+
+
 def test_recent_products_are_deduplicated_limited_and_persisted(tmp_path):
     path = tmp_path / "preferences.json"
     preferences = UiPreferences(path)

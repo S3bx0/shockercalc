@@ -67,6 +67,14 @@ CARD_BG_LIGHT = (0.96, 0.98, 1.0, 1)
 SURFACE_DARK = (0.05, 0.08, 0.11, 1)
 SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
 
+ABSOLUTE_ZERO_C = -273.15
+TEMP_HIGH_WARNING_C = 90.0
+TEMP_HIGH_STRONG_WARNING_C = 120.0
+TEMP_HIGH_ERROR_C = 130.0
+TEMP_LOW_WARNING_C = -35.0
+TEMP_LOW_STRONG_WARNING_C = -50.0
+TEMP_LOW_EXTREME_WARNING_C = -60.0
+
 _FONTTOOLS_SO_PURGED = False
 
 
@@ -236,6 +244,20 @@ I18N = {
         "hint_temp_start": "Temperatura produktu przed rozpoczęciem procesu.",
         "hint_temp_end": "Docelowa temperatura produktu po procesie.",
         "hint_time": "Łączny czas osiągnięcia temperatury końcowej.",
+        "settings_title": "Ustawienia",
+        "settings_intro": "Podstawowe ustawienia aplikacji. Część opcji jest przygotowana pod kolejne wersje.",
+        "units_title": "Jednostki",
+        "units_metric": "Metric: °C, kg, kW, m",
+        "units_imperial": "Imperial/US: °F, lb, BTU/h, ft",
+        "units_metric_active": "Aktywne: Metric",
+        "units_imperial_disabled": "Imperial/US jest przygotowane, ale wyłączone do czasu pełnej konwersji wzorów.",
+        "temperature_warning_high": "{field}: nietypowo wysoka temperatura ({value:.1f}°C). Zweryfikuj dane technologiczne.",
+        "temperature_warning_high_strong": "{field}: bardzo wysoka temperatura ({value:.1f}°C). Zweryfikuj, czy to poprawny zakres procesu.",
+        "temperature_error_high": "{field}: wartość powyżej {limit:.0f}°C jest poza bezpiecznym zakresem tej aplikacji.",
+        "temperature_warning_low": "{field}: nietypowo niska temperatura ({value:.1f}°C). Zweryfikuj zakres pracy instalacji.",
+        "temperature_warning_low_strong": "{field}: bardzo niska temperatura ({value:.1f}°C). To może dotyczyć układów specjalnych; sprawdź czynnik chłodniczy i projekt instalacji.",
+        "temperature_warning_co2": "Dla CO₂ / R744 niskotemperaturowe zastosowania wymagają weryfikacji konfiguracji układu i zakresu pracy.",
+        "temperature_error_absolute": "{field}: temperatura nie może być niższa niż zero bezwzględne (-273,15°C).",
         "telemetry_title": "Pomóż ulepszać aplikację",
         "telemetry_text": "Dobrowolne statystyki użycia, raporty błędów i zdalna konfiguracja pomagają ulepszać aplikację. Google może przetwarzać identyfikator instalacji i dane techniczne urządzenia. Wartości obliczeń, nazwy własnych produktów i pliki PDF nie są wysyłane.",
         "telemetry_enable": "Włącz",
@@ -372,6 +394,20 @@ I18N = {
         "hint_temp_start": "Product temperature before the process starts.",
         "hint_temp_end": "Target product temperature after the process.",
         "hint_time": "Total time required to reach the final temperature.",
+        "settings_title": "Settings",
+        "settings_intro": "Basic app settings. Some options are prepared for future releases.",
+        "units_title": "Units",
+        "units_metric": "Metric: °C, kg, kW, m",
+        "units_imperial": "Imperial/US: °F, lb, BTU/h, ft",
+        "units_metric_active": "Active: Metric",
+        "units_imperial_disabled": "Imperial/US is prepared but disabled until full formula conversion is implemented.",
+        "temperature_warning_high": "{field}: unusually high temperature ({value:.1f}°C). Verify the process data.",
+        "temperature_warning_high_strong": "{field}: very high temperature ({value:.1f}°C). Verify this process range.",
+        "temperature_error_high": "{field}: values above {limit:.0f}°C are outside this app's safe input range.",
+        "temperature_warning_low": "{field}: unusually low temperature ({value:.1f}°C). Verify the system operating range.",
+        "temperature_warning_low_strong": "{field}: very low temperature ({value:.1f}°C). This may indicate a special low-temperature system; verify refrigerant and system design.",
+        "temperature_warning_co2": "For CO₂ / R744, low-temperature applications require verification of system configuration and operating range.",
+        "temperature_error_absolute": "{field}: temperature cannot be below absolute zero (-273.15°C).",
         "telemetry_title": "Help improve the app",
         "telemetry_text": "Optional usage statistics, crash reports, and remote configuration help improve the app. Google may process an installation identifier and technical device data. Calculation values, custom product names, and PDF files are never sent.",
         "telemetry_enable": "Enable",
@@ -435,6 +471,9 @@ I18N = {
         "valve_unlocked_thanks": "Thank you! The valve module is now unlocked.",
     },
 }
+
+for _fallback_lang in ("es", "fr", "it", "pt", "ja", "zh"):
+    I18N[_fallback_lang] = dict(I18N["en"])
 
 CATEGORY_LABELS_EN = {
     "warzywa": "vegetables",
@@ -969,9 +1008,9 @@ def main() -> None:
             ]
             self._tick.points = [
                 cx + tube_w * 0.9,
-                tube_y + tube_h * (0.25 + 0.5 * phase),
+                tube_y + tube_h * (0.75 - 0.5 * phase),
                 cx + tube_w * 1.9,
-                tube_y + tube_h * (0.25 + 0.5 * phase),
+                tube_y + tube_h * (0.75 - 0.5 * phase),
             ]
 
         def _sync_snowflake(self):
@@ -1042,8 +1081,10 @@ def main() -> None:
             self._language = "pl"
             self._preferences = UiPreferences()
             self._hints_enabled = self._preferences.hints_enabled
+            self._unit_system = self._preferences.unit_system
             self._custom_product_dialog = None
             self._privacy_dialog = None
+            self._settings_dialog = None
             self._telemetry_dialog = None
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
@@ -1057,6 +1098,10 @@ def main() -> None:
             self._entitlements.ensure_started()
 
             self.root_host = FloatLayout()
+            with self.root_host.canvas.before:
+                self._root_bg_color = Color(*SURFACE_DARK)
+                self._root_bg_rect = Rectangle(pos=(0, 0), size=Window.size)
+            self.root_host.bind(pos=self._sync_root_background, size=self._sync_root_background)
             self.frost_background = FrostBackground()
             self.root_layout = MDBoxLayout(
                 orientation="vertical",
@@ -1115,6 +1160,7 @@ def main() -> None:
 
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
+            self._sync_theme_surfaces()
             Window.bind(size=self._apply_responsive_layout)
             self._apply_responsive_layout()
             Clock.schedule_once(lambda *_: self._refresh_pro_status(), 0.8)
@@ -1132,6 +1178,11 @@ def main() -> None:
             return self.root_host
 
         # --- tekst / stan aplikacji -------------------------------------
+        def _sync_root_background(self, *_args):
+            if hasattr(self, "_root_bg_rect"):
+                self._root_bg_rect.pos = self.root_host.pos
+                self._root_bg_rect.size = self.root_host.size
+
         def _t(self, key: str, **kwargs) -> str:
             text = I18N.get(self._language, I18N["pl"]).get(key, I18N["pl"].get(key, key))
             return text.format(**kwargs) if kwargs else text
@@ -1223,6 +1274,52 @@ def main() -> None:
                 self._mark_field_error(field, self._t("invalid_field", name=name))
                 raise ValueError(self._t("invalid_field", name=name)) from exc
 
+        def _temperature_warning(self, field_name: str, value: float) -> Optional[str]:
+            if value >= TEMP_HIGH_STRONG_WARNING_C:
+                return self._t(
+                    "temperature_warning_high_strong",
+                    field=field_name,
+                    value=value,
+                )
+            if value >= TEMP_HIGH_WARNING_C:
+                return self._t(
+                    "temperature_warning_high",
+                    field=field_name,
+                    value=value,
+                )
+            if value <= TEMP_LOW_STRONG_WARNING_C:
+                return (
+                    self._t(
+                        "temperature_warning_low_strong",
+                        field=field_name,
+                        value=value,
+                    )
+                    + " "
+                    + self._t("temperature_warning_co2")
+                )
+            if value <= TEMP_LOW_WARNING_C:
+                return self._t(
+                    "temperature_warning_low",
+                    field=field_name,
+                    value=value,
+                )
+            return None
+
+        def _validate_temperature_input(self, field, field_name: str, value: float) -> Optional[str]:
+            if value < ABSOLUTE_ZERO_C:
+                message = self._t("temperature_error_absolute", field=field_name)
+                self._mark_field_error(field, message)
+                raise ValueError(message)
+            if value > TEMP_HIGH_ERROR_C:
+                message = self._t(
+                    "temperature_error_high",
+                    field=field_name,
+                    limit=TEMP_HIGH_ERROR_C,
+                )
+                self._mark_field_error(field, message)
+                raise ValueError(message)
+            return self._temperature_warning(field_name, value)
+
         def _clear_main_validation(self):
             for line in (
                 getattr(self, "category_error_line", None),
@@ -1304,7 +1401,7 @@ def main() -> None:
             field_h = 54 if compact or short else 60
             card_spacing = 10 if compact else 12
             native_ad_h = getattr(self, "_native_ad_height_dp", 0)
-            reserved_ad_h = max(92 if compact else 100, native_ad_h + 18 if native_ad_h else 0)
+            reserved_ad_h = max(64 if compact else 70, native_ad_h + 8 if native_ad_h else 0)
             result_h = (
                 card_pad_top
                 + card_pad_bottom
@@ -1393,10 +1490,11 @@ def main() -> None:
                 "stage_icon_sp": 22 if compact else 24,
                 "unit_w": dp(64 if compact else 72),
                 "unit_h": dp(38 if compact else 42),
-                "footer_h": dp(48 if compact else 54),
+                "bottom_nav_h": dp(72 if compact else 78),
+                "footer_h": dp(42 if compact else 46),
                 "footer_sp": int(11 * text_scale),
                 "pro_w": dp(116 if compact else 128),
-                "pro_h": dp(28 if compact else 30),
+                "pro_h": dp(28),
                 "ad_h": dp(reserved_ad_h),
             }
 
@@ -1451,6 +1549,19 @@ def main() -> None:
                     btn.icon_size = f'{m["toolbar_btn_sp"]}sp'
             if hasattr(self, "btn_privacy"):
                 self._refresh_privacy_button()
+
+            if hasattr(self, "bottom_nav"):
+                self.bottom_nav.size_hint_y = None
+                self.bottom_nav.height = m["bottom_nav_h"]
+                for attr, value in (
+                    ("panel_color", (0.07, 0.08, 0.10, 1)),
+                    ("text_color_active", BRAND_ICE),
+                    ("text_color_normal", (0.74, 0.80, 0.84, 1)),
+                ):
+                    try:
+                        setattr(self.bottom_nav, attr, value)
+                    except Exception:
+                        pass
 
             if hasattr(self, "product_card"):
                 self.product_card.padding = card_padding
@@ -1563,7 +1674,7 @@ def main() -> None:
                 entry["value_label"].font_size = f'{m["body_sp"]}sp'
             if hasattr(self, "footer_bar"):
                 self.footer_bar.height = m["footer_h"]
-                self.footer_bar.padding = [m["content_pad"], dp(4), m["content_pad"], dp(4)]
+                self.footer_bar.padding = [m["content_pad"], dp(3), m["content_pad"], dp(3)]
                 self.footer_bar.spacing = dp(10 if m["compact"] else 12)
             if hasattr(self, "footer_label"):
                 self.footer_label.font_size = f'{m["footer_sp"]}sp'
@@ -1574,6 +1685,7 @@ def main() -> None:
                 self.btn_pro.font_size = f'{m["caption_sp"]}sp'
             if hasattr(self, "ad_slot") and not self._pro_no_ads:
                 self.ad_slot.height = m["ad_h"]
+                self.ad_slot.padding = [m["content_pad"], dp(2), m["content_pad"], dp(2)]
             if hasattr(self, "ad_label"):
                 self.ad_label.font_size = f'{m["caption_sp"]}sp'
 
@@ -1754,6 +1866,7 @@ def main() -> None:
                 icon_size="28sp",
                 theme_text_color="Custom",
                 text_color=BRAND_ICE,
+                on_release=lambda *_: self._open_settings_dialog(),
             )
             self.toolbar_brand_chip.add_widget(self.toolbar_snowflake)
             bar.add_widget(self.toolbar_brand_chip)
@@ -1811,9 +1924,27 @@ def main() -> None:
         def _surface_bg(self):
             return SURFACE_DARK if self.theme_cls.theme_style == "Dark" else SURFACE_LIGHT
 
+        def _style_app_button(self, button, variant: str = "primary"):
+            palettes = {
+                "primary": ((0.04, 0.42, 0.68, 1), (1, 1, 1, 1)),
+                "ice": ((0.04, 0.56, 0.72, 1), (0.94, 1.0, 1.0, 1)),
+                "dark": ((0.08, 0.12, 0.18, 1), (1.0, 0.58, 0.58, 1)),
+                "pro": ((0.05, 0.48, 0.72, 1), (1, 1, 1, 1)),
+            }
+            bg, fg = palettes.get(variant, palettes["primary"])
+            button.md_bg_color = bg
+            button.theme_text_color = "Custom"
+            button.text_color = fg
+            try:
+                button.elevation = 4
+            except Exception:
+                pass
+
         def _sync_theme_surfaces(self):
             surface = self._surface_bg()
             Window.clearcolor = surface
+            if hasattr(self, "_root_bg_color"):
+                self._root_bg_color.rgba = surface
             self.root_layout.md_bg_color = (0, 0, 0, 0)
             if hasattr(self, "frost_background"):
                 self.frost_background.set_dark(
@@ -1837,6 +1968,16 @@ def main() -> None:
                 )
             if hasattr(self, "btn_unit"):
                 self._set_mass_unit(self._mass_unit)
+            for button, variant in (
+                (getattr(self, "btn_category", None), "primary"),
+                (getattr(self, "btn_product", None), "primary"),
+                (getattr(self, "btn_calc", None), "primary"),
+                (getattr(self, "btn_pdf", None), "ice"),
+                (getattr(self, "btn_clear", None), "dark"),
+                (getattr(self, "btn_pro", None), "pro"),
+            ):
+                if button is not None:
+                    self._style_app_button(button, variant)
 
         def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
             from kivymd.uix.button import MDIconButton
@@ -2678,8 +2819,24 @@ def main() -> None:
                 return
             self._set_active_ad_tab(name)
             telemetry.set_screen(name)
+            self._animate_bottom_tab(name)
             if name == "valves":
                 self._refresh_valve_lock_ui()
+
+        def _animate_bottom_tab(self, name: str):
+            """Lekka reakcja zakładki bez kosztownych animacji layoutu."""
+            try:
+                from kivy.animation import Animation
+
+                item = self.tab_valves if name == "valves" else self.tab_freezing
+                Animation.cancel_all(item, "opacity")
+                (Animation(opacity=0.78, d=0.08) + Animation(opacity=1.0, d=0.16)).start(item)
+                # TODO: Rotate the snowflake icon directly after migrating to a
+                # bottom-navigation component that exposes the icon widget.
+                # TODO: Animate the valve drawing itself once it moves to a
+                # repo-owned SVG/canvas icon instead of the Material icon font.
+            except Exception:
+                log.debug("Animacja zakładki nie powiodła się", exc_info=True)
 
         def _set_active_ad_tab(self, tab: str):
             if not IS_ANDROID:
@@ -2893,6 +3050,94 @@ def main() -> None:
             self._refresh_privacy_button()
             if enabled:
                 telemetry.log_event("telemetry_enabled")
+
+        def _close_settings_dialog(self):
+            dialog = getattr(self, "_settings_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._settings_dialog = None
+
+        def _set_unit_system(self, unit_system: str):
+            # TODO: Implement full Imperial/US input and output conversion before enabling.
+            if str(unit_system).casefold() == "imperial":
+                self._show_error(self._t("units_imperial_disabled"))
+                return
+            self._unit_system = "metric"
+            self._preferences.set_unit_system("metric")
+            self._show_error(self._t("units_metric_active"))
+
+        def _open_settings_dialog(self):
+            """Menu ustawień pod lewą śnieżynką; gotowe na kolejne sekcje."""
+            self._close_product_dialog()
+            try:
+                from kivy.metrics import dp
+                from kivymd.uix.boxlayout import MDBoxLayout
+                from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.dialog import MDDialog
+                from kivymd.uix.label import MDLabel
+
+                content = MDBoxLayout(
+                    orientation="vertical",
+                    spacing=dp(10),
+                    adaptive_height=True,
+                )
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("settings_intro"),
+                        theme_text_color="Hint",
+                        font_style="Body2",
+                        adaptive_height=True,
+                    )
+                )
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("units_title"),
+                        theme_text_color="Custom",
+                        text_color=BRAND_ICE,
+                        font_style="Subtitle1",
+                        adaptive_height=True,
+                    )
+                )
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("units_metric_active"),
+                        theme_text_color="Custom",
+                        text_color=(0.85, 0.98, 1.0, 1),
+                        font_style="Body2",
+                        adaptive_height=True,
+                    )
+                )
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("units_imperial_disabled"),
+                        theme_text_color="Hint",
+                        font_style="Caption",
+                        adaptive_height=True,
+                    )
+                )
+                self._settings_dialog = MDDialog(
+                    title=self._t("settings_title"),
+                    type="custom",
+                    content_cls=content,
+                    buttons=[
+                        MDRaisedButton(
+                            text=self._t("units_metric"),
+                            on_release=lambda *_: self._set_unit_system("metric"),
+                        ),
+                        MDFlatButton(
+                            text=self._t("units_imperial"),
+                            disabled=True,
+                        ),
+                        MDFlatButton(
+                            text=self._t("close"),
+                            on_release=lambda *_: self._close_settings_dialog(),
+                        ),
+                    ],
+                )
+                self._settings_dialog.open()
+                telemetry.log_event("settings_opened", {"section": "general"})
+            except Exception:
+                log.exception("Ustawienia aplikacji")
 
         def _close_privacy_dialog(self):
             dialog = getattr(self, "_privacy_dialog", None)
@@ -3281,9 +3526,7 @@ def main() -> None:
             self._mass_unit = "t" if unit == "t" else "kg"
             if hasattr(self, "btn_unit"):
                 self.btn_unit.text = self._mass_unit
-                self.btn_unit.md_bg_color = (0.12, 0.55, 0.86, 1)
-                self.btn_unit.theme_text_color = "Custom"
-                self.btn_unit.text_color = (1, 1, 1, 1)
+                self._style_app_button(self.btn_unit, "ice")
 
         def _toggle_theme(self):
             self._close_product_dialog()
@@ -3452,6 +3695,20 @@ def main() -> None:
                 T2 = self._parse_required_field(
                     self.in_T2, self._t("field_temp_end")
                 )
+                warnings = [
+                    message
+                    for message in (
+                        self._validate_temperature_input(
+                            self.in_T1, self._t("field_temp_start"), T1
+                        ),
+                        self._validate_temperature_input(
+                            self.in_T2, self._t("field_temp_end"), T2
+                        ),
+                    )
+                    if message
+                ]
+                if warnings:
+                    self._show_error(warnings[0])
                 czas = self._parse_required_field(self.in_t, self._t("field_time"))
                 if czas <= 0:
                     self._mark_field_error(

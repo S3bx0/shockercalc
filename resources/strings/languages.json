@@ -1,0 +1,14 @@
+{
+  "default": "pl",
+  "fallback": "en",
+  "languages": {
+    "pl": { "name": "Polski", "status": "runtime" },
+    "en": { "name": "English", "status": "runtime" },
+    "es": { "name": "Spanish", "status": "fallback-en" },
+    "fr": { "name": "French", "status": "fallback-en" },
+    "it": { "name": "Italiano", "status": "fallback-en" },
+    "pt": { "name": "Portuguese", "status": "fallback-en" },
+    "ja": { "name": "Japanese", "status": "fallback-en" },
+    "zh": { "name": "Simplified Chinese", "status": "fallback-en" }
+  }
+}

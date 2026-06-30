@@ -68,6 +68,17 @@ class UiPreferences:
         self._save()
 
     @property
+    def unit_system(self) -> str:
+        value = str(self._data.get("unit_system", "metric")).strip().casefold()
+        return "imperial" if value == "imperial" else "metric"
+
+    def set_unit_system(self, unit_system: str) -> None:
+        # TODO: Enable "imperial" after full input/output conversion is implemented.
+        value = "imperial" if str(unit_system).casefold() == "imperial" else "metric"
+        self._data["unit_system"] = value
+        self._save()
+
+    @property
     def recent_products(self) -> List[tuple[str, str]]:
         """Zwraca ostatnio wybrane produkty od najnowszego."""
         result: List[tuple[str, str]] = []
