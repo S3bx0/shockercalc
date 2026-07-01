@@ -68,14 +68,16 @@ def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
     assert "assets/images" in source
 
 
-def test_mobilne_tlo_ma_stabilna_warstwe_i_ciasniejsza_reklame():
+def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     source = (
         Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
     ).read_text(encoding="utf-8")
 
     assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
     assert "self._root_bg_rect = Rectangle" in source
-    assert '"bottom_nav_h": dp(72 if compact else 78)' in source
+    assert "self.bottom_nav.size_hint_y = 1" in source
+    assert '"bottom_nav_h"' not in source
+    assert 'self.bottom_nav.height = m["bottom_nav_h"]' not in source
     assert "reserved_ad_h = max(64 if compact else 70" in source
 
 

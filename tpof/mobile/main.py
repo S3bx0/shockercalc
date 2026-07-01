@@ -642,7 +642,7 @@ def main() -> None:
                 self._bands = []
                 for _index in range(4):
                     color = Color(1, 1, 1, 0.04)
-                    band = Line(points=[], width=dp(42), cap="none")
+                    band = Line(points=[], width=dp(30), cap="none")
                     self._band_colors.append(color)
                     self._bands.append(band)
 
@@ -690,17 +690,17 @@ def main() -> None:
                 )
             band_palette = (
                 [
-                    (0.12, 0.58, 0.82, 0.08),
-                    (0.04, 0.74, 0.80, 0.055),
-                    (1.00, 1.00, 1.00, 0.045),
-                    (0.25, 0.72, 1.00, 0.035),
+                    (0.12, 0.58, 0.82, 0.06),
+                    (0.04, 0.74, 0.80, 0.04),
+                    (1.00, 1.00, 1.00, 0.03),
+                    (0.25, 0.72, 1.00, 0.028),
                 ]
                 if self._dark
                 else [
-                    (0.11, 0.59, 0.82, 0.11),
-                    (0.03, 0.70, 0.78, 0.075),
-                    (1.00, 1.00, 1.00, 0.18),
-                    (0.16, 0.58, 0.94, 0.07),
+                    (0.11, 0.59, 0.82, 0.06),
+                    (0.03, 0.70, 0.78, 0.045),
+                    (1.00, 1.00, 1.00, 0.10),
+                    (0.16, 0.58, 0.94, 0.04),
                 ]
             )
             for color, rgba in zip(self._band_colors, band_palette):
@@ -718,10 +718,10 @@ def main() -> None:
                 return
             x, y, width, height = self.x, self.y, self.width, self.height
             specs = [
-                (-0.18, 0.92, 0.44, 1.12),
-                (0.66, 1.04, 1.12, 0.76),
-                (-0.10, 0.18, 0.34, -0.08),
-                (0.60, 0.24, 1.08, -0.02),
+                (-0.22, 0.94, 0.26, 1.13),
+                (0.74, 1.02, 1.14, 0.78),
+                (-0.16, 0.16, 0.22, -0.04),
+                (0.64, 0.18, 1.10, -0.04),
             ]
             for band, (x1, y1, x2, y2) in zip(self._bands, specs):
                 band.points = [
@@ -1490,7 +1490,6 @@ def main() -> None:
                 "stage_icon_sp": 22 if compact else 24,
                 "unit_w": dp(64 if compact else 72),
                 "unit_h": dp(38 if compact else 42),
-                "bottom_nav_h": dp(72 if compact else 78),
                 "footer_h": dp(42 if compact else 46),
                 "footer_sp": int(11 * text_scale),
                 "pro_w": dp(116 if compact else 128),
@@ -1551,8 +1550,9 @@ def main() -> None:
                 self._refresh_privacy_button()
 
             if hasattr(self, "bottom_nav"):
-                self.bottom_nav.size_hint_y = None
-                self.bottom_nav.height = m["bottom_nav_h"]
+                # MDBottomNavigation owns the tab screen area as well as the bar,
+                # so it must remain the expanding child in the root layout.
+                self.bottom_nav.size_hint_y = 1
                 for attr, value in (
                     ("panel_color", (0.07, 0.08, 0.10, 1)),
                     ("text_color_active", BRAND_ICE),

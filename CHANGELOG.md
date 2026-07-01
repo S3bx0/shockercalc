@@ -4,6 +4,21 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.8] - 2026-07-01
+
+### Naprawiono
+
+- Przywrocono poprawny uklad mobilnych zakladek po regresji z wersji 1.4.7:
+  dolna nawigacja ponownie dziala jako kontener ekranow, dzieki czemu tresc nie
+  zapada sie i nie zjezdza pod dolny pasek.
+- Dodano test zrodlowy pilnujacy, zeby `MDBottomNavigation` nie byl ponownie
+  skracany jako caly kontener zakladek.
+
+### Zmieniono
+
+- Dopracowano motywowane tlo aplikacji: skosy sa delikatniejsze, wezsze i blizej
+  krawedzi, a subtelny efekt poruszajacych sie sniezynek pozostaje bez zmian.
+
 ## [1.4.7] - 2026-06-30
 
 ### Dodano
