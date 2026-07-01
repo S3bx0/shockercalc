@@ -66,6 +66,12 @@ CARD_BG_DARK = (0.09, 0.13, 0.17, 1)
 CARD_BG_LIGHT = (0.96, 0.98, 1.0, 1)
 SURFACE_DARK = (0.05, 0.08, 0.11, 1)
 SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
+BOTTOM_NAV_BG_DARK = (0.04, 0.05, 0.07, 1)
+BOTTOM_NAV_BG_LIGHT = (0.86, 0.95, 0.99, 1)
+FOOTER_BG_DARK = (0.04, 0.07, 0.10, 1)
+FOOTER_BG_LIGHT = (0.89, 0.96, 0.99, 1)
+AD_SLOT_BG_DARK = (0.02, 0.04, 0.06, 0.92)
+AD_SLOT_BG_LIGHT = (0.90, 0.96, 0.99, 0.98)
 
 ABSOLUTE_ZERO_C = -273.15
 TEMP_HIGH_WARNING_C = 90.0
@@ -1060,6 +1066,7 @@ def main() -> None:
             self._rotation = 0.0
             self._valve_phase = 0.0
             self._event = None
+            self._light_mode = False
             self._lines = []
             with self.canvas.before:
                 self._chip_color = Color(1, 1, 1, 0.0)
@@ -1081,13 +1088,27 @@ def main() -> None:
 
         def set_active(self, active: bool):
             self.active = bool(active)
-            self._chip_color.rgba = (1, 1, 1, 0.24 if self.active else 0.0)
-            self._icon_color.rgba = (
-                (*BRAND_ICE[:3], 0.98)
-                if self.active
-                else (0.78, 0.84, 0.88, 0.78)
-            )
+            if self._light_mode:
+                self._chip_color.rgba = (
+                    (*BRAND_CYAN[:3], 0.18) if self.active else (1, 1, 1, 0.0)
+                )
+                self._icon_color.rgba = (
+                    (0.02, 0.42, 0.58, 0.98)
+                    if self.active
+                    else (0.21, 0.33, 0.40, 0.66)
+                )
+            else:
+                self._chip_color.rgba = (1, 1, 1, 0.24 if self.active else 0.0)
+                self._icon_color.rgba = (
+                    (*BRAND_ICE[:3], 0.98)
+                    if self.active
+                    else (0.78, 0.84, 0.88, 0.78)
+                )
             self._sync_canvas()
+
+        def set_theme_light(self, light: bool):
+            self._light_mode = bool(light)
+            self.set_active(self.active)
 
         def play(self):
             self._motion = 0.0
@@ -1186,6 +1207,7 @@ def main() -> None:
             self.spacing = dp(1)
             self.padding = [0, dp(5), 0, dp(4)]
             self._on_select = on_select
+            self._light_mode = False
             self.icon_widget = BottomNavMotionIcon(
                 mode=mode,
                 size_hint=(None, None),
@@ -1212,9 +1234,19 @@ def main() -> None:
 
         def set_active(self, active: bool):
             self.icon_widget.set_active(active)
-            self.label.text_color = (
-                BRAND_ICE if active else (0.78, 0.84, 0.88, 0.82)
-            )
+            if self._light_mode:
+                self.label.text_color = (
+                    (0.02, 0.42, 0.58, 1) if active else (0.23, 0.33, 0.40, 0.72)
+                )
+            else:
+                self.label.text_color = (
+                    BRAND_ICE if active else (0.78, 0.84, 0.88, 0.82)
+                )
+
+        def set_theme_light(self, light: bool):
+            self._light_mode = bool(light)
+            self.icon_widget.set_theme_light(light)
+            self.set_active(self.icon_widget.active)
 
         def play(self):
             self.icon_widget.play()
@@ -1836,7 +1868,7 @@ def main() -> None:
                     dp(3),
                 ]
                 self.bottom_nav.spacing = dp(10 if m["compact"] else 14)
-                self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)
+                self.bottom_nav.md_bg_color = self._bottom_nav_bg()
             for tab in (
                 getattr(self, "bottom_freezing_tab", None),
                 getattr(self, "bottom_valves_tab", None),
@@ -2210,7 +2242,7 @@ def main() -> None:
                 height=dp(70),
                 padding=[dp(16), dp(3), dp(16), dp(3)],
                 spacing=dp(14),
-                md_bg_color=(0.04, 0.05, 0.07, 1),
+                md_bg_color=self._bottom_nav_bg(),
             )
             self.bottom_freezing_tab = BottomNavTab(
                 name="freezing",
@@ -2233,6 +2265,27 @@ def main() -> None:
 
         def _surface_bg(self):
             return SURFACE_DARK if self.theme_cls.theme_style == "Dark" else SURFACE_LIGHT
+
+        def _bottom_nav_bg(self):
+            return (
+                BOTTOM_NAV_BG_DARK
+                if self.theme_cls.theme_style == "Dark"
+                else BOTTOM_NAV_BG_LIGHT
+            )
+
+        def _footer_bg(self):
+            return (
+                FOOTER_BG_DARK
+                if self.theme_cls.theme_style == "Dark"
+                else FOOTER_BG_LIGHT
+            )
+
+        def _ad_slot_bg(self):
+            return (
+                AD_SLOT_BG_DARK
+                if self.theme_cls.theme_style == "Dark"
+                else AD_SLOT_BG_LIGHT
+            )
 
         def _style_app_button(self, button, variant: str = "primary"):
             palettes = {
@@ -2265,28 +2318,26 @@ def main() -> None:
                     self.theme_cls.theme_style == "Dark"
                 )
             if hasattr(self, "bottom_nav"):
-                self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)
+                self.bottom_nav.md_bg_color = self._bottom_nav_bg()
             active_tab = getattr(self, "_active_tab_name", "freezing")
             if hasattr(self, "bottom_freezing_tab"):
+                self.bottom_freezing_tab.set_theme_light(
+                    self.theme_cls.theme_style != "Dark"
+                )
                 self.bottom_freezing_tab.set_active(active_tab == "freezing")
             if hasattr(self, "bottom_valves_tab"):
+                self.bottom_valves_tab.set_theme_light(
+                    self.theme_cls.theme_style != "Dark"
+                )
                 self.bottom_valves_tab.set_active(active_tab == "valves")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
             ad_slot = getattr(self, "ad_slot", None)
             if ad_slot is not None:
-                ad_slot.md_bg_color = (
-                    (0.02, 0.04, 0.06, 0.92)
-                    if self.theme_cls.theme_style == "Dark"
-                    else (0.86, 0.91, 0.95, 0.96)
-                )
+                ad_slot.md_bg_color = self._ad_slot_bg()
             footer_bar = getattr(self, "footer_bar", None)
             if footer_bar is not None:
-                footer_bar.md_bg_color = (
-                    (0.04, 0.07, 0.10, 1)
-                    if self.theme_cls.theme_style == "Dark"
-                    else (0.90, 0.94, 0.97, 1)
-                )
+                footer_bar.md_bg_color = self._footer_bg()
             if hasattr(self, "btn_unit"):
                 self._set_mass_unit(self._mass_unit)
             for button, variant in (
@@ -2637,7 +2688,7 @@ def main() -> None:
                 height=dp(48),
                 padding=[dp(12), dp(4), dp(12), dp(4)],
                 spacing=dp(8),
-                md_bg_color=(0.04, 0.07, 0.10, 1),
+                md_bg_color=self._footer_bg(),
             )
             self.footer_bar = footer
             self.footer_label = MDLabel(
@@ -2668,7 +2719,7 @@ def main() -> None:
                 height=dp(96),
                 padding=[dp(16), dp(6), dp(16), dp(6)],
                 spacing=dp(8),
-                md_bg_color=(0.02, 0.04, 0.06, 0.92),
+                md_bg_color=self._ad_slot_bg(),
             )
             self.ad_slot = slot
             slot.add_widget(

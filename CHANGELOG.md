@@ -4,6 +4,14 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.12] - 2026-07-01
+
+### Zmieniono
+
+- Dopasowano dolny pasek zakładek, stopkę i slot reklamy do jasnego motywu:
+  zamiast czarnej belki używany jest jasny, lodowy wariant kolorystyczny.
+- Poprawiono kontrast ikon i podpisów dolnych zakładek w trybie jasnym.
+
 ## [1.4.11] - 2026-07-01
 
 ### Naprawiono

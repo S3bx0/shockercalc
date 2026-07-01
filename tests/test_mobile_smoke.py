@@ -95,6 +95,20 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
     assert "tab.play()" in source
 
 
+def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "BOTTOM_NAV_BG_LIGHT" in source
+    assert "def _bottom_nav_bg" in source
+    assert "self.bottom_nav.md_bg_color = self._bottom_nav_bg()" in source
+    assert "def set_theme_light" in source
+    assert "self.bottom_freezing_tab.set_theme_light" in source
+    assert "self.bottom_valves_tab.set_theme_light" in source
+    assert "self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)" not in source
+
+
 def test_nieaktywna_zakladka_nie_blokuje_dotyku():
     source = (
         Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
