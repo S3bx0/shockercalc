@@ -4,6 +4,17 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.9] - 2026-07-01
+
+### Naprawiono
+
+- Przywrocono widoczna warstwe lodowego tla za kartami po poprawce dolnych
+  zakladek z wersji 1.4.8.
+- Zastapiono `MDBottomNavigation` wlasnym, kompaktowym paskiem z animowana
+  sniezynka i ruchem ikony zaworu przy przelaczaniu zakladek.
+- Poprawiono dialog ustawien jednostek, zeby przyciski Metric/Imperial nie
+  uciekaly poza okno na waskich ekranach.
+
 ## [1.4.8] - 2026-07-01
 
 ### Naprawiono

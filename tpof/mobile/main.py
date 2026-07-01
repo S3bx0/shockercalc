@@ -580,10 +580,6 @@ def main() -> None:
         from kivy.uix.floatlayout import FloatLayout
         from kivy.uix.widget import Widget
         from kivymd.app import MDApp
-        from kivymd.uix.bottomnavigation import (
-            MDBottomNavigation,
-            MDBottomNavigationItem,
-        )
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDIconButton, MDRaisedButton
         from kivymd.uix.card import MDCard
@@ -1053,6 +1049,183 @@ def main() -> None:
                 )
                 dot.size = (dot_size, dot_size)
 
+    class BottomNavMotionIcon(Widget):
+        """Wlasna lekka ikona dolnej zakladki z kontrolowana animacja."""
+
+        def __init__(self, *, mode: str, **kwargs):
+            super().__init__(**kwargs)
+            self.mode = mode
+            self.active = False
+            self._motion = 0.0
+            self._rotation = 0.0
+            self._valve_phase = 0.0
+            self._event = None
+            self._lines = []
+            with self.canvas.before:
+                self._chip_color = Color(1, 1, 1, 0.0)
+                self._chip = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(14)] * 4
+                )
+            with self.canvas:
+                self._icon_color = Color(*BRAND_ICE[:3], 0.72)
+                line_count = 18 if self.mode == "snowflake" else 5
+                for _index in range(line_count):
+                    self._lines.append(Line(points=[], width=dp(1.45), cap="round"))
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas)
+            self._sync_canvas()
+
+        def on_parent(self, _instance, parent):
+            if parent is None and self._event is not None:
+                self._event.cancel()
+                self._event = None
+
+        def set_active(self, active: bool):
+            self.active = bool(active)
+            self._chip_color.rgba = (1, 1, 1, 0.24 if self.active else 0.0)
+            self._icon_color.rgba = (
+                (*BRAND_ICE[:3], 0.98)
+                if self.active
+                else (0.78, 0.84, 0.88, 0.78)
+            )
+            self._sync_canvas()
+
+        def play(self):
+            self._motion = 0.0
+            if self._event is None:
+                self._event = Clock.schedule_interval(self._tick_motion, 1.0 / 30.0)
+
+        def _tick_motion(self, dt):
+            self._motion += min(float(dt), 0.12) / 0.48
+            fraction = min(self._motion, 1.0)
+            eased = fraction * fraction * (3.0 - 2.0 * fraction)
+            if self.mode == "snowflake":
+                self._rotation = math.tau * eased
+            else:
+                self._valve_phase = math.sin(math.pi * eased)
+            self._sync_canvas()
+            if fraction >= 1.0 and self._event is not None:
+                self._event.cancel()
+                self._event = None
+                self._motion = 0.0
+                self._rotation = 0.0
+                self._valve_phase = 0.0
+                self._sync_canvas()
+
+        def _sync_canvas(self, *_args):
+            if self.width <= 0 or self.height <= 0:
+                return
+            self._chip.pos = self.pos
+            self._chip.size = self.size
+            self._chip.radius = [min(self.width, self.height) * 0.30] * 4
+            if self.mode == "snowflake":
+                self._sync_snowflake()
+            else:
+                self._sync_valve()
+
+        def _sync_snowflake(self):
+            cx = self.center_x
+            cy = self.center_y
+            radius = min(self.width, self.height) * 0.30
+            inner = radius * 0.16
+            branch = radius * 0.34
+            line_index = 0
+            for arm in range(6):
+                angle = self._rotation + arm * math.tau / 6.0
+                outer_x = cx + math.cos(angle) * radius
+                outer_y = cy + math.sin(angle) * radius
+                inner_x = cx + math.cos(angle) * inner
+                inner_y = cy + math.sin(angle) * inner
+                self._lines[line_index].points = [inner_x, inner_y, outer_x, outer_y]
+                line_index += 1
+                bx = cx + math.cos(angle) * radius * 0.62
+                by = cy + math.sin(angle) * radius * 0.62
+                for side in (-1, 1):
+                    branch_angle = angle + side * 2.45
+                    self._lines[line_index].points = [
+                        bx,
+                        by,
+                        bx + math.cos(branch_angle) * branch,
+                        by + math.sin(branch_angle) * branch,
+                    ]
+                    line_index += 1
+
+        def _sync_valve(self):
+            cx = self.center_x
+            cy = self.center_y
+            width = self.width * 0.62
+            height = self.height * 0.50
+            left = cx - width * 0.5
+            right = cx + width * 0.5
+            top = cy + height * 0.5
+            bottom = cy - height * 0.5
+            blade_shift = self._valve_phase * height * 0.32
+            self._lines[0].points = [left, cy, right, cy]
+            self._lines[1].points = [left, bottom, left, top]
+            self._lines[2].points = [right, bottom, right, top]
+            self._lines[3].points = [
+                cx - width * 0.24,
+                bottom,
+                cx + width * 0.24,
+                top - blade_shift,
+            ]
+            self._lines[4].points = [
+                cx - width * 0.24,
+                top,
+                cx + width * 0.24,
+                bottom + blade_shift,
+            ]
+
+    class BottomNavTab(MDBoxLayout):
+        """Dotykalny przycisk dolnego menu z wlasna animowana ikona."""
+
+        def __init__(self, *, name: str, text: str, mode: str, on_select, **kwargs):
+            super().__init__(**kwargs)
+            self.name = name
+            self.orientation = "vertical"
+            self.size_hint_x = 1
+            self.spacing = dp(1)
+            self.padding = [0, dp(5), 0, dp(4)]
+            self._on_select = on_select
+            self.icon_widget = BottomNavMotionIcon(
+                mode=mode,
+                size_hint=(None, None),
+                size=(dp(56), dp(34)),
+                pos_hint={"center_x": 0.5},
+            )
+            self.label = MDLabel(
+                text=text,
+                halign="center",
+                theme_text_color="Custom",
+                text_color=(0.78, 0.84, 0.88, 0.82),
+                font_size="12sp",
+                size_hint_y=None,
+                height=dp(20),
+            )
+            self.add_widget(self.icon_widget)
+            self.add_widget(self.label)
+
+        def on_touch_down(self, touch):
+            if self.collide_point(*touch.pos):
+                self._on_select(self.name)
+                return True
+            return super().on_touch_down(touch)
+
+        def set_active(self, active: bool):
+            self.icon_widget.set_active(active)
+            self.label.text_color = (
+                BRAND_ICE if active else (0.78, 0.84, 0.88, 0.82)
+            )
+
+        def play(self):
+            self.icon_widget.play()
+
+        def set_text(self, text: str):
+            self.label.text = text
+
+        def set_metrics(self, *, icon_size, label_sp: int):
+            self.icon_widget.size = (icon_size, max(dp(30), icon_size * 0.62))
+            self.label.font_size = f"{label_sp}sp"
+
     class ShockerCalcApp(MDApp):
         def build(self):
             self.title = APP_NAME
@@ -1135,28 +1308,25 @@ def main() -> None:
             content.add_widget(self.results_card)
 
             self.scroll.add_widget(content)
+            self.scroll.size_hint = (1, 1)
 
-            # Dolna nawigacja w stylu Danfoss Ref Tools: zakładka chłodnicza + zawory.
-            self.bottom_nav = MDBottomNavigation()
-            try:
-                self.bottom_nav.bind(on_switch_tabs=self._on_tab_switch)
-            except Exception:  # pragma: no cover - zależne od wersji KivyMD
-                log.debug("Nie udało się podpiąć on_switch_tabs", exc_info=True)
-            self.tab_freezing = MDBottomNavigationItem(
-                name="freezing", text=self._t("nav_freezing"), icon="snowflake"
+            # Własny host zakładek: tło pozostaje widoczne, a dolny pasek nie
+            # może już zapadać obszaru treści jak MDBottomNavigation.
+            self.tab_content_host = FloatLayout(size_hint=(1, 1))
+            self.tab_frost_background = FrostBackground(size_hint=(1, 1))
+            self.tab_content_host.add_widget(self.tab_frost_background)
+            self.valve_scroll = self._build_valve_tab(
+                dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
             )
-            self.tab_freezing.add_widget(self.scroll)
-            self.bottom_nav.add_widget(self.tab_freezing)
-            self.tab_valves = MDBottomNavigationItem(
-                name="valves", text=self._t("nav_valves"), icon="valve"
-            )
-            self.tab_valves.add_widget(
-                self._build_valve_tab(
-                    dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
-                )
-            )
-            self.bottom_nav.add_widget(self.tab_valves)
+            self.valve_scroll.size_hint = (1, 1)
+            self.tab_content_host.add_widget(self.scroll)
+            self.tab_content_host.add_widget(self.valve_scroll)
+            root.add_widget(self.tab_content_host)
+
+            self.bottom_nav = self._build_bottom_nav(dp, MDBoxLayout)
             root.add_widget(self.bottom_nav)
+            self._active_tab_name = "freezing"
+            self._show_tab("freezing", animate=False, report=False)
 
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
@@ -1460,6 +1630,9 @@ def main() -> None:
                 "toolbar_icon_sp": 24 if narrow else 26 if compact else 28,
                 "toolbar_btn_sp": 23 if narrow else 24 if compact else 26,
                 "toolbar_title_sp": int(14 * text_scale) if narrow else int(15 * text_scale) if compact else 16,
+                "bottom_nav_h": dp(64 if compact else 70),
+                "bottom_tab_icon": dp(52 if compact else 56),
+                "bottom_tab_sp": 11 if compact else 12,
                 "title_h": dp(title_h),
                 "title_sp": int(20 * text_scale),
                 "body_sp": int(15 * text_scale),
@@ -1549,19 +1722,28 @@ def main() -> None:
             if hasattr(self, "btn_privacy"):
                 self._refresh_privacy_button()
 
+            if hasattr(self, "tab_content_host"):
+                self.tab_content_host.size_hint_y = 1
             if hasattr(self, "bottom_nav"):
-                # MDBottomNavigation owns the tab screen area as well as the bar,
-                # so it must remain the expanding child in the root layout.
-                self.bottom_nav.size_hint_y = 1
-                for attr, value in (
-                    ("panel_color", (0.07, 0.08, 0.10, 1)),
-                    ("text_color_active", BRAND_ICE),
-                    ("text_color_normal", (0.74, 0.80, 0.84, 1)),
-                ):
-                    try:
-                        setattr(self.bottom_nav, attr, value)
-                    except Exception:
-                        pass
+                self.bottom_nav.size_hint_y = None
+                self.bottom_nav.height = m["bottom_nav_h"]
+                self.bottom_nav.padding = [
+                    m["content_pad"],
+                    dp(3),
+                    m["content_pad"],
+                    dp(3),
+                ]
+                self.bottom_nav.spacing = dp(10 if m["compact"] else 14)
+                self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)
+            for tab in (
+                getattr(self, "bottom_freezing_tab", None),
+                getattr(self, "bottom_valves_tab", None),
+            ):
+                if tab is not None:
+                    tab.set_metrics(
+                        icon_size=m["bottom_tab_icon"],
+                        label_sp=m["bottom_tab_sp"],
+                    )
 
             if hasattr(self, "product_card"):
                 self.product_card.padding = card_padding
@@ -1733,10 +1915,10 @@ def main() -> None:
                 self.lbl_total.text = self._total_text()
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
-            if hasattr(self, "tab_freezing"):
-                self.tab_freezing.text = self._t("nav_freezing")
-            if hasattr(self, "tab_valves"):
-                self.tab_valves.text = self._t("nav_valves")
+            if hasattr(self, "bottom_freezing_tab"):
+                self.bottom_freezing_tab.set_text(self._t("nav_freezing"))
+            if hasattr(self, "bottom_valves_tab"):
+                self.bottom_valves_tab.set_text(self._t("nav_valves"))
             if hasattr(self, "valve_lbl_title"):
                 self.valve_lbl_title.text = self._t("valve_title")
                 self.valve_btn_mode_k.text = self._t("valve_mode_volume")
@@ -1918,6 +2100,32 @@ def main() -> None:
             self._refresh_privacy_button()
             return bar
 
+        def _build_bottom_nav(self, dp, MDBoxLayout):
+            """Kompaktowy pasek zakladek z lekkimi animacjami ikon."""
+            nav = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(70),
+                padding=[dp(16), dp(3), dp(16), dp(3)],
+                spacing=dp(14),
+                md_bg_color=(0.04, 0.05, 0.07, 1),
+            )
+            self.bottom_freezing_tab = BottomNavTab(
+                name="freezing",
+                text=self._t("nav_freezing"),
+                mode="snowflake",
+                on_select=lambda name: self._show_tab(name),
+            )
+            self.bottom_valves_tab = BottomNavTab(
+                name="valves",
+                text=self._t("nav_valves"),
+                mode="valve",
+                on_select=lambda name: self._show_tab(name),
+            )
+            nav.add_widget(self.bottom_freezing_tab)
+            nav.add_widget(self.bottom_valves_tab)
+            return nav
+
         def _card_bg(self):
             return CARD_BG_DARK if self.theme_cls.theme_style == "Dark" else CARD_BG_LIGHT
 
@@ -1950,6 +2158,17 @@ def main() -> None:
                 self.frost_background.set_dark(
                     self.theme_cls.theme_style == "Dark"
                 )
+            if hasattr(self, "tab_frost_background"):
+                self.tab_frost_background.set_dark(
+                    self.theme_cls.theme_style == "Dark"
+                )
+            if hasattr(self, "bottom_nav"):
+                self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)
+            active_tab = getattr(self, "_active_tab_name", "freezing")
+            if hasattr(self, "bottom_freezing_tab"):
+                self.bottom_freezing_tab.set_active(active_tab == "freezing")
+            if hasattr(self, "bottom_valves_tab"):
+                self.bottom_valves_tab.set_active(active_tab == "valves")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
             ad_slot = getattr(self, "ad_slot", None)
@@ -2805,7 +3024,7 @@ def main() -> None:
             self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value=results.przeplyw_zaworu)
 
         def _on_tab_switch(self, *args):
-            """Reaguje na zmianę zakładki dolnej nawigacji — przełącza jednostkę reklam."""
+            """Zgodność z dawnym callbackiem dolnej nawigacji."""
             name = None
             for a in args:
                 if isinstance(a, str) and a in ("freezing", "valves"):
@@ -2817,24 +3036,41 @@ def main() -> None:
                     break
             if name is None:
                 return
-            self._set_active_ad_tab(name)
-            telemetry.set_screen(name)
-            self._animate_bottom_tab(name)
+            self._show_tab(name)
+
+        def _show_tab(self, name: str, *, animate: bool = True, report: bool = True):
+            """Przelacza widoczna karte bez ruszania wysokosci dolnego paska."""
+            if name not in ("freezing", "valves"):
+                return
+            self._active_tab_name = name
+            freezing_active = name == "freezing"
+            if hasattr(self, "scroll"):
+                self.scroll.opacity = 1 if freezing_active else 0
+                self.scroll.disabled = not freezing_active
+            if hasattr(self, "valve_scroll"):
+                self.valve_scroll.opacity = 0 if freezing_active else 1
+                self.valve_scroll.disabled = freezing_active
+            if hasattr(self, "bottom_freezing_tab"):
+                self.bottom_freezing_tab.set_active(freezing_active)
+            if hasattr(self, "bottom_valves_tab"):
+                self.bottom_valves_tab.set_active(not freezing_active)
+            if report:
+                self._set_active_ad_tab(name)
+                telemetry.set_screen(name)
+            if animate:
+                self._animate_bottom_tab(name)
             if name == "valves":
                 self._refresh_valve_lock_ui()
 
         def _animate_bottom_tab(self, name: str):
             """Lekka reakcja zakładki bez kosztownych animacji layoutu."""
             try:
-                from kivy.animation import Animation
-
-                item = self.tab_valves if name == "valves" else self.tab_freezing
-                Animation.cancel_all(item, "opacity")
-                (Animation(opacity=0.78, d=0.08) + Animation(opacity=1.0, d=0.16)).start(item)
-                # TODO: Rotate the snowflake icon directly after migrating to a
-                # bottom-navigation component that exposes the icon widget.
-                # TODO: Animate the valve drawing itself once it moves to a
-                # repo-owned SVG/canvas icon instead of the Material icon font.
+                tab = (
+                    self.bottom_valves_tab
+                    if name == "valves"
+                    else self.bottom_freezing_tab
+                )
+                tab.play()
             except Exception:
                 log.debug("Animacja zakładki nie powiodła się", exc_info=True)
 
@@ -3115,19 +3351,36 @@ def main() -> None:
                         adaptive_height=True,
                     )
                 )
+                metric_row = MDBoxLayout(
+                    orientation="horizontal",
+                    size_hint_y=None,
+                    height=dp(42),
+                )
+                metric_button = MDRaisedButton(
+                    text=self._t("units_metric"),
+                    size_hint_x=1,
+                    on_release=lambda *_: self._set_unit_system("metric"),
+                )
+                self._style_app_button(metric_button, "ice")
+                metric_row.add_widget(metric_button)
+                content.add_widget(metric_row)
+                imperial_row = MDBoxLayout(
+                    orientation="horizontal",
+                    size_hint_y=None,
+                    height=dp(42),
+                )
+                imperial_button = MDFlatButton(
+                    text=self._t("units_imperial"),
+                    size_hint_x=1,
+                    disabled=True,
+                )
+                imperial_row.add_widget(imperial_button)
+                content.add_widget(imperial_row)
                 self._settings_dialog = MDDialog(
                     title=self._t("settings_title"),
                     type="custom",
                     content_cls=content,
                     buttons=[
-                        MDRaisedButton(
-                            text=self._t("units_metric"),
-                            on_release=lambda *_: self._set_unit_system("metric"),
-                        ),
-                        MDFlatButton(
-                            text=self._t("units_imperial"),
-                            disabled=True,
-                        ),
                         MDFlatButton(
                             text=self._t("close"),
                             on_release=lambda *_: self._close_settings_dialog(),

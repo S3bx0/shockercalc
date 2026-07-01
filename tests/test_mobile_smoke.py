@@ -75,10 +75,24 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
 
     assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
     assert "self._root_bg_rect = Rectangle" in source
-    assert "self.bottom_nav.size_hint_y = 1" in source
-    assert '"bottom_nav_h"' not in source
-    assert 'self.bottom_nav.height = m["bottom_nav_h"]' not in source
+    assert "self.tab_frost_background = FrostBackground" in source
+    assert "self.bottom_nav.size_hint_y = 1" not in source
+    assert '"bottom_nav_h"' in source
+    assert 'self.bottom_nav.height = m["bottom_nav_h"]' in source
     assert "reserved_ad_h = max(64 if compact else 70" in source
+
+
+def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class BottomNavMotionIcon" in source
+    assert "class BottomNavTab" in source
+    assert "self.bottom_freezing_tab" in source
+    assert "self.bottom_valves_tab" in source
+    assert "def _show_tab" in source
+    assert "tab.play()" in source
 
 
 def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
