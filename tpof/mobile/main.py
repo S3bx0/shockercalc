@@ -1233,8 +1233,9 @@ def main() -> None:
             super().__init__(**kwargs)
             self.orientation = "vertical"
             self.padding = [dp(18), dp(13), dp(18), dp(13)]
-            self.size_hint = (0.88, None)
-            self.height = dp(92)
+            self._visible_size_hint = (0.88, None)
+            self.size_hint = (None, None)
+            self.size = (0, 0)
             self.opacity = 0
             self.disabled = True
             self.pos_hint = {"center_x": 0.5, "center_y": 0.54}
@@ -1266,12 +1267,35 @@ def main() -> None:
 
             Animation.cancel_all(self, "opacity")
             self.label.text = str(message)
+            self.size_hint = self._visible_size_hint
+            self.height = dp(92)
             self.disabled = False
             self.opacity = 1
             Clock.schedule_once(lambda *_: self._fit_height(), 0)
             fade = Animation(opacity=1, d=1.5) + Animation(opacity=0, d=0.5)
-            fade.bind(on_complete=lambda *_: setattr(self, "disabled", True))
+            fade.bind(on_complete=self._hide_after_fade)
             fade.start(self)
+
+        def _hide_after_fade(self, *_args):
+            self.opacity = 0
+            self.disabled = True
+            self.size_hint = (None, None)
+            self.size = (0, 0)
+
+        def on_touch_down(self, touch):
+            if self.disabled or self.opacity <= 0.05:
+                return False
+            return super().on_touch_down(touch)
+
+        def on_touch_move(self, touch):
+            if self.disabled or self.opacity <= 0.05:
+                return False
+            return super().on_touch_move(touch)
+
+        def on_touch_up(self, touch):
+            if self.disabled or self.opacity <= 0.05:
+                return False
+            return super().on_touch_up(touch)
 
         def _fit_height(self):
             text_width = max(self.width - dp(36), dp(120))
@@ -3123,11 +3147,10 @@ def main() -> None:
             self._active_tab_name = name
             freezing_active = name == "freezing"
             if hasattr(self, "scroll"):
-                self.scroll.opacity = 1 if freezing_active else 0
-                self.scroll.disabled = not freezing_active
+                self._set_tab_visibility(self.scroll, freezing_active)
             if hasattr(self, "valve_scroll"):
-                self.valve_scroll.opacity = 0 if freezing_active else 1
-                self.valve_scroll.disabled = freezing_active
+                self._set_tab_visibility(self.valve_scroll, not freezing_active)
+            self._raise_tab_widget(self.scroll if freezing_active else self.valve_scroll)
             if hasattr(self, "bottom_freezing_tab"):
                 self.bottom_freezing_tab.set_active(freezing_active)
             if hasattr(self, "bottom_valves_tab"):
@@ -3139,6 +3162,30 @@ def main() -> None:
                 self._animate_bottom_tab(name)
             if name == "valves":
                 self._refresh_valve_lock_ui()
+
+        def _set_tab_visibility(self, widget, active: bool):
+            """Ukryta zakladka nie moze zostawac niewidzialna warstwa dotykowa."""
+            if widget is None:
+                return
+            if active:
+                widget.size_hint = (1, 1)
+                widget.pos_hint = {"x": 0, "y": 0}
+                widget.opacity = 1
+                widget.disabled = False
+            else:
+                widget.opacity = 0
+                widget.disabled = True
+                widget.size_hint = (None, None)
+                widget.size = (0, 0)
+                widget.pos = (0, 0)
+                widget.pos_hint = {}
+
+        def _raise_tab_widget(self, widget):
+            host = getattr(self, "tab_content_host", None)
+            if host is None or widget is None or widget.parent is not host:
+                return
+            host.remove_widget(widget)
+            host.add_widget(widget)
 
         def _animate_bottom_tab(self, name: str):
             """Lekka reakcja zakładki bez kosztownych animacji layoutu."""

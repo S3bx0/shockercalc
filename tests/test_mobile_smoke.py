@@ -95,6 +95,18 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
     assert "tab.play()" in source
 
 
+def test_nieaktywna_zakladka_nie_blokuje_dotyku():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "def _set_tab_visibility" in source
+    assert "widget.size = (0, 0)" in source
+    assert "self._raise_tab_widget(self.scroll if freezing_active else self.valve_scroll)" in source
+    assert "host.remove_widget(widget)" in source
+    assert "host.add_widget(widget)" in source
+
+
 def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
     source = (
         Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
@@ -129,6 +141,8 @@ def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
     assert "notice.show(message)" in source
     assert "Animation(opacity=1, d=1.5) + Animation(opacity=0, d=0.5)" in source
     assert '"center_y": 0.54' in source
+    assert "def _hide_after_fade" in source
+    assert "self.size = (0, 0)" in source
 
 
 def test_mobilna_lista_ukrywa_wylacznie_techniczne_rekordy_ctp():

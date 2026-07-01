@@ -4,6 +4,15 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.11] - 2026-07-01
+
+### Naprawiono
+
+- Usunięto niewidzialne warstwy dotykowe między zakładkami mobilnymi, które
+  mogły blokować kliknięcia w ekranie `Chłodnicze` na części urządzeń.
+- Centralny komunikat walidacji po zniknięciu jest zdejmowany z warstwy dotyku,
+  więc nie może blokować pól i przycisków.
+
 ## [1.4.10] - 2026-07-01
 
 ### Dodano
