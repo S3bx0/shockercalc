@@ -119,6 +119,18 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert languages.exists()
 
 
+def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class CenterNotice" in source
+    assert "self.center_notice = CenterNotice()" in source
+    assert "notice.show(message)" in source
+    assert "Animation(opacity=1, d=1.5) + Animation(opacity=0, d=0.5)" in source
+    assert '"center_y": 0.54' in source
+
+
 def test_mobilna_lista_ukrywa_wylacznie_techniczne_rekordy_ctp():
     from tpof.core import list_products, load_products
     from tpof.mobile.main import _mobile_product_names

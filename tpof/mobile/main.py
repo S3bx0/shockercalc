@@ -6,7 +6,7 @@ UI w parytecie z desktopem:
   • masa z przełącznikiem jednostek kg/t
   • paski mocy (schładzanie / zamrożenie / domrażanie) + SUMA
   • opcjonalne zdjęcie produktu z assets/images
-  • Snackbar dla błędów walidacji
+  • centralny komunikat dla błędów walidacji
 
 Uruchomienie lokalne (desktop, do testów UI):
     python -m pip install -r requirements-mobile.txt
@@ -1226,6 +1226,82 @@ def main() -> None:
             self.icon_widget.size = (icon_size, max(dp(30), icon_size * 0.62))
             self.label.font_size = f"{label_sp}sp"
 
+    class CenterNotice(MDBoxLayout):
+        """Centralny komunikat walidacji, czytelniejszy niz dolny snackbar."""
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.orientation = "vertical"
+            self.padding = [dp(18), dp(13), dp(18), dp(13)]
+            self.size_hint = (0.88, None)
+            self.height = dp(92)
+            self.opacity = 0
+            self.disabled = True
+            self.pos_hint = {"center_x": 0.5, "center_y": 0.54}
+            with self.canvas.before:
+                self._shadow_color = Color(0, 0, 0, 0)
+                self._shadow = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(18)] * 4
+                )
+                self._bg_color = Color(0.02, 0.10, 0.17, 0)
+                self._bg = RoundedRectangle(
+                    pos=self.pos, size=self.size, radius=[dp(18)] * 4
+                )
+                self._border_color = Color(*BRAND_CYAN[:3], 0)
+                self._border = Line(width=dp(1.15))
+            self.label = MDLabel(
+                text="",
+                halign="center",
+                valign="middle",
+                theme_text_color="Custom",
+                text_color=(0.94, 1.0, 1.0, 1),
+                font_style="Body1",
+            )
+            self.add_widget(self.label)
+            self.bind(pos=self._sync_canvas, size=self._sync_canvas, opacity=self._sync_alpha)
+            self.label.bind(texture_size=lambda *_: self._fit_height())
+
+        def show(self, message: str):
+            from kivy.animation import Animation
+
+            Animation.cancel_all(self, "opacity")
+            self.label.text = str(message)
+            self.disabled = False
+            self.opacity = 1
+            Clock.schedule_once(lambda *_: self._fit_height(), 0)
+            fade = Animation(opacity=1, d=1.5) + Animation(opacity=0, d=0.5)
+            fade.bind(on_complete=lambda *_: setattr(self, "disabled", True))
+            fade.start(self)
+
+        def _fit_height(self):
+            text_width = max(self.width - dp(36), dp(120))
+            self.label.text_size = (text_width, None)
+            self.height = max(dp(78), min(dp(132), self.label.texture_size[1] + dp(34)))
+            self._sync_canvas()
+
+        def _sync_alpha(self, *_args):
+            alpha = max(0.0, min(1.0, float(self.opacity)))
+            self._shadow_color.rgba = (0, 0, 0, 0.30 * alpha)
+            self._bg_color.rgba = (0.02, 0.10, 0.17, 0.94 * alpha)
+            self._border_color.rgba = (*BRAND_CYAN[:3], 0.82 * alpha)
+
+        def _sync_canvas(self, *_args):
+            self._shadow.pos = (self.x + dp(2), self.y - dp(3))
+            self._shadow.size = self.size
+            self._bg.pos = self.pos
+            self._bg.size = self.size
+            radius = min(dp(18), self.height * 0.22)
+            self._shadow.radius = [radius] * 4
+            self._bg.radius = [radius] * 4
+            self._border.rounded_rectangle = (
+                self.x,
+                self.y,
+                self.width,
+                self.height,
+                radius,
+            )
+            self._sync_alpha()
+
     class ShockerCalcApp(MDApp):
         def build(self):
             self.title = APP_NAME
@@ -1330,6 +1406,8 @@ def main() -> None:
 
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
+            self.center_notice = CenterNotice()
+            self.root_host.add_widget(self.center_notice)
             self._sync_theme_surfaces()
             Window.bind(size=self._apply_responsive_layout)
             self._apply_responsive_layout()
@@ -3859,21 +3937,13 @@ def main() -> None:
                 self._show_error(self._t("pdf_error", error=exc))
 
         def _show_error(self, message: str):
-            # KivyMD 1.2.0 udostępnia MDSnackbar; starsze wersje miały Snackbar(text=...).
-            try:
-                from kivymd.uix.label import MDLabel
-                from kivymd.uix.snackbar import MDSnackbar
-                from kivy.metrics import dp
-
-                MDSnackbar(
-                    MDLabel(text=message),
-                    y=dp(24),
-                    pos_hint={"center_x": 0.5},
-                    size_hint_x=0.9,
-                ).open()
-                return
-            except Exception:
-                pass
+            notice = getattr(self, "center_notice", None)
+            if notice is not None:
+                try:
+                    notice.show(message)
+                    return
+                except Exception:
+                    log.debug("Centralny komunikat nie powiodl sie", exc_info=True)
             try:
                 from kivymd.uix.snackbar import Snackbar
 

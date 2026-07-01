@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.10] - 2026-07-01
+
+### Dodano
+
+- Centralny komunikat walidacji w kolorach aplikacji: komunikat pojawia sie
+  na srodku ekranu, pozostaje czytelny przez 1,5 s i znika plynnie do 2 s.
+
+### Zmieniono
+
+- Odświeżono pierwszą partię grafik produktów w stylu pop-art: buraki,
+  marchew, pietruszka, pasternak, rzepa, brukiew, kalarepa, seler, por i cebula.
+
 ## [1.4.9] - 2026-07-01
 
 ### Naprawiono
