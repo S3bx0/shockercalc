@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import Dict, List, Mapping, MutableMapping, Optional
 
@@ -14,6 +15,9 @@ from tpof.core.models import Product
 PREFERENCES_FILE = "ui_preferences.json"
 CUSTOM_PRODUCTS_FILE = "custom_products.json"
 ROOT_KEY = "zywnosc"
+SUPPORTED_UNIT_SYSTEMS = frozenset({"metric"})
+MIN_CUSTOM_T_ZAM_C = -80.0
+MAX_CUSTOM_T_ZAM_C = 10.0
 
 
 def app_data_dir() -> Path:
@@ -70,11 +74,13 @@ class UiPreferences:
     @property
     def unit_system(self) -> str:
         value = str(self._data.get("unit_system", "metric")).strip().casefold()
-        return "imperial" if value == "imperial" else "metric"
+        return value if value in SUPPORTED_UNIT_SYSTEMS else "metric"
 
     def set_unit_system(self, unit_system: str) -> None:
         # TODO: Enable "imperial" after full input/output conversion is implemented.
-        value = "imperial" if str(unit_system).casefold() == "imperial" else "metric"
+        value = str(unit_system or "").strip().casefold()
+        if value not in SUPPORTED_UNIT_SYSTEMS:
+            value = "metric"
         self._data["unit_system"] = value
         self._save()
 
@@ -151,7 +157,11 @@ class UiPreferences:
 
 
 def normalize_category(value: str) -> str:
-    text = re.sub(r"\s+", "_", (value or "").strip().lower())
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
+    text = re.sub(r"\s+", "_", ascii_text.strip().lower())
     return re.sub(r"_+", "_", text).strip("_")
 
 
@@ -189,6 +199,12 @@ def create_custom_product(values: Mapping[str, object]) -> Product:
         raise ValueError("c2")
     if latent is None or latent < 0:
         raise ValueError("l1")
+    if (
+        freezing is None
+        or freezing < MIN_CUSTOM_T_ZAM_C
+        or freezing > MAX_CUSTOM_T_ZAM_C
+    ):
+        raise ValueError("t_zam")
 
     optional = {}
     for key in ("bialko", "tluszcz", "weglowodany", "blonnik", "popiol"):
@@ -196,6 +212,9 @@ def create_custom_product(values: Mapping[str, object]) -> Product:
         if number is not None and not 0 <= number <= 100:
             raise ValueError(key)
         optional[key] = number
+    macro_sum = sum(number or 0.0 for number in optional.values())
+    if macro_sum > 100.0:
+        raise ValueError("makroskladniki")
 
     return Product(
         nazwa=name,
@@ -253,8 +272,27 @@ class CustomProductStore:
 
     def __init__(self, path: Optional[Path] = None) -> None:
         self.path = Path(path) if path else app_data_dir() / CUSTOM_PRODUCTS_FILE
+        self._cache_mtime_ns: Optional[int] = None
+        self._cache_catalog: Optional[Dict[str, List[Product]]] = None
+
+    def _path_mtime_ns(self) -> Optional[int]:
+        try:
+            return self.path.stat().st_mtime_ns
+        except OSError:
+            return None
+
+    def _cache_copy(self, catalog: Dict[str, List[Product]]) -> Dict[str, List[Product]]:
+        return {category: list(products) for category, products in catalog.items()}
+
+    def _invalidate_cache(self) -> None:
+        self._cache_mtime_ns = None
+        self._cache_catalog = None
 
     def load_catalog(self) -> Dict[str, List[Product]]:
+        current_mtime = self._path_mtime_ns()
+        if self._cache_catalog is not None and self._cache_mtime_ns == current_mtime:
+            return self._cache_copy(self._cache_catalog)
+
         raw = _read_json(self.path, {})
         root = raw.get(ROOT_KEY, {}) if isinstance(raw, dict) else {}
         if not isinstance(root, dict):
@@ -272,7 +310,9 @@ class CustomProductStore:
                 except ValueError:
                     continue
             if products:
-                result[category] = products
+                result[normalize_category(category)] = products
+        self._cache_mtime_ns = current_mtime
+        self._cache_catalog = self._cache_copy(result)
         return result
 
     def merge_into(self, catalog: MutableMapping[str, List[Product]]) -> None:
@@ -321,3 +361,4 @@ class CustomProductStore:
         else:
             records.append(replacement)
         _write_json(self.path, raw)
+        self._invalidate_cache()

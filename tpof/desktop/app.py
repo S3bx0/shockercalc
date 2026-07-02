@@ -529,7 +529,7 @@ class FreezingCalculatorApp:
             try:
                 tw.attributes("-topmost", True)
             except Exception:
-                pass
+                log.debug("Nie udało się ustawić tooltipa jako topmost", exc_info=True)
             lbl = tk.Label(
                 tw, text=text, justify="left",
                 background="#FFFFE0", foreground="#202020",
@@ -544,7 +544,7 @@ class FreezingCalculatorApp:
                 try:
                     tip["win"].destroy()
                 except Exception:
-                    pass
+                    log.debug("Nie udało się zamknąć tooltipa", exc_info=True)
                 tip["win"] = None
 
         widget.bind("<Enter>", show)

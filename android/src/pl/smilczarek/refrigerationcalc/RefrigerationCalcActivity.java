@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Button;
@@ -106,7 +107,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
     private static final String PREF_TELEMETRY_SET = "firebase_telemetry_preference_set";
     private static final String PREF_TELEMETRY_ENABLED = "firebase_telemetry_enabled";
-    // Closed-test build works through 2026-07-15 in Europe/Warsaw.
+    // Closed-test guard only. Disable/remove this for the production Play release.
+    // The closed-test build works through 2026-07-15 in Europe/Warsaw.
     private static final long TEST_BUILD_EXPIRES_AT_EPOCH_MS = 1784152800000L;
 
     private AdView bannerAdView;
@@ -512,6 +514,16 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     @android.annotation.TargetApi(30)
     private void enablePlatformEdgeToEdge() {
         getWindow().setDecorFitsSystemWindows(false);
+        WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller != null) {
+            // Tło pasków systemowych jest jasne po stronie systemu, więc ikony
+            // muszą być ciemne również w trybie edge-to-edge Androida 15+.
+            controller.setSystemBarsAppearance(
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
         WindowManager.LayoutParams attributes = getWindow().getAttributes();
         if (attributes.layoutInDisplayCutoutMode
                 != WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS) {
@@ -538,11 +550,13 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                             WindowInsets.Type.systemBars()
                                     | WindowInsets.Type.displayCutout()
                     );
+                    Insets ime = windowInsets.getInsets(WindowInsets.Type.ime());
+                    int bottomInset = Math.max(bars.bottom, ime.bottom);
                     view.setPadding(
                             initialLeft + bars.left,
                             initialTop + bars.top,
                             initialRight + bars.right,
-                            initialBottom + bars.bottom
+                            initialBottom + bottomInset
                     );
                     return windowInsets;
                 }

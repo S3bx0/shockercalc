@@ -18,9 +18,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.4.12" in spec
-    assert '__version__ = "1.4.12"' in package_init
-    assert 'version = "1.4.12"' in pyproject
+    assert "version = 1.4.13" in spec
+    assert '__version__ = "1.4.13"' in package_init
+    assert 'version = "1.4.13"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -34,6 +34,9 @@ def test_activity_uses_modern_edge_to_edge_api():
     assert "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" not in source
     assert "WindowInsets.Type.systemBars()" in source
     assert "WindowInsets.Type.displayCutout()" in source
+    assert "WindowInsets.Type.ime()" in source
+    assert "APPEARANCE_LIGHT_STATUS_BARS" in source
+    assert "APPEARANCE_LIGHT_NAVIGATION_BARS" in source
     assert "import androidx.core.view.WindowCompat;" not in source
     assert "WindowCompat.enableEdgeToEdge(getWindow())" not in source
     assert "setStatusBarColor" not in source
@@ -134,8 +137,14 @@ def test_product_images_are_mobile_sized_and_bounded():
 
 def test_build_config_supports_rotation_and_current_android_libraries():
     spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
+    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
+    assert "android.permissions = INTERNET, ACCESS_NETWORK_STATE" in spec
+    assert "WRITE_EXTERNAL_STORAGE" not in spec
+    assert "READ_EXTERNAL_STORAGE" not in spec
+    assert "/sdcard/Download" not in mobile_main
+    assert "/storage/emulated/0/Download" not in mobile_main
     assert "com.google.android.gms:play-services-ads:25.4.0" in spec
     assert "com.android.billingclient:billing:9.1.0" in spec
     assert "com.google.android.ump:user-messaging-platform:4.0.0" in spec

@@ -176,8 +176,12 @@ def _apply_watermark(pdf_bytes: bytes, watermark_image: Path) -> bytes:
 
 
 def _encrypt(pdf_bytes: bytes, owner_password: str) -> bytes:
-    """Szyfruje PDF — puste user_password = otwiera się bez hasła,
-    owner_password chroni przed edycją (działa tylko gdy reader respektuje uprawnienia)."""
+    """Nakłada miękką blokadę edycji PDF zależną od czytnika.
+
+    Raport otwiera się bez hasła (`user_password=""`). Hasło właściciela ma
+    utrudniać przypadkową edycję/drukowanie w czytnikach, które respektują
+    uprawnienia PDF, ale nie jest traktowane jako silna ochrona kryptograficzna.
+    """
     if not owner_password:
         return pdf_bytes
     reader = PdfReader(BytesIO(pdf_bytes))

@@ -39,3 +39,25 @@ def test_desktop_report_keeps_product_properties_by_default():
     assert "Ciepło właściwe powyżej zamrażania" in text
     assert "Zawartość wody" in text
     assert "Ciepło topnienia" in text
+
+
+def test_estimated_freezing_point_text_does_not_claim_zero_fallback():
+    product = Product(
+        nazwa="Bez katalogowego T_zam",
+        kategoria="test",
+        c1=3.4,
+        c2=1.9,
+        T_zam=None,
+        wodaprocent=50.0,
+        L1=220.0,
+    )
+    results = calculate_freezing(
+        FreezingInputs(masa_kg=10.0, T_pocz_C=5.0, T_konc_C=-18.0, czas_h=8.0),
+        product,
+    )
+
+    text = format_results_text(results)
+
+    assert "szacunkowo — brak danych katalogowych" in text
+    assert "przyjęto 0°C" not in text
+    assert "Temperatura początkowego zamarzania [°C]: -1.20" in text

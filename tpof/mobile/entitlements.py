@@ -1,10 +1,10 @@
-"""Uprawnienia: 7-dniowy pełny trial, freemium produktów oraz moduły funkcyjne.
+"""Uprawnienia: 1-dniowy pełny trial, freemium produktów oraz moduły funkcyjne.
 
 Logika świadomie oddzielona od UI, żeby dało się ją łatwo testować bez Kivy.
 
 Model uprawnień ma trzy warstwy:
 
-1. **Trial** — pierwsze ``TRIAL_DAYS`` dni od instalacji dają pełny dostęp
+1. **Trial** — pierwszy dzień od instalacji daje pełny dostęp
    do wszystkiego (wszystkie produkty, wszystkie moduły).
 
 2. **Freemium produktów** — po wygaśnięciu triala (bez PRO) dostępny jest

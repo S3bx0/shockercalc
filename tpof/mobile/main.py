@@ -562,15 +562,15 @@ def _sync_module_ownership(entitlements: Entitlements, module_id: str, owned: bo
 
 
 def _pdf_output_dir() -> Path:
-    """Zwraca katalog do zapisu PDF — Android Downloads albo cwd."""
-    # Android: użyj public Downloads, gdy aplikacja ma uprawnienia
+    """Zwraca prywatny katalog PDF bez żądania szerokich uprawnień storage."""
     if "ANDROID_ARGUMENT" in os.environ:
-        for candidate in ("/sdcard/Download", "/storage/emulated/0/Download"):
-            p = Path(candidate)
-            if p.exists() and os.access(p, os.W_OK):
-                return p
-        # fallback: prywatny katalog aplikacji
-        return Path(os.environ.get("ANDROID_PRIVATE", os.getcwd()))
+        private_root = Path(os.environ.get("ANDROID_PRIVATE", os.getcwd()))
+        pdf_dir = private_root / "pdf"
+        try:
+            pdf_dir.mkdir(parents=True, exist_ok=True)
+            return pdf_dir
+        except OSError:
+            return private_root
     return Path.cwd()
 
 

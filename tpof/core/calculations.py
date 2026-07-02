@@ -18,7 +18,7 @@ SECONDS_IN_HOUR: int = 3600
 def _estimate_T_zam(woda_procent: Optional[float]) -> float:
     """Szacuje punkt zamarzania produktu na podstawie zawartości wody [%].
 
-    Empiryczne przybliżenie inżynierskie: T_zam ≈ -0.6 · (woda% / 100) · 10
+    Empiryczne przybliżenie inżynierskie: T_zam ≈ -0.6 · (100 / woda%)
     daje wartości w zakresie ~-0.6 °C (woda czysta) do ~-6 °C (10% wody).
     Wzór jest zgrubny — używany tylko gdy brak danych w bazie.
     """
@@ -57,6 +57,13 @@ def calculate_freezing(inputs: FreezingInputs, product: Product) -> FreezingResu
     T_pocz = inputs.T_pocz_C
     T_konc = inputs.T_konc_C
     t = inputs.czas_h
+    if T_konc >= T_pocz:
+        raise ValueError(
+            "Temperatura końcowa musi być niższa od temperatury początkowej "
+            f"(otrzymano: {T_pocz:.2f}°C -> {T_konc:.2f}°C). "
+            "Dla ogrzewania lub braku zmiany temperatury kalkulator chłodniczy "
+            "nie wyznacza poprawnego zapotrzebowania mocy."
+        )
 
     T_zam: Optional[float] = product.T_zam
     T_zam_szacunkowy = T_zam is None

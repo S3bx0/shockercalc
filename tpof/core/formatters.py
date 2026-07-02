@@ -18,7 +18,11 @@ def format_results_text(
     p = results.produkt
     i = results.inputs
 
-    T_zam_warning = " (szacunkowo, brak danych — przyjęto 0°C)" if results.T_zam_szacunkowy else ""
+    T_zam_warning = (
+        " (szacunkowo — brak danych katalogowych)"
+        if results.T_zam_szacunkowy
+        else ""
+    )
 
     lines = [
         "--- Wyniki obliczeń ---",

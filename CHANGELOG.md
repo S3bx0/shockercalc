@@ -4,6 +4,30 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.4.13] - 2026-07-02
+
+### Naprawiono
+
+- Poprawiono opis szacowanego punktu zamarzania: aplikacja nie sugeruje już
+  błędnie, że przy braku danych katalogowych przyjmuje `0°C`.
+- Kalkulator chłodniczy odrzuca teraz przypadki, w których temperatura końcowa
+  jest równa lub wyższa od początkowej, zamiast liczyć ujemne energie/moc.
+- Własne produkty PRO mają dodatkową walidację: zakres `T_zam`, nieujemne
+  makroskładniki, suma makroskładników do 100% oraz kategorie normalizowane bez
+  polskich znaków.
+- Lokalny katalog własnych produktów dostał cache w pamięci z invalidacją po
+  zapisie, co zmniejsza liczbę odczytów JSON przy pracy z listami.
+
+### Android / Google Play
+
+- Usunięto szerokie uprawnienia `READ_EXTERNAL_STORAGE` i
+  `WRITE_EXTERNAL_STORAGE`; eksport PDF na Androidzie używa prywatnego pliku
+  roboczego oraz istniejącego mostka MediaStore/Share po stronie Javy.
+- Edge-to-edge uwzględnia teraz klawiaturę ekranową (`WindowInsets.Type.ime()`)
+  i ustawia ciemne ikony pasków systemowych nad jasnym tłem.
+- Dopisano checklistę ręcznych testów edge-to-edge, IME, storage i terminu
+  ważności buildów testowych.
+
 ## [1.4.12] - 2026-07-01
 
 ### Zmieniono

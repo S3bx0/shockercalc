@@ -104,11 +104,15 @@ class TestEdgeCases:
         assert res.Q_zamrozenie_kJ == 0.0
         assert math.isclose(res.Q_domrozenie_kJ, 10 * 2.22 * 16, rel_tol=1e-9)
 
-    def test_T_pocz_rowne_T_konc_brak_energii(self, szynka):
+    def test_T_pocz_rowne_T_konc_jest_odrzucane(self, szynka):
         inputs = FreezingInputs(masa_kg=10.0, T_pocz_C=-5.0, T_konc_C=-5.0, czas_h=5.0)
-        res = calculate_freezing(inputs, szynka)
-        assert res.Q_total_kJ == 0.0
-        assert res.P_total_kW == 0.0
+        with pytest.raises(ValueError, match="Temperatura końcowa musi być niższa"):
+            calculate_freezing(inputs, szynka)
+
+    def test_T_konc_wyzsza_od_T_pocz_jest_odrzucana(self, szynka):
+        inputs = FreezingInputs(masa_kg=10.0, T_pocz_C=-10.0, T_konc_C=-5.0, czas_h=5.0)
+        with pytest.raises(ValueError, match="Temperatura końcowa musi być niższa"):
+            calculate_freezing(inputs, szynka)
 
     def test_brak_L1_pomija_ciepło_utajone(self):
         """Gdy brak ciepła topnienia, etap zamrażania = 0, ale c2 nadal działa."""

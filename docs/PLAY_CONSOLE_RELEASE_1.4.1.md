@@ -23,6 +23,19 @@ Przed 16 lipca 2026 należy opublikować wydanie produkcyjne z wyższym
 razie testerzy, którzy nie pobiorą aktualizacji, zobaczą ekran przekierowania do
 Google Play zgodnie z założeniem tej wersji.
 
+## Uprawnienia storage / PDF
+
+Aktualne buildy Android nie wymagają szerokiego dostępu do pamięci użytkownika.
+W `buildozer.spec` pozostają tylko `INTERNET` i `ACCESS_NETWORK_STATE`. PDF na
+Androidzie powstaje jako plik roboczy w prywatnym katalogu aplikacji, a finalne
+zapisanie do Downloads/udostępnienie obsługuje natywna warstwa Android przez
+MediaStore i intent udostępniania.
+
+## Checklist QA Android
+
+Szczegółowa lista ręcznych testów edge-to-edge, klawiatury IME, storage i
+wariantu testowego znajduje się w `docs/ANDROID_QA_CHECKLIST.md`.
+
 ## Materiały sklepu
 
 - ikona 512 x 512: `assets/store/play-icon-512.png`;

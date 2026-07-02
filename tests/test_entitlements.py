@@ -1,4 +1,4 @@
-"""Testy logiki uprawnień (trial 7 dni + freemium 1 produkt/kategoria).
+"""Testy logiki uprawnień (trial wg TRIAL_DAYS + freemium 1 produkt/kategoria).
 
 Nie wymagają Kivy/KivyMD — czysty Python, sterowanie czasem przez wstrzyknięty zegar.
 """

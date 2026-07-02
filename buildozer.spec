@@ -15,7 +15,7 @@ source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.4.12
+version = 1.4.13
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -45,7 +45,7 @@ orientation = portrait, landscape, portrait-reverse, landscape-reverse
 fullscreen = 0
 
 # Uprawnienia Android
-android.permissions = INTERNET, ACCESS_NETWORK_STATE, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
 # Min / target API (AdMob SDK 25.x wymaga compileSdk 35+)
 android.api = 36
