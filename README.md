@@ -1,7 +1,7 @@
 # Refrigeration Calc
 
-Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych
-oraz doboru zaworów dekompresyjnych.
+Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
+doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 > **⚠️ Oprogramowanie własnościowe.** Ten kod jest udostępniony publicznie
 > wyłącznie do wglądu. **Nie wolno** go kopiować, używać, modyfikować ani
@@ -19,6 +19,11 @@ tpof/                  # pakiet źródłowy
 │   ├── data_loader.py
 │   ├── formatters.py
 │   └── pdf_report.py
+├── labor/             # czysta logika kalkulatora robocizny
+│   ├── models.py
+│   ├── config.py
+│   ├── validation.py
+│   └── cost_calculator.py
 └── desktop/           # warstwa Tkinter + ttkbootstrap
     ├── app.py
     └── paths.py
@@ -68,6 +73,7 @@ W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednost
 |----------|-------|-------------------|
 | Chłodnicze (zamrażanie) | `…/5599859341` | `…/1548239161` |
 | Zawory dekompresyjne    | `…/6303778370` | `…/1060900411` |
+| Robocizna               | domyślny baner chłodniczy | domyślna ścieżka główna |
 
 App ID: `ca-app-pub-7481054652344026~2716191071`. Jednostka reklamowa jest
 przełączana w warstwie natywnej (`setActiveAdTab`) przy zmianie zakładki.

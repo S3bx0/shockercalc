@@ -4,6 +4,22 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.0] - 2026-07-02
+
+### Dodano
+
+- Dodano trzecią zakładkę mobilną **Robocizna** z kalkulatorem kosztów ekipy,
+  dojazdów/delegacji, zwyżek, kontenerów, diet, posiłków i kosztów dodatkowych.
+- Przeniesiono logikę kalkulatora robocizny do czystego modułu `tpof.labor`,
+  zgodnego z testami i niezależnego od UI.
+- Dolne menu dostało trzecią animowaną ikonę w formie kalkulatora oraz
+  lokalizację PL/EN dla nowego modułu.
+
+### Testy
+
+- Dodano testy rdzenia `tpof.labor` oraz testy źródłowe pilnujące trzeciej
+  zakładki w mobilnym pasku nawigacji.
+
 ## [1.4.13] - 2026-07-02
 
 ### Naprawiono

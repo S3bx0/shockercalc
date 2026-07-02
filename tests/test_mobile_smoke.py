@@ -91,6 +91,7 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
     assert "class BottomNavTab" in source
     assert "self.bottom_freezing_tab" in source
     assert "self.bottom_valves_tab" in source
+    assert "self.bottom_labor_tab" in source
     assert "def _show_tab" in source
     assert "tab.play()" in source
 
@@ -106,6 +107,7 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     assert "def set_theme_light" in source
     assert "self.bottom_freezing_tab.set_theme_light" in source
     assert "self.bottom_valves_tab.set_theme_light" in source
+    assert "self.bottom_labor_tab.set_theme_light" in source
     assert "self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)" not in source
 
 
@@ -116,7 +118,8 @@ def test_nieaktywna_zakladka_nie_blokuje_dotyku():
 
     assert "def _set_tab_visibility" in source
     assert "widget.size = (0, 0)" in source
-    assert "self._raise_tab_widget(self.scroll if freezing_active else self.valve_scroll)" in source
+    assert '"labor": getattr(self, "labor_scroll", None)' in source
+    assert "self._raise_tab_widget(tab_widgets.get(name))" in source
     assert "host.remove_widget(widget)" in source
     assert "host.add_widget(widget)" in source
 

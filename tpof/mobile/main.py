@@ -21,6 +21,7 @@ import logging
 import math
 import os
 import unicodedata
+from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -35,6 +36,12 @@ from tpof.core import (
     list_categories,
     list_products,
     load_products,
+)
+from tpof.labor import (
+    CalculationInput as LaborCalculationInput,
+    calculate_cost_breakdown as calculate_labor_cost_breakdown,
+    default_rate_config,
+    validate_calculation_inputs as validate_labor_inputs,
 )
 from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
 from tpof.mobile.paths import DATA_PATH, FONT_PATH, IMAGES_DIR
@@ -290,6 +297,39 @@ I18N = {
         "ad_limit_reached": "Dzienny limit reklam wyczerpany. Subskrybuj PRO, aby liczyć bez ograniczeń.",
         "nav_freezing": "Chłodnicze",
         "nav_valves": "Zawory",
+        "nav_labor": "Robocizna",
+        "labor_title": "Robocizna",
+        "labor_hint": "Oszacuj koszt robocizny, dojazdów i podstawowych kosztów organizacyjnych.",
+        "labor_people": "Liczba osób",
+        "labor_days": "Liczba dni pracy",
+        "labor_distance": "Odległość w jedną stronę [km]",
+        "labor_highways_on": "Autostrady: Tak",
+        "labor_highways_off": "Autostrady: Nie",
+        "labor_lifts": "Ilość zwyżek",
+        "labor_containers": "Ilość kontenerów",
+        "labor_additional_on": "Dodatkowe koszty: Tak",
+        "labor_additional_off": "Dodatkowe koszty: Nie",
+        "labor_additional": "Dodatkowe koszty [zł]",
+        "labor_calculate": "Oblicz robociznę",
+        "labor_result": "Wynik robocizny",
+        "labor_total_cost": "Koszt całkowity: {value} zł",
+        "labor_labor_cost": "Robocizna: {value} zł",
+        "labor_travel_cost": "Dojazd / delegacja: {value} zł",
+        "labor_lift_cost": "Zwyżki: {value} zł",
+        "labor_container_cost": "Kontenery: {value} zł",
+        "labor_hotel_cost": "Noclegi: {value} zł",
+        "labor_allowance_cost": "Diety: {value} zł",
+        "labor_meal_cost": "Posiłek regeneracyjny: {value} zł",
+        "labor_additional_costs": "Koszty dodatkowe: {value} zł",
+        "labor_travel_mode": "Tryb: {value}",
+        "labor_travel_details": "Przejazdy: {trips} • dni opłat: {toll_days} • noclegi: {nights}",
+        "labor_validation_error": "Popraw pola robocizny: {message}",
+        "hint_labor_people": "Liczba pracowników w ekipie.",
+        "hint_labor_days": "Liczba dni pracy na budowie.",
+        "hint_labor_distance": "Odległość z bazy do obiektu w jedną stronę.",
+        "hint_labor_lifts": "Ile zwyżek będzie potrzebnych dziennie.",
+        "hint_labor_containers": "Ile kontenerów będzie potrzebnych dziennie.",
+        "hint_labor_additional": "Ręcznie doliczane koszty dodatkowe w zł.",
         "valve_title": "Zawory dekompresyjne",
         "valve_type": "Typ zaworu",
         "valve_mode_volume": "Kubatura",
@@ -440,6 +480,39 @@ I18N = {
         "ad_limit_reached": "Daily ad limit reached. Subscribe to PRO to calculate without limits.",
         "nav_freezing": "Cooling",
         "nav_valves": "Valves",
+        "nav_labor": "Labor",
+        "labor_title": "Labor",
+        "labor_hint": "Estimate labor, travel and basic site organization costs.",
+        "labor_people": "Number of people",
+        "labor_days": "Working days",
+        "labor_distance": "One-way distance [km]",
+        "labor_highways_on": "Highways: Yes",
+        "labor_highways_off": "Highways: No",
+        "labor_lifts": "Number of lifts",
+        "labor_containers": "Number of containers",
+        "labor_additional_on": "Additional costs: Yes",
+        "labor_additional_off": "Additional costs: No",
+        "labor_additional": "Additional costs [PLN]",
+        "labor_calculate": "Calculate labor",
+        "labor_result": "Labor result",
+        "labor_total_cost": "Total cost: {value} PLN",
+        "labor_labor_cost": "Labor: {value} PLN",
+        "labor_travel_cost": "Travel / delegation: {value} PLN",
+        "labor_lift_cost": "Lifts: {value} PLN",
+        "labor_container_cost": "Containers: {value} PLN",
+        "labor_hotel_cost": "Hotels: {value} PLN",
+        "labor_allowance_cost": "Allowances: {value} PLN",
+        "labor_meal_cost": "Regeneration meal: {value} PLN",
+        "labor_additional_costs": "Additional costs: {value} PLN",
+        "labor_travel_mode": "Mode: {value}",
+        "labor_travel_details": "Trips: {trips} • toll days: {toll_days} • hotel nights: {nights}",
+        "labor_validation_error": "Fix labor fields: {message}",
+        "hint_labor_people": "Number of workers in the crew.",
+        "hint_labor_days": "Number of working days on site.",
+        "hint_labor_distance": "Distance from base to site, one way.",
+        "hint_labor_lifts": "How many lifts are needed per day.",
+        "hint_labor_containers": "How many containers are needed per day.",
+        "hint_labor_additional": "Manual extra costs in PLN.",
         "valve_title": "Decompression valves",
         "valve_type": "Valve type",
         "valve_mode_volume": "Volume",
@@ -1065,6 +1138,7 @@ def main() -> None:
             self._motion = 0.0
             self._rotation = 0.0
             self._valve_phase = 0.0
+            self._calc_phase = 0.0
             self._event = None
             self._light_mode = False
             self._lines = []
@@ -1075,7 +1149,7 @@ def main() -> None:
                 )
             with self.canvas:
                 self._icon_color = Color(*BRAND_ICE[:3], 0.72)
-                line_count = 18 if self.mode == "snowflake" else 5
+                line_count = 18 if self.mode == "snowflake" else 11 if self.mode == "calculator" else 5
                 for _index in range(line_count):
                     self._lines.append(Line(points=[], width=dp(1.45), cap="round"))
             self.bind(pos=self._sync_canvas, size=self._sync_canvas)
@@ -1121,8 +1195,10 @@ def main() -> None:
             eased = fraction * fraction * (3.0 - 2.0 * fraction)
             if self.mode == "snowflake":
                 self._rotation = math.tau * eased
-            else:
+            elif self.mode == "valve":
                 self._valve_phase = math.sin(math.pi * eased)
+            else:
+                self._calc_phase = math.sin(math.pi * eased)
             self._sync_canvas()
             if fraction >= 1.0 and self._event is not None:
                 self._event.cancel()
@@ -1130,6 +1206,7 @@ def main() -> None:
                 self._motion = 0.0
                 self._rotation = 0.0
                 self._valve_phase = 0.0
+                self._calc_phase = 0.0
                 self._sync_canvas()
 
         def _sync_canvas(self, *_args):
@@ -1140,8 +1217,10 @@ def main() -> None:
             self._chip.radius = [min(self.width, self.height) * 0.30] * 4
             if self.mode == "snowflake":
                 self._sync_snowflake()
-            else:
+            elif self.mode == "valve":
                 self._sync_valve()
+            else:
+                self._sync_calculator()
 
         def _sync_snowflake(self):
             cx = self.center_x
@@ -1195,6 +1274,38 @@ def main() -> None:
                 cx + width * 0.24,
                 bottom + blade_shift,
             ]
+
+        def _sync_calculator(self):
+            cx = self.center_x
+            cy = self.center_y
+            width = self.width * 0.46
+            height = self.height * 0.58
+            left = cx - width * 0.5
+            right = cx + width * 0.5
+            top = cy + height * 0.5
+            bottom = cy - height * 0.5
+            pulse = self._calc_phase * height * 0.05
+            self._lines[0].points = [left, bottom, left, top, right, top, right, bottom, left, bottom]
+            self._lines[1].points = [
+                left + width * 0.18,
+                top - height * 0.25 + pulse,
+                right - width * 0.18,
+                top - height * 0.25 + pulse,
+            ]
+            line_index = 2
+            key_radius = min(width, height) * 0.06
+            for row in range(3):
+                for col in range(3):
+                    kx = left + width * (0.24 + col * 0.26)
+                    ky = bottom + height * (0.20 + row * 0.18)
+                    scale = 1.0 + self._calc_phase * (0.18 if row == col else 0.08)
+                    self._lines[line_index].points = [
+                        kx - key_radius * scale,
+                        ky,
+                        kx + key_radius * scale,
+                        ky,
+                    ]
+                    line_index += 1
 
     class BottomNavTab(MDBoxLayout):
         """Dotykalny przycisk dolnego menu z wlasna animowana ikona."""
@@ -1399,6 +1510,9 @@ def main() -> None:
             self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
             self._last_valve_results = None
             self._valve_menu: Optional[MDDropdownMenu] = None
+            self._labor_use_highways = False
+            self._labor_has_additional = False
+            self._last_labor_breakdown = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
 
@@ -1451,8 +1565,13 @@ def main() -> None:
                 dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
             )
             self.valve_scroll.size_hint = (1, 1)
+            self.labor_scroll = self._build_labor_tab(
+                dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
+            )
+            self.labor_scroll.size_hint = (1, 1)
             self.tab_content_host.add_widget(self.scroll)
             self.tab_content_host.add_widget(self.valve_scroll)
+            self.tab_content_host.add_widget(self.labor_scroll)
             root.add_widget(self.tab_content_host)
 
             self.bottom_nav = self._build_bottom_nav(dp, MDBoxLayout)
@@ -1518,6 +1637,12 @@ def main() -> None:
                 (getattr(self, "valve_in_tz", None), "hint_valve_temp_after"),
                 (getattr(self, "valve_in_n", None), "hint_valve_coolers"),
                 (getattr(self, "valve_in_q", None), "hint_valve_flow"),
+                (getattr(self, "labor_in_people", None), "hint_labor_people"),
+                (getattr(self, "labor_in_days", None), "hint_labor_days"),
+                (getattr(self, "labor_in_distance", None), "hint_labor_distance"),
+                (getattr(self, "labor_in_lifts", None), "hint_labor_lifts"),
+                (getattr(self, "labor_in_containers", None), "hint_labor_containers"),
+                (getattr(self, "labor_in_additional", None), "hint_labor_additional"),
             ]
 
         def _apply_hints(self):
@@ -1867,11 +1992,12 @@ def main() -> None:
                     m["content_pad"],
                     dp(3),
                 ]
-                self.bottom_nav.spacing = dp(10 if m["compact"] else 14)
+                self.bottom_nav.spacing = dp(8 if m["compact"] else 10)
                 self.bottom_nav.md_bg_color = self._bottom_nav_bg()
             for tab in (
                 getattr(self, "bottom_freezing_tab", None),
                 getattr(self, "bottom_valves_tab", None),
+                getattr(self, "bottom_labor_tab", None),
             ):
                 if tab is not None:
                     tab.set_metrics(
@@ -2053,6 +2179,22 @@ def main() -> None:
                 self.bottom_freezing_tab.set_text(self._t("nav_freezing"))
             if hasattr(self, "bottom_valves_tab"):
                 self.bottom_valves_tab.set_text(self._t("nav_valves"))
+            if hasattr(self, "bottom_labor_tab"):
+                self.bottom_labor_tab.set_text(self._t("nav_labor"))
+            if hasattr(self, "labor_lbl_title"):
+                self.labor_lbl_title.text = self._t("labor_title")
+                self.labor_lbl_hint.text = self._t("labor_hint")
+                self.labor_in_people.hint_text = self._t("labor_people")
+                self.labor_in_days.hint_text = self._t("labor_days")
+                self.labor_in_distance.hint_text = self._t("labor_distance")
+                self.labor_in_lifts.hint_text = self._t("labor_lifts")
+                self.labor_in_containers.hint_text = self._t("labor_containers")
+                self.labor_in_additional.hint_text = self._t("labor_additional")
+                self.labor_btn_calc.text = self._t("labor_calculate")
+                self.labor_lbl_result.text = self._t("labor_result")
+                self._set_labor_highways(self._labor_use_highways)
+                self._set_labor_additional_enabled(self._labor_has_additional)
+                self._render_labor_results(self._last_labor_breakdown)
             if hasattr(self, "valve_lbl_title"):
                 self.valve_lbl_title.text = self._t("valve_title")
                 self.valve_btn_mode_k.text = self._t("valve_mode_volume")
@@ -2241,7 +2383,7 @@ def main() -> None:
                 size_hint_y=None,
                 height=dp(70),
                 padding=[dp(16), dp(3), dp(16), dp(3)],
-                spacing=dp(14),
+                spacing=dp(8),
                 md_bg_color=self._bottom_nav_bg(),
             )
             self.bottom_freezing_tab = BottomNavTab(
@@ -2256,8 +2398,15 @@ def main() -> None:
                 mode="valve",
                 on_select=lambda name: self._show_tab(name),
             )
+            self.bottom_labor_tab = BottomNavTab(
+                name="labor",
+                text=self._t("nav_labor"),
+                mode="calculator",
+                on_select=lambda name: self._show_tab(name),
+            )
             nav.add_widget(self.bottom_freezing_tab)
             nav.add_widget(self.bottom_valves_tab)
+            nav.add_widget(self.bottom_labor_tab)
             return nav
 
         def _card_bg(self):
@@ -2330,6 +2479,11 @@ def main() -> None:
                     self.theme_cls.theme_style != "Dark"
                 )
                 self.bottom_valves_tab.set_active(active_tab == "valves")
+            if hasattr(self, "bottom_labor_tab"):
+                self.bottom_labor_tab.set_theme_light(
+                    self.theme_cls.theme_style != "Dark"
+                )
+                self.bottom_labor_tab.set_active(active_tab == "labor")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
             ad_slot = getattr(self, "ad_slot", None)
@@ -2347,6 +2501,9 @@ def main() -> None:
                 (getattr(self, "btn_pdf", None), "ice"),
                 (getattr(self, "btn_clear", None), "dark"),
                 (getattr(self, "btn_pro", None), "pro"),
+                (getattr(self, "labor_btn_highways", None), "primary" if getattr(self, "_labor_use_highways", False) else "dark"),
+                (getattr(self, "labor_btn_additional", None), "primary" if getattr(self, "_labor_has_additional", False) else "dark"),
+                (getattr(self, "labor_btn_calc", None), "ice"),
             ):
                 if button is not None:
                     self._style_app_button(button, variant)
@@ -2982,6 +3139,409 @@ def main() -> None:
             scroll.add_widget(content)
             return scroll
 
+        def _build_labor_tab(self, dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
+            scroll = MDScrollView()
+            content = MDBoxLayout(
+                orientation="vertical",
+                padding=[dp(16), dp(14), dp(16), dp(18)],
+                spacing=dp(14),
+                size_hint_y=None,
+            )
+            content.bind(minimum_height=content.setter("height"))
+
+            card = MDCard(
+                orientation="vertical",
+                padding=dp(14),
+                spacing=dp(10),
+                size_hint_y=None,
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
+            )
+            card.bind(minimum_height=card.setter("height"))
+            self._themed_cards.append(card)
+            self.labor_card = card
+
+            self.labor_lbl_title = MDLabel(
+                text=self._t("labor_title"),
+                font_style="H6",
+                size_hint_y=None,
+                height=dp(36),
+            )
+            card.add_widget(self.labor_lbl_title)
+
+            self.labor_lbl_hint = MDLabel(
+                text=self._t("labor_hint"),
+                font_style="Caption",
+                theme_text_color="Hint",
+                size_hint_y=None,
+                height=dp(38),
+            )
+            card.add_widget(self.labor_lbl_hint)
+
+            self.labor_in_people = MDTextField(
+                hint_text=self._t("labor_people"), input_filter="int"
+            )
+            self.labor_in_days = MDTextField(
+                hint_text=self._t("labor_days"), input_filter="int"
+            )
+            self.labor_in_distance = MDTextField(
+                hint_text=self._t("labor_distance"), input_filter="int"
+            )
+            self.labor_in_lifts = MDTextField(
+                hint_text=self._t("labor_lifts"), input_filter="int"
+            )
+            self.labor_in_containers = MDTextField(
+                hint_text=self._t("labor_containers"), input_filter="int"
+            )
+            for field in (
+                self.labor_in_people,
+                self.labor_in_days,
+                self.labor_in_distance,
+                self.labor_in_lifts,
+                self.labor_in_containers,
+            ):
+                field.size_hint_y = None
+                field.height = dp(60)
+                card.add_widget(field)
+
+            toggle_row = MDBoxLayout(
+                orientation="horizontal",
+                spacing=dp(8),
+                size_hint_y=None,
+                height=dp(46),
+            )
+            self.labor_btn_highways = MDRaisedButton(
+                text=self._t("labor_highways_off"),
+                size_hint_x=0.5,
+                size_hint_y=None,
+                height=dp(44),
+                font_size="13sp",
+                on_release=lambda *_: self._toggle_labor_highways(),
+            )
+            self.labor_btn_additional = MDRaisedButton(
+                text=self._t("labor_additional_off"),
+                size_hint_x=0.5,
+                size_hint_y=None,
+                height=dp(44),
+                font_size="13sp",
+                on_release=lambda *_: self._toggle_labor_additional(),
+            )
+            toggle_row.add_widget(self.labor_btn_highways)
+            toggle_row.add_widget(self.labor_btn_additional)
+            card.add_widget(toggle_row)
+
+            self.labor_in_additional = MDTextField(
+                hint_text=self._t("labor_additional"), input_filter=_numeric_input_filter
+            )
+            self.labor_in_additional.size_hint_y = None
+            self.labor_in_additional.height = dp(60)
+            self.labor_additional_box = MDBoxLayout(
+                orientation="vertical", size_hint_y=None, height=0
+            )
+            self.labor_additional_box.add_widget(self.labor_in_additional)
+            card.add_widget(self.labor_additional_box)
+
+            self.labor_btn_calc = MDRaisedButton(
+                text=self._t("labor_calculate"),
+                icon="calculator-variant",
+                size_hint_x=1,
+                size_hint_y=None,
+                height=dp(50),
+                font_size="15sp",
+                on_release=lambda *_: self._calculate_labor(),
+            )
+            card.add_widget(self.labor_btn_calc)
+            content.add_widget(card)
+
+            result_card = MDCard(
+                orientation="vertical",
+                padding=dp(14),
+                spacing=dp(8),
+                size_hint_y=None,
+                radius=[16, 16, 16, 16],
+                elevation=3,
+                md_bg_color=self._card_bg(),
+            )
+            result_card.bind(minimum_height=result_card.setter("height"))
+            self._themed_cards.append(result_card)
+            self.labor_result_card = result_card
+
+            self.labor_lbl_result = MDLabel(
+                text=self._t("labor_result"),
+                font_style="H6",
+                size_hint_y=None,
+                height=dp(36),
+            )
+            result_card.add_widget(self.labor_lbl_result)
+            self.labor_lbl_total = MDLabel(
+                text=self._t("labor_total_cost", value="—"),
+                font_style="H6",
+                halign="center",
+                size_hint_y=None,
+                height=dp(44),
+                theme_text_color="Custom",
+                text_color=STAGE_COLORS["total"],
+            )
+            result_card.add_widget(self.labor_lbl_total)
+
+            self.labor_result_labels = {}
+            for attr, key in (
+                ("labor_cost", "labor_labor_cost"),
+                ("travel_cost", "labor_travel_cost"),
+                ("lift_cost", "labor_lift_cost"),
+                ("container_cost", "labor_container_cost"),
+                ("hotel_cost", "labor_hotel_cost"),
+                ("allowance_cost", "labor_allowance_cost"),
+                ("regenerative_meal_cost", "labor_meal_cost"),
+                ("additional_costs_value", "labor_additional_costs"),
+            ):
+                label = MDLabel(
+                    text=self._t(key, value="—"),
+                    size_hint_y=None,
+                    height=dp(28),
+                    theme_text_color="Secondary",
+                )
+                self.labor_result_labels[attr] = (label, key)
+                result_card.add_widget(label)
+            self.labor_lbl_mode = MDLabel(
+                text=self._t("labor_travel_mode", value="—"),
+                size_hint_y=None,
+                height=dp(28),
+                theme_text_color="Secondary",
+            )
+            self.labor_lbl_details = MDLabel(
+                text=self._t("labor_travel_details", trips="—", toll_days="—", nights="—"),
+                size_hint_y=None,
+                height=dp(32),
+                theme_text_color="Hint",
+                font_style="Caption",
+            )
+            result_card.add_widget(self.labor_lbl_mode)
+            result_card.add_widget(self.labor_lbl_details)
+            content.add_widget(result_card)
+
+            scroll.add_widget(content)
+            self._set_labor_highways(False)
+            self._set_labor_additional_enabled(False)
+            self._render_labor_results(None)
+            return scroll
+
+        def _set_labor_highways(self, enabled: bool):
+            self._labor_use_highways = bool(enabled)
+            if hasattr(self, "labor_btn_highways"):
+                self.labor_btn_highways.text = self._t(
+                    "labor_highways_on" if self._labor_use_highways else "labor_highways_off"
+                )
+                self._style_app_button(
+                    self.labor_btn_highways,
+                    "primary" if self._labor_use_highways else "dark",
+                )
+
+        def _toggle_labor_highways(self):
+            self._set_labor_highways(not self._labor_use_highways)
+
+        def _set_labor_additional_enabled(self, enabled: bool):
+            from kivy.metrics import dp
+
+            self._labor_has_additional = bool(enabled)
+            if hasattr(self, "labor_btn_additional"):
+                self.labor_btn_additional.text = self._t(
+                    "labor_additional_on"
+                    if self._labor_has_additional
+                    else "labor_additional_off"
+                )
+                self._style_app_button(
+                    self.labor_btn_additional,
+                    "primary" if self._labor_has_additional else "dark",
+                )
+            if hasattr(self, "labor_additional_box"):
+                self.labor_additional_box.height = dp(60) if self._labor_has_additional else 0
+                self.labor_additional_box.opacity = 1 if self._labor_has_additional else 0
+                self.labor_additional_box.disabled = not self._labor_has_additional
+            if hasattr(self, "labor_in_additional") and not self._labor_has_additional:
+                self.labor_in_additional.text = ""
+                self._clear_field_error(self.labor_in_additional)
+
+        def _toggle_labor_additional(self):
+            self._set_labor_additional_enabled(not self._labor_has_additional)
+
+        def _clear_labor_validation(self):
+            for field in (
+                getattr(self, "labor_in_people", None),
+                getattr(self, "labor_in_days", None),
+                getattr(self, "labor_in_distance", None),
+                getattr(self, "labor_in_lifts", None),
+                getattr(self, "labor_in_containers", None),
+                getattr(self, "labor_in_additional", None),
+            ):
+                if field is not None:
+                    self._clear_field_error(field)
+
+        def _parse_labor_int(
+            self,
+            field,
+            name_key: str,
+            *,
+            min_value: int,
+            allow_zero: bool,
+            default_empty: Optional[int] = None,
+        ) -> int:
+            raw = (getattr(field, "text", "") or "").strip()
+            if not raw and default_empty is not None:
+                return default_empty
+            if not raw:
+                self._mark_field_error(field)
+                raise ValueError(self._t("invalid_field", name=self._t(name_key)))
+            try:
+                value = int(raw)
+            except (TypeError, ValueError) as exc:
+                self._mark_field_error(field, self._t("invalid_field", name=self._t(name_key)))
+                raise ValueError(self._t("invalid_field", name=self._t(name_key))) from exc
+            if value < min_value or (not allow_zero and value == 0):
+                message = self._t("invalid_field", name=self._t(name_key))
+                self._mark_field_error(field, message)
+                raise ValueError(message)
+            return value
+
+        def _parse_labor_decimal(self, field, name_key: str) -> Decimal:
+            raw = (getattr(field, "text", "") or "").strip()
+            if not raw:
+                self._mark_field_error(field)
+                raise ValueError(self._t("invalid_field", name=self._t(name_key)))
+            try:
+                value = Decimal(raw.replace(",", "."))
+            except Exception as exc:
+                self._mark_field_error(field, self._t("invalid_field", name=self._t(name_key)))
+                raise ValueError(self._t("invalid_field", name=self._t(name_key))) from exc
+            if value < 0:
+                message = self._t("invalid_field", name=self._t(name_key))
+                self._mark_field_error(field, message)
+                raise ValueError(message)
+            return value
+
+        def _format_labor_money(self, value) -> str:
+            if value is None:
+                return "—"
+            amount = Decimal(str(value)).quantize(Decimal("0.01"))
+            text = f"{amount:,.2f}"
+            return text.replace(",", " ").replace(".", ",") if self._language == "pl" else text
+
+        def _labor_travel_mode_text(self, mode: str) -> str:
+            if self._language == "pl":
+                return mode
+            if mode == "Dojazd dzienny":
+                return "Daily travel"
+            if mode == "Delegacja tygodniowa":
+                return "Weekly delegation"
+            return mode
+
+        def _render_labor_results(self, breakdown):
+            dash = "—"
+            if not hasattr(self, "labor_lbl_total"):
+                return
+            self.labor_lbl_total.text = self._t(
+                "labor_total_cost",
+                value=dash if breakdown is None else self._format_labor_money(breakdown.total_cost),
+            )
+            for attr, (label, key) in getattr(self, "labor_result_labels", {}).items():
+                value = dash if breakdown is None else self._format_labor_money(getattr(breakdown, attr))
+                label.text = self._t(key, value=value)
+            if hasattr(self, "labor_lbl_mode"):
+                self.labor_lbl_mode.text = self._t(
+                    "labor_travel_mode",
+                    value=dash if breakdown is None else self._labor_travel_mode_text(breakdown.travel_mode),
+                )
+            if hasattr(self, "labor_lbl_details"):
+                self.labor_lbl_details.text = self._t(
+                    "labor_travel_details",
+                    trips=dash if breakdown is None else breakdown.travel_round_trips,
+                    toll_days=dash if breakdown is None else breakdown.highway_toll_days,
+                    nights=dash if breakdown is None else breakdown.hotel_nights,
+                )
+
+        def _calculate_labor(self):
+            from kivy.metrics import dp
+
+            self._clear_labor_validation()
+            try:
+                people = self._parse_labor_int(
+                    self.labor_in_people, "labor_people", min_value=1, allow_zero=False
+                )
+                days = self._parse_labor_int(
+                    self.labor_in_days, "labor_days", min_value=1, allow_zero=False
+                )
+                distance = self._parse_labor_int(
+                    self.labor_in_distance, "labor_distance", min_value=0, allow_zero=True
+                )
+                lifts = self._parse_labor_int(
+                    self.labor_in_lifts,
+                    "labor_lifts",
+                    min_value=0,
+                    allow_zero=True,
+                    default_empty=0,
+                )
+                containers = self._parse_labor_int(
+                    self.labor_in_containers,
+                    "labor_containers",
+                    min_value=0,
+                    allow_zero=True,
+                    default_empty=0,
+                )
+                additional = (
+                    self._parse_labor_decimal(self.labor_in_additional, "labor_additional")
+                    if self._labor_has_additional
+                    else Decimal("0")
+                )
+                errors = validate_labor_inputs(
+                    people,
+                    days,
+                    distance,
+                    lifts,
+                    containers,
+                    self._labor_has_additional,
+                    additional,
+                )
+                if errors:
+                    raise ValueError(errors[0])
+                telemetry.log_event(
+                    "calculation_started",
+                    {"calculator": "labor", "screen": self._active_tab_name},
+                )
+                breakdown = calculate_labor_cost_breakdown(
+                    LaborCalculationInput(
+                        number_of_people=people,
+                        number_of_days=days,
+                        distance_km_one_way=distance,
+                        use_highways=self._labor_use_highways,
+                        number_of_lifts=lifts,
+                        number_of_containers=containers,
+                        additional_costs_value=additional,
+                    ),
+                    default_rate_config(),
+                )
+                self._last_labor_breakdown = breakdown
+                self._render_labor_results(breakdown)
+                telemetry.log_event(
+                    "calculation_finished",
+                    {
+                        "calculator": "labor",
+                        "travel_mode": breakdown.travel_mode,
+                        "has_additional": self._labor_has_additional,
+                    },
+                )
+                if hasattr(self, "labor_scroll") and hasattr(self, "labor_result_card"):
+                    self.labor_scroll.scroll_to(self.labor_result_card, padding=dp(12), animate=True)
+            except ValueError as exc:
+                self._show_error(self._t("labor_validation_error", message=str(exc)))
+                telemetry.log_event(
+                    "calculation_error",
+                    {"calculator": "labor", "error": str(exc)[:120]},
+                )
+            except Exception as exc:  # pragma: no cover - UI safeguard
+                log.exception("Błąd obliczeń robocizny")
+                self._show_error(self._t("calc_error", error=exc))
+
         def _set_valve_mode(self, mode: str):
             """Przełącza tryb wprowadzania objętości: Kubatura ("K") / Wymiary ("W")."""
             from kivy.metrics import dp
@@ -3180,11 +3740,11 @@ def main() -> None:
             """Zgodność z dawnym callbackiem dolnej nawigacji."""
             name = None
             for a in args:
-                if isinstance(a, str) and a in ("freezing", "valves"):
+                if isinstance(a, str) and a in ("freezing", "valves", "labor"):
                     name = a
                     break
                 item_name = getattr(a, "name", None)
-                if item_name in ("freezing", "valves"):
+                if item_name in ("freezing", "valves", "labor"):
                     name = item_name
                     break
             if name is None:
@@ -3193,19 +3753,23 @@ def main() -> None:
 
         def _show_tab(self, name: str, *, animate: bool = True, report: bool = True):
             """Przelacza widoczna karte bez ruszania wysokosci dolnego paska."""
-            if name not in ("freezing", "valves"):
+            if name not in ("freezing", "valves", "labor"):
                 return
             self._active_tab_name = name
-            freezing_active = name == "freezing"
-            if hasattr(self, "scroll"):
-                self._set_tab_visibility(self.scroll, freezing_active)
-            if hasattr(self, "valve_scroll"):
-                self._set_tab_visibility(self.valve_scroll, not freezing_active)
-            self._raise_tab_widget(self.scroll if freezing_active else self.valve_scroll)
+            tab_widgets = {
+                "freezing": getattr(self, "scroll", None),
+                "valves": getattr(self, "valve_scroll", None),
+                "labor": getattr(self, "labor_scroll", None),
+            }
+            for tab_name, widget in tab_widgets.items():
+                self._set_tab_visibility(widget, tab_name == name)
+            self._raise_tab_widget(tab_widgets.get(name))
             if hasattr(self, "bottom_freezing_tab"):
-                self.bottom_freezing_tab.set_active(freezing_active)
+                self.bottom_freezing_tab.set_active(name == "freezing")
             if hasattr(self, "bottom_valves_tab"):
-                self.bottom_valves_tab.set_active(not freezing_active)
+                self.bottom_valves_tab.set_active(name == "valves")
+            if hasattr(self, "bottom_labor_tab"):
+                self.bottom_labor_tab.set_active(name == "labor")
             if report:
                 self._set_active_ad_tab(name)
                 telemetry.set_screen(name)
@@ -3241,11 +3805,11 @@ def main() -> None:
         def _animate_bottom_tab(self, name: str):
             """Lekka reakcja zakładki bez kosztownych animacji layoutu."""
             try:
-                tab = (
-                    self.bottom_valves_tab
-                    if name == "valves"
-                    else self.bottom_freezing_tab
-                )
+                tab = {
+                    "freezing": self.bottom_freezing_tab,
+                    "valves": self.bottom_valves_tab,
+                    "labor": self.bottom_labor_tab,
+                }[name]
                 tab.play()
             except Exception:
                 log.debug("Animacja zakładki nie powiodła się", exc_info=True)
