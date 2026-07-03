@@ -10,11 +10,13 @@ from pathlib import Path
 from typing import Dict, List, Mapping, MutableMapping, Optional
 
 from tpof.core.models import Product
+from tpof.labor import default_rate_config, rate_config_from_values, rate_config_to_dict
 
 
 PREFERENCES_FILE = "ui_preferences.json"
 CUSTOM_PRODUCTS_FILE = "custom_products.json"
 ROOT_KEY = "zywnosc"
+LABOR_RATES_KEY = "labor_rates"
 SUPPORTED_UNIT_SYSTEMS = frozenset({"metric"})
 MIN_CUSTOM_T_ZAM_C = -80.0
 MAX_CUSTOM_T_ZAM_C = 10.0
@@ -82,6 +84,25 @@ class UiPreferences:
         if value not in SUPPORTED_UNIT_SYSTEMS:
             value = "metric"
         self._data["unit_system"] = value
+        self._save()
+
+    @property
+    def labor_rate_values(self) -> Dict[str, str]:
+        raw = self._data.get(LABOR_RATES_KEY, {})
+        if not isinstance(raw, dict):
+            return rate_config_to_dict(default_rate_config())
+        try:
+            return rate_config_to_dict(rate_config_from_values(raw))
+        except ValueError:
+            return rate_config_to_dict(default_rate_config())
+
+    def set_labor_rate_values(self, values: Mapping[str, object]) -> None:
+        rates = rate_config_from_values(values)
+        self._data[LABOR_RATES_KEY] = rate_config_to_dict(rates)
+        self._save()
+
+    def reset_labor_rate_values(self) -> None:
+        self._data.pop(LABOR_RATES_KEY, None)
         self._save()
 
     @property

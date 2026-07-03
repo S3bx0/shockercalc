@@ -148,6 +148,18 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert languages.exists()
 
 
+def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
+    source = (
+        Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"
+    ).read_text(encoding="utf-8")
+
+    assert "def _open_labor_rates_dialog" in source
+    assert "labor_rates_pro_required" in source
+    assert "self._preferences.set_labor_rate_values" in source
+    assert "self._preferences.reset_labor_rate_values" in source
+    assert "self._labor_rate_config()" in source
+
+
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
     source = (
         Path(__file__).parents[1] / "tpof" / "mobile" / "main.py"

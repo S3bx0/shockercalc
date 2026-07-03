@@ -54,6 +54,24 @@ def test_unit_system_file_values_fallback_to_metric(tmp_path, stored_value):
     assert UiPreferences(path).unit_system == "metric"
 
 
+def test_labor_rate_values_persist_and_reset(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    preferences.set_labor_rate_values(
+        {"labor_hourly_rate": "222", "workdays_per_week": "6"}
+    )
+
+    restored = UiPreferences(path)
+    assert restored.labor_rate_values["labor_hourly_rate"] == "222"
+    assert restored.labor_rate_values["workdays_per_week"] == "6"
+
+    restored.reset_labor_rate_values()
+
+    assert UiPreferences(path).labor_rate_values["labor_hourly_rate"] == "130.0"
+    assert UiPreferences(path).labor_rate_values["workdays_per_week"] == "5"
+
+
 def test_recent_products_are_deduplicated_limited_and_persisted(tmp_path):
     path = tmp_path / "preferences.json"
     preferences = UiPreferences(path)

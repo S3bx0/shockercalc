@@ -88,12 +88,16 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             "ca-app-pub-7481054652344026/5599859341";
     private static final String LIVE_BANNER_VALVES_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/6303778370";
+    private static final String LIVE_BANNER_LABOR_AD_UNIT_ID =
+            "ca-app-pub-7481054652344026/8198860699";
     private static final String TEST_BANNER_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/9214589741";
     private static final String LIVE_REWARDED_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/1548239161";
     private static final String LIVE_REWARDED_VALVES_AD_UNIT_ID =
             "ca-app-pub-7481054652344026/1060900411";
+    private static final String LIVE_REWARDED_LABOR_AD_UNIT_ID =
+            "ca-app-pub-7481054652344026/7623346864";
     private static final String TEST_REWARDED_AD_UNIT_ID =
             "ca-app-pub-3940256099942544/5224354917";
     private static final String LEGACY_PRO_PRODUCT_ID = "pro_no_ads";
@@ -729,29 +733,47 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         if (isDebugBuild()) {
             return TEST_BANNER_AD_UNIT_ID;
         }
-        return "valves".equals(activeAdTab)
-                ? LIVE_BANNER_VALVES_AD_UNIT_ID
-                : LIVE_BANNER_AD_UNIT_ID;
+        if ("valves".equals(activeAdTab)) {
+            return LIVE_BANNER_VALVES_AD_UNIT_ID;
+        }
+        if ("labor".equals(activeAdTab)) {
+            return LIVE_BANNER_LABOR_AD_UNIT_ID;
+        }
+        return LIVE_BANNER_AD_UNIT_ID;
     }
 
     private String getRewardedAdUnitId() {
         if (isDebugBuild()) {
             return TEST_REWARDED_AD_UNIT_ID;
         }
-        return "valves".equals(activeAdTab)
-                ? LIVE_REWARDED_VALVES_AD_UNIT_ID
-                : LIVE_REWARDED_AD_UNIT_ID;
+        if ("valves".equals(activeAdTab)) {
+            return LIVE_REWARDED_VALVES_AD_UNIT_ID;
+        }
+        if ("labor".equals(activeAdTab)) {
+            return LIVE_REWARDED_LABOR_AD_UNIT_ID;
+        }
+        return LIVE_REWARDED_AD_UNIT_ID;
+    }
+
+    private String normalizeAdTab(final String tab) {
+        if ("valves".equals(tab)) {
+            return "valves";
+        }
+        if ("labor".equals(tab)) {
+            return "labor";
+        }
+        return "freezing";
     }
 
     /**
-     * Ustawia aktywną zakładkę UI ("freezing" / "valves") z warstwy Pythona.
+     * Ustawia aktywną zakładkę UI ("freezing" / "valves" / "labor") z warstwy Pythona.
      * Gdy zakładka się zmienia, przeładowuje baner oraz reklamę rewarded na
      * jednostkę przypisaną do danej zakładki. Wywoływane przy przełączaniu
      * dolnej nawigacji — reklamy są inicjowane akcją użytkownika, więc nie
      * narusza zasad AdMob (brak auto-odświeżania programowego).
      */
     public void setActiveAdTab(final String tab) {
-        final String normalized = "valves".equals(tab) ? "valves" : "freezing";
+        final String normalized = normalizeAdTab(tab);
         if (normalized.equals(activeAdTab)) {
             return;
         }

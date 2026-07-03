@@ -39,8 +39,10 @@ from tpof.core import (
 )
 from tpof.labor import (
     CalculationInput as LaborCalculationInput,
+    RATE_CONFIG_FIELDS,
     calculate_cost_breakdown as calculate_labor_cost_breakdown,
     default_rate_config,
+    rate_config_from_values,
     validate_calculation_inputs as validate_labor_inputs,
 )
 from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
@@ -65,7 +67,9 @@ BRAND_ICE = (0.62, 0.94, 1.0, 1)
 APP_NAME = "Refrigeration Calc"
 ADMOB_APP_ID = "ca-app-pub-7481054652344026~2716191071"
 ADMOB_BANNER_AD_UNIT_ID = "ca-app-pub-7481054652344026/5599859341"
+ADMOB_BANNER_LABOR_AD_UNIT_ID = "ca-app-pub-7481054652344026/8198860699"
 ADMOB_TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
+ADMOB_REWARDED_LABOR_AD_UNIT_ID = "ca-app-pub-7481054652344026/7623346864"
 PRO_SUBSCRIPTION_PRODUCT_ID = "refrigeration_pro"
 
 IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
@@ -311,6 +315,28 @@ I18N = {
         "labor_additional_off": "Dodatkowe koszty: Nie",
         "labor_additional": "Dodatkowe koszty [zł]",
         "labor_calculate": "Oblicz robociznę",
+        "labor_rates_button": "Stawki PRO",
+        "labor_rates_title": "Stawki robocizny PRO",
+        "labor_rates_intro": "Edytuj lokalne stawki używane wyłącznie w kalkulatorze robocizny na tym urządzeniu.",
+        "labor_rates_pro_required": "Edycja stawek robocizny jest dostępna w PRO.",
+        "labor_rates_saved": "Stawki zapisane.",
+        "labor_rates_reset": "Przywrócono stawki fabryczne.",
+        "labor_rates_invalid": "Popraw stawki robocizny: {message}",
+        "labor_rates_factory": "Fabryczne",
+        "labor_rate_labor_hourly_rate": "Roboczogodzina [zł/h]",
+        "labor_rate_hours_per_day": "Godziny pracy / dzień",
+        "labor_rate_travel_rate_per_km": "Dojazd [zł/km]",
+        "labor_rate_highway_toll_per_travel_day": "Autostrady / dzień przejazdu [zł]",
+        "labor_rate_lift_daily_rate": "Zwyżka / dzień [zł]",
+        "labor_rate_lift_transport_cost": "Transport zwyżki [zł]",
+        "labor_rate_container_daily_rate": "Kontener / dzień [zł]",
+        "labor_rate_container_transport_cost": "Transport kontenera [zł]",
+        "labor_rate_hotel_rate_per_person": "Nocleg / osoba [zł]",
+        "labor_rate_allowance_per_person": "Dieta / osoba / dzień [zł]",
+        "labor_rate_meal_per_person": "Posiłek / osoba / dzień [zł]",
+        "labor_rate_hotel_nights_multiplier": "Mnożnik noclegów",
+        "labor_rate_local_return_distance_limit_km": "Limit dojazdu dziennego [km]",
+        "labor_rate_workdays_per_week": "Dni robocze / tydzień",
         "labor_result": "Wynik robocizny",
         "labor_total_cost": "Koszt całkowity: {value} zł",
         "labor_labor_cost": "Robocizna: {value} zł",
@@ -494,6 +520,28 @@ I18N = {
         "labor_additional_off": "Additional costs: No",
         "labor_additional": "Additional costs [PLN]",
         "labor_calculate": "Calculate labor",
+        "labor_rates_button": "PRO rates",
+        "labor_rates_title": "PRO labor rates",
+        "labor_rates_intro": "Edit local rates used only by the labor calculator on this device.",
+        "labor_rates_pro_required": "Labor rate editing is available in PRO.",
+        "labor_rates_saved": "Rates saved.",
+        "labor_rates_reset": "Factory labor rates restored.",
+        "labor_rates_invalid": "Fix labor rates: {message}",
+        "labor_rates_factory": "Factory",
+        "labor_rate_labor_hourly_rate": "Labor hour [PLN/h]",
+        "labor_rate_hours_per_day": "Working hours / day",
+        "labor_rate_travel_rate_per_km": "Travel [PLN/km]",
+        "labor_rate_highway_toll_per_travel_day": "Highway toll / travel day [PLN]",
+        "labor_rate_lift_daily_rate": "Lift / day [PLN]",
+        "labor_rate_lift_transport_cost": "Lift transport [PLN]",
+        "labor_rate_container_daily_rate": "Container / day [PLN]",
+        "labor_rate_container_transport_cost": "Container transport [PLN]",
+        "labor_rate_hotel_rate_per_person": "Hotel / person [PLN]",
+        "labor_rate_allowance_per_person": "Allowance / person / day [PLN]",
+        "labor_rate_meal_per_person": "Meal / person / day [PLN]",
+        "labor_rate_hotel_nights_multiplier": "Hotel nights multiplier",
+        "labor_rate_local_return_distance_limit_km": "Daily return limit [km]",
+        "labor_rate_workdays_per_week": "Workdays / week",
         "labor_result": "Labor result",
         "labor_total_cost": "Total cost: {value} PLN",
         "labor_labor_cost": "Labor: {value} PLN",
@@ -1502,6 +1550,8 @@ def main() -> None:
             self._privacy_dialog = None
             self._settings_dialog = None
             self._telemetry_dialog = None
+            self._labor_rate_dialog = None
+            self._labor_rate_fields = {}
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
@@ -2190,6 +2240,7 @@ def main() -> None:
                 self.labor_in_lifts.hint_text = self._t("labor_lifts")
                 self.labor_in_containers.hint_text = self._t("labor_containers")
                 self.labor_in_additional.hint_text = self._t("labor_additional")
+                self.labor_btn_rates.text = self._t("labor_rates_button")
                 self.labor_btn_calc.text = self._t("labor_calculate")
                 self.labor_lbl_result.text = self._t("labor_result")
                 self._set_labor_highways(self._labor_use_highways)
@@ -2503,6 +2554,7 @@ def main() -> None:
                 (getattr(self, "btn_pro", None), "pro"),
                 (getattr(self, "labor_btn_highways", None), "primary" if getattr(self, "_labor_use_highways", False) else "dark"),
                 (getattr(self, "labor_btn_additional", None), "primary" if getattr(self, "_labor_has_additional", False) else "dark"),
+                (getattr(self, "labor_btn_rates", None), "pro"),
                 (getattr(self, "labor_btn_calc", None), "ice"),
             ):
                 if button is not None:
@@ -3245,13 +3297,30 @@ def main() -> None:
             self.labor_btn_calc = MDRaisedButton(
                 text=self._t("labor_calculate"),
                 icon="calculator-variant",
-                size_hint_x=1,
+                size_hint_x=0.64,
                 size_hint_y=None,
                 height=dp(50),
                 font_size="15sp",
                 on_release=lambda *_: self._calculate_labor(),
             )
-            card.add_widget(self.labor_btn_calc)
+            self.labor_btn_rates = MDRaisedButton(
+                text=self._t("labor_rates_button"),
+                icon="tune-variant",
+                size_hint_x=0.36,
+                size_hint_y=None,
+                height=dp(50),
+                font_size="13sp",
+                on_release=lambda *_: self._open_labor_rates_dialog(),
+            )
+            action_row = MDBoxLayout(
+                orientation="horizontal",
+                spacing=dp(8),
+                size_hint_y=None,
+                height=dp(52),
+            )
+            action_row.add_widget(self.labor_btn_rates)
+            action_row.add_widget(self.labor_btn_calc)
+            card.add_widget(action_row)
             content.add_widget(card)
 
             result_card = MDCard(
@@ -3460,6 +3529,143 @@ def main() -> None:
                     nights=dash if breakdown is None else breakdown.hotel_nights,
                 )
 
+        def _labor_rate_config(self):
+            try:
+                return rate_config_from_values(self._preferences.labor_rate_values)
+            except ValueError:
+                self._preferences.reset_labor_rate_values()
+                return default_rate_config()
+
+        def _close_labor_rates_dialog(self):
+            dialog = getattr(self, "_labor_rate_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._labor_rate_dialog = None
+
+        def _labor_rate_text_values(self):
+            values = self._preferences.labor_rate_values
+            return {key: str(values.get(key, "")) for key in RATE_CONFIG_FIELDS}
+
+        def _open_labor_rates_dialog(self):
+            if not self._pro_no_ads:
+                self._show_error(self._t("labor_rates_pro_required"))
+                return
+            self._close_labor_rates_dialog()
+            try:
+                from kivy.metrics import dp
+                from kivy.uix.scrollview import ScrollView
+                from kivymd.uix.boxlayout import MDBoxLayout
+                from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.dialog import MDDialog
+                from kivymd.uix.label import MDLabel
+                from kivymd.uix.textfield import MDTextField
+
+                outer = MDBoxLayout(
+                    orientation="vertical",
+                    spacing=dp(8),
+                    size_hint_y=None,
+                    height=dp(540),
+                )
+                outer.add_widget(
+                    MDLabel(
+                        text=self._t("labor_rates_intro"),
+                        theme_text_color="Hint",
+                        font_style="Caption",
+                        adaptive_height=True,
+                    )
+                )
+                scroll = ScrollView()
+                form = MDBoxLayout(
+                    orientation="vertical",
+                    spacing=dp(8),
+                    padding=[0, dp(4), dp(8), dp(8)],
+                    size_hint_y=None,
+                )
+                form.bind(minimum_height=form.setter("height"))
+                self._labor_rate_fields = {}
+                values = self._labor_rate_text_values()
+                for key in RATE_CONFIG_FIELDS:
+                    field = MDTextField(
+                        hint_text=self._t(f"labor_rate_{key}"),
+                        text=values.get(key, ""),
+                        input_filter="int" if key == "workdays_per_week" else _numeric_input_filter,
+                        size_hint_y=None,
+                        height=dp(62),
+                    )
+                    field.bind(
+                        text=lambda widget, _value: self._clear_field_error(widget)
+                    )
+                    self._labor_rate_fields[key] = field
+                    form.add_widget(field)
+                scroll.add_widget(form)
+                outer.add_widget(scroll)
+
+                self._labor_rate_dialog = MDDialog(
+                    title=self._t("labor_rates_title"),
+                    type="custom",
+                    content_cls=outer,
+                    buttons=[
+                        MDFlatButton(
+                            text=self._t("labor_rates_factory"),
+                            on_release=lambda *_: self._reset_labor_rates(),
+                        ),
+                        MDFlatButton(
+                            text=self._t("cancel"),
+                            on_release=lambda *_: self._close_labor_rates_dialog(),
+                        ),
+                        MDRaisedButton(
+                            text=self._t("save"),
+                            on_release=lambda *_: self._save_labor_rates(),
+                        ),
+                    ],
+                )
+                self._labor_rate_dialog.open()
+                telemetry.log_event("settings_opened", {"section": "labor_rates"})
+            except Exception as exc:
+                telemetry.record_exception(exc, "open_labor_rates")
+                log.exception("Formularz stawek robocizny")
+                self._show_error(self._t("calc_error", error=exc))
+
+        def _invalidate_labor_results(self):
+            self._last_labor_breakdown = None
+            self._render_labor_results(None)
+
+        def _mark_labor_rate_errors(self, message: str):
+            fields = getattr(self, "_labor_rate_fields", {})
+            marked = False
+            for key, field in fields.items():
+                if key in message:
+                    self._mark_field_error(field)
+                    marked = True
+            if not marked:
+                for field in fields.values():
+                    self._mark_field_error(field)
+
+        def _save_labor_rates(self):
+            fields = getattr(self, "_labor_rate_fields", {})
+            values = {key: field.text for key, field in fields.items()}
+            try:
+                self._preferences.set_labor_rate_values(values)
+            except ValueError as exc:
+                message = str(exc)
+                self._mark_labor_rate_errors(message)
+                self._show_error(self._t("labor_rates_invalid", message=message))
+                return
+            self._invalidate_labor_results()
+            self._close_labor_rates_dialog()
+            self._show_error(self._t("labor_rates_saved"))
+            telemetry.log_event("settings_saved", {"section": "labor_rates"})
+
+        def _reset_labor_rates(self):
+            self._preferences.reset_labor_rate_values()
+            values = self._labor_rate_text_values()
+            for key, field in getattr(self, "_labor_rate_fields", {}).items():
+                field.text = values.get(key, "")
+                self._clear_field_error(field)
+            self._invalidate_labor_results()
+            self._show_error(self._t("labor_rates_reset"))
+            telemetry.log_event("settings_reset", {"section": "labor_rates"})
+
         def _calculate_labor(self):
             from kivy.metrics import dp
 
@@ -3518,7 +3724,7 @@ def main() -> None:
                         number_of_containers=containers,
                         additional_costs_value=additional,
                     ),
-                    default_rate_config(),
+                    self._labor_rate_config(),
                 )
                 self._last_labor_breakdown = breakdown
                 self._render_labor_results(breakdown)

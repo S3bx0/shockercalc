@@ -18,9 +18,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.0" in spec
-    assert '__version__ = "1.5.0"' in package_init
-    assert 'version = "1.5.0"' in pyproject
+    assert "version = 1.5.1" in spec
+    assert '__version__ = "1.5.1"' in package_init
+    assert 'version = "1.5.1"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -52,6 +52,19 @@ def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
     assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in source
     assert "recordPythonException" in source
     assert "custom_products_limit" in source
+
+
+def test_labor_tab_uses_dedicated_admob_units():
+    activity = ACTIVITY.read_text(encoding="utf-8")
+    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
+
+    assert "ca-app-pub-7481054652344026/8198860699" in activity
+    assert "ca-app-pub-7481054652344026/7623346864" in activity
+    assert 'if ("labor".equals(activeAdTab))' in activity
+    assert "normalizeAdTab(final String tab)" in activity
+    assert 'if ("labor".equals(tab))' in activity
+    assert 'self._set_active_ad_tab(name)' in mobile_main
+    assert '"labor": self.bottom_labor_tab' in mobile_main
 
 
 def test_native_splash_is_lightweight_and_started_by_activity():

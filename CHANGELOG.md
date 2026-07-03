@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.1] - 2026-07-03
+
+### Dodano
+
+- Dodano funkcję PRO do edycji stawek kalkulatora **Robocizna**: roboczogodziny,
+  dojazdów, opłat, zwyżek, kontenerów, noclegów, diet, posiłków i dni roboczych
+  tygodnia.
+- Dodano reset stawek Robocizny do wartości fabrycznych na urządzeniu.
+- Dodano osobne jednostki AdMob dla zakładki Robocizna: banner oraz rewarded.
+- Dodano dokument `docs/MOBILE_REFACTOR_PLAN.md` z planem rozbicia mobilnego
+  monolitu na moduły.
+
+### Testy
+
+- Dodano testy zapisu/resetu stawek Robocizny, serializacji konfiguracji stawek
+  oraz testy pilnujące dedykowanych jednostek reklamowych Robocizny.
+
 ## [1.5.0] - 2026-07-02
 
 ### Dodano

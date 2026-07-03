@@ -12,6 +12,8 @@ from tpof.labor import (
     delegation_nights,
     delegation_travel_days,
     delegation_weeks,
+    rate_config_from_values,
+    rate_config_to_dict,
     validate_calculation_inputs,
 )
 
@@ -39,6 +41,22 @@ def build_rates(**overrides):
 
 def test_default_labor_rates_are_valid():
     default_rate_config().validate()
+
+
+def test_labor_rate_config_accepts_string_overrides():
+    rates = rate_config_from_values(
+        {"labor_hourly_rate": "150,5", "workdays_per_week": "6"}
+    )
+
+    assert rates.labor_hourly_rate == Decimal("150.5")
+    assert rates.workdays_per_week == 6
+
+
+def test_labor_rate_config_serializes_to_strings():
+    data = rate_config_to_dict(default_rate_config())
+
+    assert data["labor_hourly_rate"] == "130.0"
+    assert data["workdays_per_week"] == "5"
 
 
 def test_labor_cost_breakdown_full_case_matches_desktop_logic():
