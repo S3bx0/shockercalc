@@ -1,0 +1,1 @@
+"""Custom product dialog skeleton."""

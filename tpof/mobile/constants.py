@@ -1,0 +1,86 @@
+"""Shared mobile constants.
+
+This module is intentionally a leaf: do not import Kivy widgets, app classes or
+controllers here. UI widgets, tabs and the temporary ``main.py`` shim can import
+these values without creating cycles.
+"""
+
+from __future__ import annotations
+
+import os
+
+STAGE_COLORS = {
+    "schladzanie": (0.11, 0.62, 0.85, 1),
+    "zamrozenie": (0.49, 0.40, 0.96, 1),
+    "domrozenie": (0.06, 0.76, 0.82, 1),
+    "total": (0.05, 0.62, 0.42, 1),
+}
+
+BRAND_NAVY = (0.02, 0.07, 0.14, 1)
+BRAND_BLUE = (0.04, 0.33, 0.54, 1)
+BRAND_CYAN = (0.06, 0.72, 0.80, 1)
+BRAND_ICE = (0.62, 0.94, 1.0, 1)
+
+APP_NAME = "Refrigeration Calc"
+
+ADMOB_APP_ID = "ca-app-pub-7481054652344026~2716191071"
+ADMOB_BANNER_AD_UNIT_ID = "ca-app-pub-7481054652344026/5599859341"
+ADMOB_BANNER_LABOR_AD_UNIT_ID = "ca-app-pub-7481054652344026/8198860699"
+ADMOB_TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
+ADMOB_REWARDED_LABOR_AD_UNIT_ID = "ca-app-pub-7481054652344026/7623346864"
+
+PRO_SUBSCRIPTION_PRODUCT_ID = "refrigeration_pro"
+
+IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
+
+CARD_BG_DARK = (0.09, 0.13, 0.17, 1)
+CARD_BG_LIGHT = (0.96, 0.98, 1.0, 1)
+SURFACE_DARK = (0.05, 0.08, 0.11, 1)
+SURFACE_LIGHT = (0.93, 0.96, 0.98, 1)
+BOTTOM_NAV_BG_DARK = (0.04, 0.05, 0.07, 1)
+BOTTOM_NAV_BG_LIGHT = (0.86, 0.95, 0.99, 1)
+FOOTER_BG_DARK = (0.04, 0.07, 0.10, 1)
+FOOTER_BG_LIGHT = (0.89, 0.96, 0.99, 1)
+AD_SLOT_BG_DARK = (0.02, 0.04, 0.06, 0.92)
+AD_SLOT_BG_LIGHT = (0.90, 0.96, 0.99, 0.98)
+
+ABSOLUTE_ZERO_C = -273.15
+TEMP_HIGH_WARNING_C = 90.0
+TEMP_HIGH_STRONG_WARNING_C = 120.0
+TEMP_HIGH_ERROR_C = 130.0
+TEMP_LOW_WARNING_C = -35.0
+TEMP_LOW_STRONG_WARNING_C = -50.0
+TEMP_LOW_EXTREME_WARNING_C = -60.0
+
+__all__ = [
+    "ABSOLUTE_ZERO_C",
+    "AD_SLOT_BG_DARK",
+    "AD_SLOT_BG_LIGHT",
+    "ADMOB_APP_ID",
+    "ADMOB_BANNER_AD_UNIT_ID",
+    "ADMOB_BANNER_LABOR_AD_UNIT_ID",
+    "ADMOB_REWARDED_LABOR_AD_UNIT_ID",
+    "ADMOB_TEST_BANNER_AD_UNIT_ID",
+    "APP_NAME",
+    "BOTTOM_NAV_BG_DARK",
+    "BOTTOM_NAV_BG_LIGHT",
+    "BRAND_BLUE",
+    "BRAND_CYAN",
+    "BRAND_ICE",
+    "BRAND_NAVY",
+    "CARD_BG_DARK",
+    "CARD_BG_LIGHT",
+    "FOOTER_BG_DARK",
+    "FOOTER_BG_LIGHT",
+    "IS_ANDROID",
+    "PRO_SUBSCRIPTION_PRODUCT_ID",
+    "STAGE_COLORS",
+    "SURFACE_DARK",
+    "SURFACE_LIGHT",
+    "TEMP_HIGH_ERROR_C",
+    "TEMP_HIGH_STRONG_WARNING_C",
+    "TEMP_HIGH_WARNING_C",
+    "TEMP_LOW_EXTREME_WARNING_C",
+    "TEMP_LOW_STRONG_WARNING_C",
+    "TEMP_LOW_WARNING_C",
+]

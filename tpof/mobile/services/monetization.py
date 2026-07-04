@@ -1,0 +1,1 @@
+"""Monetization UI service skeleton."""
