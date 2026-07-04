@@ -133,13 +133,14 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/main.py")
+    i18n_source = _source("tpof/mobile/i18n.py")
     languages = ROOT / "resources" / "strings" / "languages.json"
 
     assert "def _open_settings_dialog" in source
     assert "self.toolbar_snowflake = MDIconButton" in source
     assert "on_release=lambda *_: self._open_settings_dialog()" in source
     assert "units_imperial_disabled" in source
-    assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in source
+    assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in i18n_source
     assert languages.exists()
 
 
