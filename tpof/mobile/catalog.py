@@ -65,6 +65,35 @@ def _safe_image_path(nazwa: str) -> Optional[str]:
     return None
 
 
+def _search_key(value: str) -> str:
+    """Normalizuje tekst do wyszukiwania bez wielkości liter i akcentów."""
+    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
+    text = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return text.replace("ł", "l")
+
+
+def _search_product_names(names: List[str], query: str) -> List[str]:
+    """Filtruje produkty, preferując początek nazwy i początek słowa."""
+    normalized_query = _search_key(query).strip()
+    if not normalized_query:
+        return list(names)
+    tokens = normalized_query.split()
+    matches = []
+    for index, name in enumerate(names):
+        normalized_name = _search_key(name)
+        if not all(token in normalized_name for token in tokens):
+            continue
+        words = normalized_name.split()
+        if normalized_name.startswith(normalized_query):
+            rank = 0
+        elif any(word.startswith(tokens[0]) for word in words):
+            rank = 1
+        else:
+            rank = 2
+        matches.append((rank, index, name))
+    return [name for _rank, _index, name in sorted(matches)]
+
+
 __all__ = [
     "FEATURED_MOBILE_CATEGORIES",
     "_is_mobile_hidden_product",
@@ -72,4 +101,6 @@ __all__ = [
     "_mobile_sort_key",
     "_ordered_mobile_categories",
     "_safe_image_path",
+    "_search_key",
+    "_search_product_names",
 ]

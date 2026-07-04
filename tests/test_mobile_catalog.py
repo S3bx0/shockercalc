@@ -50,3 +50,26 @@ def test_safe_image_path_dla_nieistniejacego():
     from tpof.mobile.catalog import _safe_image_path
 
     assert _safe_image_path("NieistniejacyProdukt_12345") is None
+
+
+def test_wyszukiwanie_produktow_ignoruje_polskie_znaki_i_wielkosc_liter():
+    from tpof.mobile.catalog import _search_product_names
+
+    names = ["Śliwki suszone", "Mleko", "Łosoś", "Śliwki świeże"]
+
+    assert _search_product_names(names, "SLIWKI") == [
+        "Śliwki suszone",
+        "Śliwki świeże",
+    ]
+    assert _search_product_names(names, "losos") == ["Łosoś"]
+
+
+def test_wyszukiwanie_produktow_preferuje_poczatek_nazwy():
+    from tpof.mobile.catalog import _search_product_names
+
+    names = ["Brzoskwinie suszone", "Suszone morele", "Morele suszone"]
+
+    assert _search_product_names(names, "morele") == [
+        "Morele suszone",
+        "Suszone morele",
+    ]

@@ -35,7 +35,7 @@ def test_mobilny_wynik_nie_ujawnia_wlasciwosci_produktu():
 
 
 def test_mobilny_font_ma_fallback_do_kivy():
-    from tpof.mobile.main import _runtime_font_path
+    from tpof.mobile.android_bridge import _runtime_font_path
 
     assert _runtime_font_path() is not None
 
@@ -166,29 +166,6 @@ def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
     assert "self.size = (0, 0)" in notice_source
 
 
-def test_wyszukiwanie_produktow_ignoruje_polskie_znaki_i_wielkosc_liter():
-    from tpof.mobile.main import _search_product_names
-
-    names = ["Śliwki suszone", "Mleko", "Łosoś", "Śliwki świeże"]
-
-    assert _search_product_names(names, "SLIWKI") == [
-        "Śliwki suszone",
-        "Śliwki świeże",
-    ]
-    assert _search_product_names(names, "losos") == ["Łosoś"]
-
-
-def test_wyszukiwanie_produktow_preferuje_poczatek_nazwy():
-    from tpof.mobile.main import _search_product_names
-
-    names = ["Brzoskwinie suszone", "Suszone morele", "Morele suszone"]
-
-    assert _search_product_names(names, "morele") == [
-        "Morele suszone",
-        "Suszone morele",
-    ]
-
-
 def test_paths_wskazuja_na_istniejace_zasoby():
     from tpof.mobile.paths import DATA_PATH, IMAGES_DIR
 
@@ -198,7 +175,7 @@ def test_paths_wskazuja_na_istniejace_zasoby():
 
 def test_sync_module_ownership_nadaje_modul(tmp_path):
     from tpof.mobile.entitlements import MODULE_VALVES, Entitlements
-    from tpof.mobile.main import _sync_module_ownership
+    from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 
     ent = Entitlements(state_path=tmp_path / "entitlement.json")
     _sync_module_ownership(ent, MODULE_VALVES, True)
@@ -207,7 +184,7 @@ def test_sync_module_ownership_nadaje_modul(tmp_path):
 
 def test_sync_module_ownership_cofa_modul_po_revoke(tmp_path):
     from tpof.mobile.entitlements import MODULE_VALVES, Entitlements
-    from tpof.mobile.main import _sync_module_ownership
+    from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 
     ent = Entitlements(state_path=tmp_path / "entitlement.json")
     ent.grant_module(MODULE_VALVES)
@@ -216,7 +193,7 @@ def test_sync_module_ownership_cofa_modul_po_revoke(tmp_path):
 
 
 def test_pdf_output_dir_na_desktopie_zwraca_cwd():
-    from tpof.mobile.main import _pdf_output_dir
+    from tpof.mobile.pdf_export import _pdf_output_dir
 
     out = _pdf_output_dir()
     assert out.exists()

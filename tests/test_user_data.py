@@ -7,7 +7,7 @@ from tpof.mobile.user_data import (
     UiPreferences,
     create_custom_product,
 )
-from tpof.mobile.main import _numeric_input_filter
+from tpof.mobile.validation import _numeric_input_filter
 
 
 VALID_PRODUCT = {

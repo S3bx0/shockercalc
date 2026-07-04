@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import math
 import os
-import unicodedata
 from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
@@ -45,112 +44,23 @@ from tpof.labor import (
     rate_config_from_values,
     validate_calculation_inputs as validate_labor_inputs,
 )
+from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
 from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
-from tpof.mobile.paths import DATA_PATH, FONT_PATH
+from tpof.mobile.paths import DATA_PATH
 from tpof.mobile import telemetry
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.catalog import (
     _mobile_product_names,
     _ordered_mobile_categories,
     _safe_image_path,
+    _search_product_names,
 )
 from tpof.mobile.constants import *  # TODO(refactor): replace with explicit imports after app split.
+from tpof.mobile.pdf_export import _pdf_output_dir
+from tpof.mobile.services.entitlements_ui import _sync_module_ownership
+from tpof.mobile.validation import _numeric_input_filter
 
 log = logging.getLogger(__name__)
-
-_FONTTOOLS_SO_PURGED = False
-
-
-def _runtime_font_path() -> Optional[Path]:
-    """Używa fontu aplikacji albo kopii DejaVu dostarczanej przez Kivy."""
-    if FONT_PATH.exists():
-        return FONT_PATH
-    try:
-        from kivy.resources import resource_find
-
-        found = resource_find("data/fonts/DejaVuSans.ttf")
-        return Path(found) if found else None
-    except ImportError:
-        return None
-
-
-def _numeric_input_filter(value: str, _from_undo: bool = False) -> str:
-    """Pozwala wpisywac liczby z polskim przecinkiem i znakiem minus."""
-    return "".join(char for char in str(value) if char in "0123456789-.,")
-
-
-def _search_key(value: str) -> str:
-    """Normalizuje tekst do wyszukiwania bez wielkości liter i akcentów."""
-    decomposed = unicodedata.normalize("NFKD", str(value or "").casefold())
-    text = "".join(char for char in decomposed if not unicodedata.combining(char))
-    return text.replace("ł", "l")
-
-
-def _search_product_names(names: List[str], query: str) -> List[str]:
-    """Filtruje produkty, preferując początek nazwy i początek słowa."""
-    normalized_query = _search_key(query).strip()
-    if not normalized_query:
-        return list(names)
-    tokens = normalized_query.split()
-    matches = []
-    for index, name in enumerate(names):
-        normalized_name = _search_key(name)
-        if not all(token in normalized_name for token in tokens):
-            continue
-        words = normalized_name.split()
-        if normalized_name.startswith(normalized_query):
-            rank = 0
-        elif any(word.startswith(tokens[0]) for word in words):
-            rank = 1
-        else:
-            rank = 2
-        matches.append((rank, index, name))
-    return [name for _rank, _index, name in sorted(matches)]
-
-
-def _purge_host_arch_fonttools_so() -> None:
-    """Usuwa host-arch (.so) rozszerzenia fonttools z rozpakowanego bundla.
-
-    Na Androidzie p4a instaluje fonttools hostowym pipem, więc skompilowane
-    rozszerzenia Cython (np. ``fontTools/misc/bezierTools.so``) są dla x86_64,
-    a nie arm64 -> ``dlopen`` pada przy generowaniu PDF. Katalog
-    ``_python_bundle`` jest rozpakowany do zapisywalnego ``files/app/...``,
-    więc kasujemy te ``.so`` w runtime — fonttools wraca do czystego Pythona.
-    """
-    global _FONTTOOLS_SO_PURGED
-    if _FONTTOOLS_SO_PURGED or not IS_ANDROID:
-        return
-    _FONTTOOLS_SO_PURGED = True
-
-    import sys
-
-    roots: List[str] = []
-    try:
-        import fontTools  # noqa: WPS433 - pakiet __init__ jest czysto-pythonowy
-
-        roots.extend(getattr(fontTools, "__path__", []) or [])
-    except Exception:  # pragma: no cover - Android only
-        pass
-    for entry in sys.path:
-        candidate = os.path.join(entry, "fontTools")
-        if os.path.isdir(candidate):
-            roots.append(candidate)
-
-    seen = set()
-    for root in roots:
-        root = os.path.abspath(root)
-        if root in seen or not os.path.isdir(root):
-            continue
-        seen.add(root)
-        for dirpath, _dirnames, filenames in os.walk(root):
-            for name in filenames:
-                if name.endswith(".so"):
-                    try:
-                        os.remove(os.path.join(dirpath, name))
-                        log.warning("Usunieto host-arch fonttools .so: %s", name)
-                    except OSError as exc:  # pragma: no cover - Android only
-                        log.warning("Nie usunieto %s: %s", name, exc)
-
 
 I18N = {
     "pl": {
@@ -589,27 +499,6 @@ CATEGORY_LABELS_EN = {
     "soki_i_napoje": "juices and drinks",
     "różne": "miscellaneous",
 }
-
-def _sync_module_ownership(entitlements: Entitlements, module_id: str, owned: bool) -> None:
-    """Synchronizuje lokalne uprawnienie modułu z aktualnym stanem Google Play."""
-    if owned:
-        entitlements.grant_module(module_id)
-    else:
-        entitlements.revoke_module(module_id)
-
-
-def _pdf_output_dir() -> Path:
-    """Zwraca prywatny katalog PDF bez żądania szerokich uprawnień storage."""
-    if "ANDROID_ARGUMENT" in os.environ:
-        private_root = Path(os.environ.get("ANDROID_PRIVATE", os.getcwd()))
-        pdf_dir = private_root / "pdf"
-        try:
-            pdf_dir.mkdir(parents=True, exist_ok=True)
-            return pdf_dir
-        except OSError:
-            return private_root
-    return Path.cwd()
-
 
 def main() -> None:
     """Punkt wejścia mobilnej aplikacji."""
