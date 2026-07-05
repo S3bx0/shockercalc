@@ -35,7 +35,7 @@ class BottomNavMotionIcon(Widget):
             self._icon_color = Color(*BRAND_ICE[:3], 0.72)
             line_count = 18 if self.mode == "snowflake" else 11 if self.mode == "calculator" else 5
             for _index in range(line_count):
-                self._lines.append(Line(points=[], width=dp(1.45), cap="round"))
+                self._lines.append(Line(points=[], width=dp(1.15), cap="round"))
         self.bind(pos=self._sync_canvas, size=self._sync_canvas)
         self._sync_canvas()
 

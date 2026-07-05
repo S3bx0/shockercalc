@@ -93,6 +93,8 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
     assert "self.bottom_labor_tab" in source
     assert "def _show_tab" in source
     assert "tab.play()" in source
+    assert "width=dp(1.15)" in nav_source
+    assert "width=dp(1.45)" not in nav_source
 
 
 def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
@@ -108,6 +110,20 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     assert "self.bottom_valves_tab.set_theme_light" in source
     assert "self.bottom_labor_tab.set_theme_light" in source
     assert "self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)" not in source
+
+
+def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
+    source = _source("tpof/mobile/main.py")
+    show_tab_block = source[
+        source.index("def _show_tab") : source.index("def _set_tab_visibility")
+    ]
+    toggle_theme_block = source[
+        source.index("def _toggle_theme") : source.index("def _reset_inputs")
+    ]
+
+    assert "self._sync_theme_surfaces()" in show_tab_block
+    assert "Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)" in show_tab_block
+    assert "Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)" in toggle_theme_block
 
 
 def test_przyciski_zaworow_uzywaja_brandowej_palety():

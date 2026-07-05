@@ -2460,6 +2460,11 @@ def main() -> None:
                 self._animate_bottom_tab(name)
             if name == "valves":
                 self._refresh_valve_lock_ui()
+            # Hidden tabs are disabled to avoid touch interception. After a
+            # theme switch they need a fresh pass once re-enabled, otherwise
+            # KivyMD can keep disabled/dark colors until app restart.
+            self._sync_theme_surfaces()
+            Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)
 
         def _set_tab_visibility(self, widget, active: bool):
             """Ukryta zakladka nie moze zostawac niewidzialna warstwa dotykowa."""
@@ -3209,6 +3214,7 @@ def main() -> None:
             is_dark = self.theme_cls.theme_style == "Dark"
             self.theme_cls.theme_style = "Light" if is_dark else "Dark"
             self._sync_theme_surfaces()
+            Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)
             if hasattr(self, "btn_theme"):
                 self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
 

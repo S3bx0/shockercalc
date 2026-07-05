@@ -4,6 +4,19 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.4] - 2026-07-05
+
+### Naprawiono
+
+- Odświeżanie motywu po przełączeniu zakładki działa teraz po odblokowaniu
+  widoku i jeszcze raz w kolejnej klatce, żeby ukryte wcześniej karty **Zawory**
+  i **Robocizna** nie zostawały w ciemnym stylu po zmianie na jasny motyw.
+
+### Zmieniono
+
+- Odchudzono kreski animowanych ikon dolnej nawigacji, aby ikony wyglądały
+  lżej i spójniej z obecnym, lodowym stylem aplikacji.
+
 ## [1.5.3] - 2026-07-05
 
 ### Narzędzia / jakość
