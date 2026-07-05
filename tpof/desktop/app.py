@@ -12,6 +12,7 @@ import os
 import pathlib
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
+from typing import Any, cast
 
 import ttkbootstrap as ttk
 from PIL import Image, ImageTk
@@ -20,6 +21,7 @@ from ttkbootstrap.widgets import Floodgauge, Meter
 
 from tpof.core import (
     FreezingInputs,
+    FreezingResults,
     Product,
     calculate_freezing,
     find_product,
@@ -68,7 +70,16 @@ class FreezingCalculatorApp:
 
         self.current_image_path: pathlib.Path | None = None
         self.current_photo: ImageTk.PhotoImage | None = None
-        self.last_results = None  # type: ignore[assignment]
+        self.last_results: FreezingResults | None = None
+        self._icon_photo: ImageTk.PhotoImage | None = None
+        self._logo_photo: ImageTk.PhotoImage | None = None
+
+        self.mass_entry: ttk.Entry
+        self.start_temp_entry: ttk.Entry
+        self.end_temp_entry: ttk.Entry
+        self.time_entry: ttk.Entry
+        self.image_label: ttk.Label
+        self.results_tree: ttk.Treeview
 
         self.status_var = tk.StringVar(value="Gotowy. Wprowadź parametry i wybierz produkt.")
         self.theme_var = tk.StringVar(value=DEFAULT_THEME)
@@ -303,8 +314,8 @@ class FreezingCalculatorApp:
         # --- Górny rząd: Floodgauge dla każdego etapu (animowane słupki) ---
         gauges = ttk.Frame(card)
         gauges.grid(row=0, column=0, columnspan=2, sticky=EW, pady=(0, 12))
-        for col in range(3):
-            gauges.columnconfigure(col, weight=1, uniform="gauges")
+        for gauge_col in range(3):
+            gauges.columnconfigure(gauge_col, weight=1, uniform="gauges")
 
         self.gauge_schladzanie = self._make_floodgauge(gauges, "Schładzanie", "info")
         self.gauge_schladzanie["frame"].grid(row=0, column=0, sticky=EW, padx=(0, 6))
@@ -324,7 +335,7 @@ class FreezingCalculatorApp:
             table_frame, columns=columns, show="headings",
             bootstyle="success", height=8,
         )
-        headings = [
+        headings: list[tuple[str, str, int, str]] = [
             ("etap", "Etap", 200, W),
             ("q_mj", "Q [MJ]", 110, E),
             ("p_kw", "P [kW]", 110, E),
@@ -332,7 +343,7 @@ class FreezingCalculatorApp:
         ]
         for col, label, width, anchor in headings:
             self.results_tree.heading(col, text=label)
-            self.results_tree.column(col, width=width, anchor=anchor, stretch=True)
+            self.results_tree.column(col, width=width, anchor=cast(Any, anchor), stretch=True)
         self.results_tree.grid(row=0, column=0, sticky=NSEW)
 
         # KLUCZ: ttkbootstrap nadaje styl 'success.Treeview' — musimy go skonfigurować
@@ -385,7 +396,7 @@ class FreezingCalculatorApp:
         ).grid(row=0, column=0, sticky=EW, pady=(0, 4))
         gauge = Floodgauge(
             wrapper, length=200, maximum=100, value=0,
-            bootstyle=bootstyle, font=("Segoe UI", 14, "bold"),
+            bootstyle=bootstyle, font=("Segoe UI", 14, "bold"),  # type: ignore[arg-type]
             text="— kW",
         )
         gauge.grid(row=1, column=0, sticky=EW, ipady=8)
@@ -469,7 +480,7 @@ class FreezingCalculatorApp:
             img.thumbnail((220, 220))
             self.current_photo = ImageTk.PhotoImage(img)
             self.image_label.configure(image=self.current_photo, text="")
-            self.image_label.image = self.current_photo
+            self.image_label.image = self.current_photo  # type: ignore[attr-defined]
             self.current_image_path = target if target != FALLBACK_IMAGE else None
         except Exception:  # noqa: BLE001
             log.exception("Błąd ładowania zdjęcia")
@@ -483,7 +494,7 @@ class FreezingCalculatorApp:
                 img = Image.open(WATERMARK_PATH)
                 img.thumbnail((64, 64))
                 self._icon_photo = ImageTk.PhotoImage(img)
-                self.master.iconphoto(True, self._icon_photo)
+                self.master.iconphoto(True, cast(Any, self._icon_photo))
         except Exception:  # noqa: BLE001
             log.exception("Nie udało się ustawić ikony okna")
 
@@ -695,13 +706,13 @@ class FreezingCalculatorApp:
         )
         t = self._validate(self.time_entry, "Czas musi być liczbą dodatnią.", is_positive_number)
 
-        if None in (m, T_pocz, T_konc, t):
+        if m is None or T_pocz is None or T_konc is None or t is None:
             return None
 
         # Konwersja jednostki masy
         masa_kg = float(m) * 1000.0 if self.mass_unit_var.get() == "t" else float(m)
 
-        if T_konc >= T_pocz:  # type: ignore[operator]
+        if T_konc >= T_pocz:
             messagebox.showerror(
                 "Błąd",
                 "Temperatura końcowa musi być niższa niż początkowa "
@@ -721,7 +732,7 @@ class FreezingCalculatorApp:
             return None
         return value
 
-    def _display_results(self, results) -> None:
+    def _display_results(self, results: FreezingResults) -> None:
         # 1) Tabela podsumowania (Treeview)
         for item in self.results_tree.get_children():
             self.results_tree.delete(item)

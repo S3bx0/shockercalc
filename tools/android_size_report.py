@@ -24,7 +24,7 @@ def _entry_group(name: str) -> str:
     return parts[0] if parts else "(root)"
 
 
-def _tar_members(gzip_data: bytes):
+def _tar_members(gzip_data: bytes) -> tuple[bytes, list[tarfile.TarInfo]]:
     raw = gzip.decompress(gzip_data)
     with tarfile.open(fileobj=io.BytesIO(raw), mode="r:") as archive:
         members = [member for member in archive.getmembers() if member.isfile()]
@@ -56,31 +56,31 @@ def build_report(package: Path) -> str:
         "",
     ]
     with zipfile.ZipFile(package) as archive:
-        grouped = defaultdict(lambda: [0, 0])
+        grouped: defaultdict[str, list[int]] = defaultdict(lambda: [0, 0])
         for info in archive.infolist():
             group = _entry_group(info.filename)
             grouped[group][0] += info.compress_size
             grouped[group][1] += info.file_size
 
         lines.append("ZIP groups (compressed / raw)")
-        for group, (compressed, raw) in sorted(
+        for group, (compressed, raw_size) in sorted(
             grouped.items(), key=lambda item: item[1][0], reverse=True
         ):
-            lines.append(f"{_fmt(compressed)} / {_fmt(raw)}  {group}")
+            lines.append(f"{_fmt(compressed)} / {_fmt(raw_size)}  {group}")
 
         private_name = next(
             (name for name in archive.namelist() if name.endswith("assets/private.tar")),
             None,
         )
         if private_name:
-            raw, members = _tar_members(archive.read(private_name))
-            private_groups = defaultdict(int)
+            private_raw, members = _tar_members(archive.read(private_name))
+            private_groups: defaultdict[str, int] = defaultdict(int)
             for member in members:
                 private_groups[_private_group(member.name)] += member.size
             lines.extend(
                 [
                     "",
-                    f"private.tar: {_fmt(len(archive.read(private_name)))} gzip / {_fmt(len(raw))} extracted",
+                    f"private.tar: {_fmt(len(archive.read(private_name)))} gzip / {_fmt(len(private_raw))} extracted",
                 ]
             )
             for group, size in sorted(
@@ -93,14 +93,14 @@ def build_report(package: Path) -> str:
             None,
         )
         if pybundle_name:
-            raw, members = _tar_members(archive.read(pybundle_name))
-            python_groups = defaultdict(int)
+            pybundle_raw, members = _tar_members(archive.read(pybundle_name))
+            python_groups: defaultdict[str, int] = defaultdict(int)
             for member in members:
                 python_groups[_python_group(member.name)] += member.size
             lines.extend(
                 [
                     "",
-                    f"Python bundle: {_fmt(len(archive.read(pybundle_name)))} gzip / {_fmt(len(raw))} extracted",
+                    f"Python bundle: {_fmt(len(archive.read(pybundle_name)))} gzip / {_fmt(len(pybundle_raw))} extracted",
                 ]
             )
             for group, size in sorted(

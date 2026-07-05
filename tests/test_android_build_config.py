@@ -18,9 +18,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.2" in spec
-    assert '__version__ = "1.5.2"' in package_init
-    assert 'version = "1.5.2"' in pyproject
+    assert "version = 1.5.3" in spec
+    assert '__version__ = "1.5.3"' in package_init
+    assert 'version = "1.5.3"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -189,6 +189,14 @@ def test_workflows_pin_reproducible_build_tools():
     )
     assert "firebase-tools@15.22.0" in debug_workflow
     assert "distribute_to_firebase" in debug_workflow
+
+
+def test_lint_workflow_runs_full_mypy_baseline():
+    workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
+
+    assert "mypy==2.1.0" in workflow
+    assert "python -m mypy\n" in workflow
+    assert "python -m mypy ." in workflow
 
 
 def test_p4a_hook_configures_firebase_only_with_matching_config(tmp_path):

@@ -3225,18 +3225,19 @@ def main() -> None:
         def _build_pdf_bytes(self) -> bytes | None:
             """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
             runtime_font = _runtime_font_path()
-            try:
-                from tpof.core.pdf_report import build_pdf
+            if runtime_font is not None:
+                try:
+                    from tpof.core.pdf_report import build_pdf
 
-                img_path = _safe_image_path(self._last_results.produkt.nazwa)
-                return build_pdf(
-                    self._last_results,
-                    font_path=runtime_font,
-                    product_image_path=Path(img_path) if img_path else None,
-                    watermark_image_path=None,
-                )
-            except ImportError:
-                pass
+                    img_path = _safe_image_path(self._last_results.produkt.nazwa)
+                    return build_pdf(
+                        self._last_results,
+                        font_path=runtime_font,
+                        product_image_path=Path(img_path) if img_path else None,
+                        watermark_image_path=None,
+                    )
+                except ImportError:
+                    pass
             try:
                 _purge_host_arch_fonttools_so()
                 from tpof.core.pdf_report_mobile import build_pdf_simple

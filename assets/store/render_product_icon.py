@@ -33,6 +33,7 @@ def _s(v: float) -> float:
 def _gradient() -> Image.Image:
     img = Image.new("RGBA", (CANVAS, CANVAS))
     px = img.load()
+    assert px is not None
     for y in range(CANVAS):
         t = y / (CANVAS - 1)
         r = round(TOP[0] + (BOTTOM[0] - TOP[0]) * t)
@@ -84,7 +85,7 @@ def main() -> None:
     _polyline(d, [(362, 250), (362, 150)])
     _polyline(d, [(344, 176), (362, 150), (380, 176)])
 
-    out = img.resize((SIZE, SIZE), Image.LANCZOS)
+    out = img.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
     out.save(OUT, "PNG")
     print(f"zapisano {OUT} ({out.size[0]}x{out.size[1]}, mode={out.mode})")
 

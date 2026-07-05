@@ -4,6 +4,21 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.3] - 2026-07-05
+
+### Narzędzia / jakość
+
+- Doprowadzono pełny przebieg `mypy .` do zielonego stanu dla projektu, w tym
+  skryptów pomocniczych, generatorów assetów i aplikacji desktopowej.
+- Rozszerzono workflow lint o pełny baseline `python -m mypy .`, aby CI pilnowało
+  nie tylko czystych modułów, ale też szerszej części repozytorium.
+
+### Naprawiono
+
+- Utwardzono mobilny eksport PDF: jeśli środowisko Androida nie udostępnia
+  fontu runtime dla bogatego generatora PDF, aplikacja bezpiecznie przechodzi na
+  prosty mobilny generator zamiast ryzykować błąd w eksporcie.
+
 ## [1.5.2] - 2026-07-05
 
 ### Zmieniono

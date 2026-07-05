@@ -64,8 +64,8 @@ def _edge_score(image: Image.Image) -> float:
 
 
 def _analyze_image(path: Path) -> AssetFinding:
-    with Image.open(path) as image:
-        image = image.convert("RGB")
+    with Image.open(path) as opened:
+        image = opened.convert("RGB")
         width, height = image.size
         bottom = image.crop((0, int(height * 0.74), width, height))
         top_left = image.crop((0, 0, int(width * 0.45), int(height * 0.18)))
