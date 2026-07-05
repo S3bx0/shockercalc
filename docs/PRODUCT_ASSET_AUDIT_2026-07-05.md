@@ -10,11 +10,14 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 - Kandydaci medium priority: 1
 - Kandydaci low priority: 7
 - Obrazy wygladajace jak szablon/karta: 162
+- Widoczne produkty mobilne: 208
+- Widoczne produkty bez grafiki: 8
+- Obrazy bez rekordu produktu: 4
 
 ## Rekomendacja
 
 1. Najpierw podmieniac obrazy `high`: to glownie grafiki z widoczna ramka/etykieta karty, ktore odcinaja sie od finalnego stylu.
-2. Nowe grafiki trzymac jako WebP 512x512, cel 70-110 KiB, twardy limit 120 KiB na plik.
+2. Nowe grafiki trzymac jako WebP 512x512, cel 70-110 KiB; 120 KiB traktowac jako sygnal do przegladu, a 150 KiB jako twardy limit testow.
 3. Nie podmieniac automatycznie wszystkich obrazow naraz. Robic batchami po 20-40 sztuk i sprawdzac UI na telefonie.
 4. Zachowac nazwy plikow, zeby nie ruszac mapowania produktow ani logiki aplikacji.
 
@@ -102,6 +105,42 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 | `Brzoskwinie świeże.webp` | 112.4 KiB | ok |
 | `Kantalupa.webp` | 112.1 KiB | ok |
 | `Truskawki.webp` | 111.5 KiB | ok |
+
+## Pokrycie katalogu mobilnego
+
+- Wszystkie produkty w bazie: 215
+- Produkty widoczne w aplikacji mobilnej: 208
+- Produkty techniczne ukryte w aplikacji mobilnej: 7
+- Produkty widoczne bez obrazu: 8
+- Obrazy bez rekordu produktu: 4
+
+### Widoczne produkty bez grafiki
+
+- `Bataty`
+- `Chrzan`
+- `Cytryny`
+- `Czosnek`
+- `Kapusta liściasta`
+- `Porzeczki czerwone i białe`
+- `Seler korzeniowy`
+- `Seler naciowy`
+
+### Obrazy bez rekordu produktu
+
+- `Cukinia`
+- `Rzepa2`
+- `Seler`
+- `Winogrono amerykańskie`
+
+### Obrazy produktow technicznych ukrytych w mobile
+
+- `chleb_CTP ALDI`
+- `lody_CTP ALDI`
+- `mieso i kielbasa_CTP ALDI`
+- `nabial_CTP ALDI`
+- `pizza_CTP ALDI`
+- `ryby_CTP ALDI`
+- `zerowka_CTP ALDI`
 
 ## Dane szczegolowe
 

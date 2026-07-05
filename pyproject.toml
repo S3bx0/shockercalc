@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shocker-calc"
-version = "1.5.4"
+version = "1.5.5"
 description = "Refrigeration Calc — kalkulator zapotrzebowania chłodu dla procesu zamrażania (desktop + mobile)."
 readme = "README.md"
 requires-python = ">=3.10"

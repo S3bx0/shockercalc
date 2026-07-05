@@ -6,12 +6,20 @@ The script is intentionally heuristic: it does not decide which image is
 from __future__ import annotations
 
 import csv
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageFilter, ImageStat
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tpof.core import load_products  # noqa: E402
+from tpof.mobile.catalog import _is_mobile_hidden_product  # noqa: E402
+from tpof.mobile.paths import DATA_PATH  # noqa: E402
+
 IMAGES_DIR = ROOT / "assets" / "images"
 DOCS_DIR = ROOT / "docs"
 CSV_PATH = DOCS_DIR / "product_asset_audit_2026-07-05.csv"
@@ -44,6 +52,16 @@ class AssetFinding:
     @property
     def kib(self) -> float:
         return self.bytes_size / 1024
+
+
+@dataclass(frozen=True)
+class CatalogCoverage:
+    visible_product_count: int
+    all_product_count: int
+    hidden_mobile_product_count: int
+    missing_visible_images: tuple[str, ...]
+    images_without_catalog_product: tuple[str, ...]
+    hidden_mobile_images: tuple[str, ...]
 
 
 def _white_ratio(image: Image.Image) -> float:
@@ -149,7 +167,52 @@ def _write_csv(findings: list[AssetFinding]) -> None:
             )
 
 
-def _write_report(findings: list[AssetFinding]) -> None:
+def _catalog_coverage(image_paths: list[Path]) -> CatalogCoverage:
+    catalog = load_products(DATA_PATH)
+    image_stems = {path.stem for path in image_paths}
+
+    all_names: list[str] = []
+    visible_names: list[str] = []
+    hidden_mobile_names: list[str] = []
+    for category, products in catalog.items():
+        for product in products:
+            all_names.append(product.nazwa)
+            if _is_mobile_hidden_product(category, product.nazwa):
+                hidden_mobile_names.append(product.nazwa)
+            else:
+                visible_names.append(product.nazwa)
+
+    missing = tuple(
+        sorted(
+            (name for name in visible_names if name not in image_stems),
+            key=str.casefold,
+        )
+    )
+    orphans = tuple(sorted(image_stems - set(all_names), key=str.casefold))
+    hidden_images = tuple(
+        sorted(
+            (name for name in hidden_mobile_names if name in image_stems),
+            key=str.casefold,
+        )
+    )
+    return CatalogCoverage(
+        visible_product_count=len(visible_names),
+        all_product_count=len(all_names),
+        hidden_mobile_product_count=len(hidden_mobile_names),
+        missing_visible_images=missing,
+        images_without_catalog_product=orphans,
+        hidden_mobile_images=hidden_images,
+    )
+
+
+def _extend_bullet_list(lines: list[str], items: tuple[str, ...]) -> None:
+    if not items:
+        lines.append("- brak")
+        return
+    lines.extend(f"- `{item}`" for item in items)
+
+
+def _write_report(findings: list[AssetFinding], coverage: CatalogCoverage) -> None:
     total_size = sum(item.bytes_size for item in findings)
     by_priority = {
         priority: [item for item in findings if item.priority == priority]
@@ -175,11 +238,14 @@ def _write_report(findings: list[AssetFinding]) -> None:
         f"- Kandydaci medium priority: {len(by_priority['medium'])}",
         f"- Kandydaci low priority: {len(by_priority['low'])}",
         f"- Obrazy wygladajace jak szablon/karta: {len(card_template)}",
+        f"- Widoczne produkty mobilne: {coverage.visible_product_count}",
+        f"- Widoczne produkty bez grafiki: {len(coverage.missing_visible_images)}",
+        f"- Obrazy bez rekordu produktu: {len(coverage.images_without_catalog_product)}",
         "",
         "## Rekomendacja",
         "",
         "1. Najpierw podmieniac obrazy `high`: to glownie grafiki z widoczna ramka/etykieta karty, ktore odcinaja sie od finalnego stylu.",
-        "2. Nowe grafiki trzymac jako WebP 512x512, cel 70-110 KiB, twardy limit 120 KiB na plik.",
+        "2. Nowe grafiki trzymac jako WebP 512x512, cel 70-110 KiB; 120 KiB traktowac jako sygnal do przegladu, a 150 KiB jako twardy limit testow.",
         "3. Nie podmieniac automatycznie wszystkich obrazow naraz. Robic batchami po 20-40 sztuk i sprawdzac UI na telefonie.",
         "4. Zachowac nazwy plikow, zeby nie ruszac mapowania produktow ani logiki aplikacji.",
         "",
@@ -210,6 +276,27 @@ def _write_report(findings: list[AssetFinding]) -> None:
     lines.extend(
         [
             "",
+            "## Pokrycie katalogu mobilnego",
+            "",
+            f"- Wszystkie produkty w bazie: {coverage.all_product_count}",
+            f"- Produkty widoczne w aplikacji mobilnej: {coverage.visible_product_count}",
+            f"- Produkty techniczne ukryte w aplikacji mobilnej: {coverage.hidden_mobile_product_count}",
+            f"- Produkty widoczne bez obrazu: {len(coverage.missing_visible_images)}",
+            f"- Obrazy bez rekordu produktu: {len(coverage.images_without_catalog_product)}",
+            "",
+            "### Widoczne produkty bez grafiki",
+            "",
+        ]
+    )
+    _extend_bullet_list(lines, coverage.missing_visible_images)
+    lines.extend(["", "### Obrazy bez rekordu produktu", ""])
+    _extend_bullet_list(lines, coverage.images_without_catalog_product)
+    lines.extend(["", "### Obrazy produktow technicznych ukrytych w mobile", ""])
+    _extend_bullet_list(lines, coverage.hidden_mobile_images)
+
+    lines.extend(
+        [
+            "",
             "## Dane szczegolowe",
             "",
             f"Pelna tabela CSV: `{CSV_PATH.relative_to(ROOT).as_posix()}`",
@@ -223,10 +310,16 @@ def _write_report(findings: list[AssetFinding]) -> None:
 def main() -> None:
     paths = sorted(IMAGES_DIR.glob("*.webp"), key=lambda path: path.name.casefold())
     findings = [_analyze_image(path) for path in paths]
+    coverage = _catalog_coverage(paths)
     DOCS_DIR.mkdir(exist_ok=True)
     _write_csv(findings)
-    _write_report(findings)
+    _write_report(findings, coverage)
     print(f"Analysed {len(findings)} product assets")
+    print(
+        "Coverage: "
+        f"{coverage.visible_product_count} visible mobile products, "
+        f"{len(coverage.missing_visible_images)} missing images"
+    )
     print(f"Wrote {REPORT_PATH.relative_to(ROOT)}")
     print(f"Wrote {CSV_PATH.relative_to(ROOT)}")
 

@@ -4,6 +4,23 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.5] - 2026-07-05
+
+### Dokumentacja / audyt
+
+- Zaktualizowano audyt rozmiaru Androida na podstawie aktualnego release AAB
+  `1.5.4`: paczka ma 45,37 MiB, a najwiekszym kontrolowalnym skladnikiem
+  pozostaje katalog grafik produktow.
+- Rozszerzono audyt grafik produktowych o pokrycie katalogu mobilnego:
+  widoczne produkty bez grafiki, obrazy bez rekordu produktu i techniczne obrazy
+  CTP ukryte w aplikacji mobilnej.
+
+### Testy
+
+- Dodano regresyjne budzety assetow: katalog `assets/images` ponizej 9 MiB,
+  pojedyncza grafika produktu ponizej 150 KiB, WebP maksymalnie 512x512 px oraz
+  kontrolowana lista brakujacych/technicznych grafik.
+
 ## [1.5.4] - 2026-07-05
 
 ### Naprawiono
