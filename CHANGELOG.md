@@ -4,6 +4,20 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.6] - 2026-07-05
+
+### Dodano
+
+- Dodano osiem brakujacych grafik produktow w stylu pop-art:
+  `Bataty`, `Chrzan`, `Czosnek`, `Cytryny`, `Kapusta liściasta`,
+  `Porzeczki czerwone i białe`, `Seler korzeniowy` i `Seler naciowy`.
+
+### Testy / audyt
+
+- Domknieto pokrycie mobilnego katalogu produktow: test regresyjny wymaga teraz
+  zera widocznych produktow bez grafiki.
+- Zaktualizowano audyt grafik i rozmiaru po dodaniu brakujacych assetow.
+
 ## [1.5.5] - 2026-07-05
 
 ### Dokumentacja / audyt

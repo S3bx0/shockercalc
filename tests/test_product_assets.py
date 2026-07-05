@@ -8,16 +8,7 @@ from tools.audit_product_assets import IMAGES_DIR, _catalog_coverage
 MAX_PRODUCT_IMAGES_SIZE = 9 * 1024 * 1024
 MAX_SINGLE_PRODUCT_IMAGE_SIZE = 150 * 1024
 
-EXPECTED_MISSING_MOBILE_IMAGES = {
-    "Bataty",
-    "Chrzan",
-    "Czosnek",
-    "Cytryny",
-    "Kapusta liściasta",
-    "Porzeczki czerwone i białe",
-    "Seler korzeniowy",
-    "Seler naciowy",
-}
+EXPECTED_MISSING_MOBILE_IMAGES: set[str] = set()
 EXPECTED_ORPHAN_IMAGES = {
     "Cukinia",
     "Rzepa2",
@@ -40,8 +31,7 @@ def test_mobile_product_asset_coverage_is_controlled():
     coverage = _catalog_coverage(images)
 
     assert coverage.visible_product_count >= 200
-    assert set(coverage.missing_visible_images) <= EXPECTED_MISSING_MOBILE_IMAGES
-    assert len(coverage.missing_visible_images) <= len(EXPECTED_MISSING_MOBILE_IMAGES)
+    assert set(coverage.missing_visible_images) == EXPECTED_MISSING_MOBILE_IMAGES
     assert set(coverage.images_without_catalog_product) <= EXPECTED_ORPHAN_IMAGES
     assert set(coverage.hidden_mobile_images) == EXPECTED_HIDDEN_MOBILE_IMAGES
 

@@ -29,7 +29,7 @@ Najwieksze elementy:
 
 | Element | Rozmiar |
 |---|---:|
-| `assets/images` | 8.67 MiB |
+| `assets/images` | 8.97 MiB |
 | `tpof/mobile` | 0.30 MiB |
 | `assets/Table3.json` | 0.06 MiB |
 | `tpof/core` | 0.03 MiB |
@@ -78,7 +78,7 @@ Nowe testy regresyjne pilnuja, zeby stabilizacja assetow nie popsula paczki:
 - caly katalog `assets/images` musi zostac ponizej **9 MiB**,
 - pojedyncza grafika produktu musi zostac ponizej **150 KiB**,
 - obrazy musza pozostac w formacie WebP i maksymalnie **512x512 px**,
-- lista widocznych produktow bez grafiki nie moze wyjsc poza znany, kontrolowany zestaw,
+- lista widocznych produktow bez grafiki musi pozostac pusta,
 - techniczne obrazy CTP sa nadal wykrywane jako ukryte w aplikacji mobilnej.
 
 ## Rekomendacje bezpieczne na teraz
