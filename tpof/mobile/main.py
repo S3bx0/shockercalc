@@ -60,6 +60,8 @@ from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.validation import _numeric_input_filter
 from tpof.mobile.i18n import display_category, translate
+from tpof.mobile import theme
+from tpof.mobile.layout import clamp, compute_metrics
 
 log = logging.getLogger(__name__)
 
@@ -455,128 +457,17 @@ def main() -> None:
             return Window.width / unit, Window.height / unit
 
         def _clamp(self, value: float, min_value: float, max_value: float) -> float:
-            return max(min_value, min(max_value, value))
+            return clamp(value, min_value, max_value)
 
         def _layout_metrics(self, dp):
             width_dp, height_dp = self._screen_dp(dp)
-            narrow = width_dp < 360
-            compact = width_dp < 400
-            short = height_dp < 720
-            text_scale = self._clamp(width_dp / 412.0, 0.88, 1.06)
-            product_horizontal = width_dp >= 370
-            product_hint_h = 30 if self._hints_enabled else 0
-
-            card_pad = 10 if narrow else 12 if compact else 14
-            card_pad_x = card_pad
-            card_pad_top = card_pad + (8 if compact else 10)
-            card_pad_bottom = card_pad + (5 if compact else 6)
-            content_pad = 10 if narrow else 14 if compact else 16
-            stage_row_h = 66 if compact or short else 74
-            action_h = 64 if compact else 68
-            title_h = 42 if compact else 46
-            total_h = 44 if compact else 50
-            result_space = 8 if compact or short else 10
-            field_h = 54 if compact or short else 60
-            card_spacing = 10 if compact else 12
-            native_ad_h = getattr(self, "_native_ad_height_dp", 0)
-            reserved_ad_h = max(64 if compact else 70, native_ad_h + 8 if native_ad_h else 0)
-            result_h = (
-                card_pad_top
-                + card_pad_bottom
-                + title_h
-                + action_h
-                + total_h
-                + (stage_row_h * 3)
-                + (result_space * 5)
+            return compute_metrics(
+                dp,
+                width_dp,
+                height_dp,
+                hints_enabled=self._hints_enabled,
+                native_ad_height_dp=getattr(self, "_native_ad_height_dp", 0),
             )
-            params_h = (
-                card_pad_top
-                + card_pad_bottom
-                + title_h
-                + (field_h + 8)
-                + (field_h * 3)
-                + (card_spacing * 4)
-            )
-
-            if product_horizontal:
-                product_body_h = 180 if compact else 202
-                product_card_h = (
-                    product_body_h + title_h + product_hint_h
-                    + card_pad_top + card_pad_bottom + 12
-                )
-                product_controls_h = product_body_h
-                product_image_h = product_body_h
-            else:
-                product_controls_h = 130
-                product_image_h = 162
-                product_body_h = product_controls_h + product_image_h + 12
-                product_card_h = (
-                    product_body_h + title_h + product_hint_h
-                    + card_pad_top + card_pad_bottom + 12
-                )
-
-            return {
-                "width_dp": width_dp,
-                "height_dp": height_dp,
-                "narrow": narrow,
-                "compact": compact,
-                "short": short,
-                "text_scale": text_scale,
-                "product_horizontal": product_horizontal,
-                "content_pad": dp(content_pad),
-                "content_top": dp(18 if compact else 20),
-                "content_bottom": dp(26 if compact else 30),
-                "content_spacing": dp(14 if compact or short else 16),
-                "card_pad": dp(card_pad),
-                "card_pad_x": dp(card_pad_x),
-                "card_pad_top": dp(card_pad_top),
-                "card_pad_bottom": dp(card_pad_bottom),
-                "card_spacing": dp(card_spacing),
-                "toolbar_h": dp(62 if narrow else 66 if compact else 72),
-                "toolbar_icon_w": dp(38 if narrow else 42 if compact else 44),
-                "toolbar_btn_w": dp(40 if narrow else 42 if compact else 44),
-                "toolbar_icon_sp": 24 if narrow else 26 if compact else 28,
-                "toolbar_btn_sp": 23 if narrow else 24 if compact else 26,
-                "toolbar_title_sp": int(14 * text_scale) if narrow else int(15 * text_scale) if compact else 16,
-                "bottom_nav_h": dp(64 if compact else 70),
-                "bottom_tab_icon": dp(52 if compact else 56),
-                "bottom_tab_sp": 11 if compact else 12,
-                "title_h": dp(title_h),
-                "title_sp": int(20 * text_scale),
-                "body_sp": int(15 * text_scale),
-                "caption_sp": int(12 * text_scale),
-                "button_h": dp(46 if compact else 52),
-                "button_sp": int(14 * text_scale),
-                "field_h": dp(field_h),
-                "params_h": dp(params_h),
-                "product_card_h": dp(product_card_h),
-                "product_body_h": dp(product_body_h),
-                "product_controls_h": dp(product_controls_h),
-                "product_image_h": dp(product_image_h),
-                "product_hint_h": dp(product_hint_h),
-                "product_body_spacing": dp(12 if compact else 14),
-                "placeholder_top": dp(32 if compact else 44),
-                "placeholder_bottom": dp(20 if compact else 28),
-                "placeholder_icon_sp": 36 if compact else 42,
-                "action_h": dp(action_h),
-                "action_button_h": dp(44 if compact else 48),
-                "action_sp": int(13 * text_scale) if compact else int(14 * text_scale),
-                "results_h": dp(result_h),
-                "results_spacing": dp(result_space),
-                "total_h": dp(total_h),
-                "total_sp": int(20 * text_scale),
-                "stage_row_h": dp(stage_row_h),
-                "stage_head_h": dp(34 if compact else 38),
-                "stage_icon_w": dp(34 if compact else 38),
-                "stage_icon_sp": 22 if compact else 24,
-                "unit_w": dp(64 if compact else 72),
-                "unit_h": dp(38 if compact else 42),
-                "footer_h": dp(42 if compact else 46),
-                "footer_sp": int(11 * text_scale),
-                "pro_w": dp(116 if compact else 128),
-                "pro_h": dp(28),
-                "ad_h": dp(reserved_ad_h),
-            }
 
         def _apply_responsive_layout(self, *_):
             from kivy.metrics import dp
@@ -878,18 +769,10 @@ def main() -> None:
             return display_category(self._language, category)
 
         def _menu_bg_color(self):
-            return (
-                (0.10, 0.14, 0.18, 1)
-                if self.theme_cls.theme_style == "Dark"
-                else (0.91, 0.96, 1.0, 1)
-            )
+            return theme.menu_bg_color(self.theme_cls.theme_style == "Dark")
 
         def _menu_text_color(self):
-            return (
-                (0.94, 0.97, 1.0, 1)
-                if self.theme_cls.theme_style == "Dark"
-                else (0.12, 0.14, 0.16, 1)
-            )
+            return theme.menu_text_color(self.theme_cls.theme_style == "Dark")
 
         def _menu(self, caller, items, width_mult, max_height, dp, MDDropdownMenu):
             width_dp, height_dp = self._screen_dp(dp)
@@ -1056,47 +939,22 @@ def main() -> None:
             return nav
 
         def _card_bg(self):
-            return CARD_BG_DARK if self.theme_cls.theme_style == "Dark" else CARD_BG_LIGHT
+            return theme.card_bg(self.theme_cls.theme_style == "Dark")
 
         def _surface_bg(self):
-            return SURFACE_DARK if self.theme_cls.theme_style == "Dark" else SURFACE_LIGHT
+            return theme.surface_bg(self.theme_cls.theme_style == "Dark")
 
         def _bottom_nav_bg(self):
-            return (
-                BOTTOM_NAV_BG_DARK
-                if self.theme_cls.theme_style == "Dark"
-                else BOTTOM_NAV_BG_LIGHT
-            )
+            return theme.bottom_nav_bg(self.theme_cls.theme_style == "Dark")
 
         def _footer_bg(self):
-            return (
-                FOOTER_BG_DARK
-                if self.theme_cls.theme_style == "Dark"
-                else FOOTER_BG_LIGHT
-            )
+            return theme.footer_bg(self.theme_cls.theme_style == "Dark")
 
         def _ad_slot_bg(self):
-            return (
-                AD_SLOT_BG_DARK
-                if self.theme_cls.theme_style == "Dark"
-                else AD_SLOT_BG_LIGHT
-            )
+            return theme.ad_slot_bg(self.theme_cls.theme_style == "Dark")
 
         def _style_app_button(self, button, variant: str = "primary"):
-            palettes = {
-                "primary": ((0.04, 0.42, 0.68, 1), (1, 1, 1, 1)),
-                "ice": ((0.04, 0.56, 0.72, 1), (0.94, 1.0, 1.0, 1)),
-                "dark": ((0.08, 0.12, 0.18, 1), (1.0, 0.58, 0.58, 1)),
-                "pro": ((0.05, 0.48, 0.72, 1), (1, 1, 1, 1)),
-            }
-            bg, fg = palettes.get(variant, palettes["primary"])
-            button.md_bg_color = bg
-            button.theme_text_color = "Custom"
-            button.text_color = fg
-            try:
-                button.elevation = 4
-            except Exception:
-                pass
+            theme.style_app_button(button, variant)
 
         def _sync_theme_surfaces(self):
             surface = self._surface_bg()

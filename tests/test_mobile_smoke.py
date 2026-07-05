@@ -72,6 +72,7 @@ def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
 
 def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     source = _source("tpof/mobile/main.py")
+    layout_source = _source("tpof/mobile/layout.py")
 
     assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
     assert "self._root_bg_rect = Rectangle" in source
@@ -79,7 +80,7 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     assert "self.bottom_nav.size_hint_y = 1" not in source
     assert '"bottom_nav_h"' in source
     assert 'self.bottom_nav.height = m["bottom_nav_h"]' in source
-    assert "reserved_ad_h = max(64 if compact else 70" in source
+    assert "reserved_ad_h = max(64 if compact else 70" in layout_source
 
 
 def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
