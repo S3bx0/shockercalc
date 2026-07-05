@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional
 
 from tpof.mobile.constants import IS_ANDROID
 from tpof.mobile.paths import FONT_PATH
@@ -18,7 +17,7 @@ log = logging.getLogger(__name__)
 _FONTTOOLS_SO_PURGED = False
 
 
-def _runtime_font_path() -> Optional[Path]:
+def _runtime_font_path() -> Path | None:
     """Używa fontu aplikacji albo kopii DejaVu dostarczanej przez Kivy."""
     if FONT_PATH.exists():
         return FONT_PATH
@@ -47,7 +46,7 @@ def _purge_host_arch_fonttools_so() -> None:
 
     import sys
 
-    roots: List[str] = []
+    roots: list[str] = []
     try:
         import fontTools  # noqa: WPS433 - pakiet __init__ jest czysto-pythonowy
 

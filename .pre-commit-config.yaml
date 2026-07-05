@@ -1,0 +1,19 @@
+# Pre-commit hooks. Setup (once):
+#   python -m pip install -r requirements-dev.txt pre-commit
+#   pre-commit install
+# Uses locally installed ruff/mypy (pinned in requirements-dev.txt) so hook
+# versions match CI exactly.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint + autofix)
+        entry: ruff check --fix
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy (pure modules)
+        entry: mypy
+        language: system
+        pass_filenames: false
+        types: [python]

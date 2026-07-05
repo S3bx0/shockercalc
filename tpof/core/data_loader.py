@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from .models import Product
 
@@ -12,14 +11,14 @@ METADATA_KEY = "metadata"
 ROOT_KEY = "żywność"
 
 
-def load_products(json_path: Union[str, Path]) -> Dict[str, List[Product]]:
+def load_products(json_path: str | Path) -> dict[str, list[Product]]:
     """Wczytuje bazę produktów do słownika {kategoria: [Product, ...]}."""
     path = Path(json_path)
     with path.open("r", encoding="utf-8") as fh:
         raw = json.load(fh)
 
     root = raw.get(ROOT_KEY, {})
-    result: Dict[str, List[Product]] = {}
+    result: dict[str, list[Product]] = {}
     for category, items in root.items():
         if category == METADATA_KEY or not isinstance(items, list):
             continue
@@ -27,17 +26,17 @@ def load_products(json_path: Union[str, Path]) -> Dict[str, List[Product]]:
     return result
 
 
-def list_categories(catalog: Dict[str, List[Product]]) -> List[str]:
+def list_categories(catalog: dict[str, list[Product]]) -> list[str]:
     return sorted(catalog.keys())
 
 
-def list_products(catalog: Dict[str, List[Product]], category: str) -> List[str]:
+def list_products(catalog: dict[str, list[Product]], category: str) -> list[str]:
     return [p.nazwa for p in catalog.get(category, [])]
 
 
 def find_product(
-    catalog: Dict[str, List[Product]], category: str, name: str
-) -> Optional[Product]:
+    catalog: dict[str, list[Product]], category: str, name: str
+) -> Product | None:
     for product in catalog.get(category, []):
         if product.nazwa == name:
             return product

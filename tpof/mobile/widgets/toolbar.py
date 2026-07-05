@@ -7,6 +7,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 
 from tpof.mobile.constants import BRAND_ICE
 
+
 class BrandToolbar(MDBoxLayout):
     """Gradientowy pasek naglowka nawiazujacy do nowego logo."""
 

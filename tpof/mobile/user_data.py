@@ -6,12 +6,11 @@ import json
 import os
 import re
 import unicodedata
+from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import Dict, List, Mapping, MutableMapping, Optional
 
 from tpof.core.models import Product
 from tpof.labor import default_rate_config, rate_config_from_values, rate_config_to_dict
-
 
 PREFERENCES_FILE = "ui_preferences.json"
 CUSTOM_PRODUCTS_FILE = "custom_products.json"
@@ -60,7 +59,7 @@ def _write_json(path: Path, data) -> None:
 class UiPreferences:
     """Male ustawienia interfejsu zapisywane lokalnie na urzadzeniu."""
 
-    def __init__(self, path: Optional[Path] = None) -> None:
+    def __init__(self, path: Path | None = None) -> None:
         self.path = Path(path) if path else app_data_dir() / PREFERENCES_FILE
         raw = _read_json(self.path, {})
         self._data = raw if isinstance(raw, dict) else {}
@@ -87,7 +86,7 @@ class UiPreferences:
         self._save()
 
     @property
-    def labor_rate_values(self) -> Dict[str, str]:
+    def labor_rate_values(self) -> dict[str, str]:
         raw = self._data.get(LABOR_RATES_KEY, {})
         if not isinstance(raw, dict):
             return rate_config_to_dict(default_rate_config())
@@ -106,9 +105,9 @@ class UiPreferences:
         self._save()
 
     @property
-    def recent_products(self) -> List[tuple[str, str]]:
+    def recent_products(self) -> list[tuple[str, str]]:
         """Zwraca ostatnio wybrane produkty od najnowszego."""
-        result: List[tuple[str, str]] = []
+        result: list[tuple[str, str]] = []
         raw_items = self._data.get("recent_products", [])
         if not isinstance(raw_items, list):
             return result
@@ -124,14 +123,14 @@ class UiPreferences:
     def recent_products_for_category(
         self,
         category: str,
-        available_names: Optional[List[str]] = None,
-    ) -> List[str]:
+        available_names: list[str] | None = None,
+    ) -> list[str]:
         """Filtruje historię do kategorii i aktualnie dostępnej listy."""
         wanted_category = str(category or "").casefold()
         canonical = {
             name.casefold(): name for name in (available_names or []) if name
         }
-        result: List[str] = []
+        result: list[str] = []
         for stored_category, stored_name in self.recent_products:
             if stored_category.casefold() != wanted_category:
                 continue
@@ -186,7 +185,7 @@ def normalize_category(value: str) -> str:
     return re.sub(r"_+", "_", text).strip("_")
 
 
-def _number(value, field: str, *, required: bool = False) -> Optional[float]:
+def _number(value, field: str, *, required: bool = False) -> float | None:
     if value is None or str(value).strip() == "":
         if required:
             raise ValueError(field)
@@ -291,25 +290,25 @@ def _product_from_json_record(record: Mapping[str, object], category: str) -> Pr
 class CustomProductStore:
     """Baza produktow PRO zapisywana tylko w pamieci prywatnej aplikacji."""
 
-    def __init__(self, path: Optional[Path] = None) -> None:
+    def __init__(self, path: Path | None = None) -> None:
         self.path = Path(path) if path else app_data_dir() / CUSTOM_PRODUCTS_FILE
-        self._cache_mtime_ns: Optional[int] = None
-        self._cache_catalog: Optional[Dict[str, List[Product]]] = None
+        self._cache_mtime_ns: int | None = None
+        self._cache_catalog: dict[str, list[Product]] | None = None
 
-    def _path_mtime_ns(self) -> Optional[int]:
+    def _path_mtime_ns(self) -> int | None:
         try:
             return self.path.stat().st_mtime_ns
         except OSError:
             return None
 
-    def _cache_copy(self, catalog: Dict[str, List[Product]]) -> Dict[str, List[Product]]:
+    def _cache_copy(self, catalog: dict[str, list[Product]]) -> dict[str, list[Product]]:
         return {category: list(products) for category, products in catalog.items()}
 
     def _invalidate_cache(self) -> None:
         self._cache_mtime_ns = None
         self._cache_catalog = None
 
-    def load_catalog(self) -> Dict[str, List[Product]]:
+    def load_catalog(self) -> dict[str, list[Product]]:
         current_mtime = self._path_mtime_ns()
         if self._cache_catalog is not None and self._cache_mtime_ns == current_mtime:
             return self._cache_copy(self._cache_catalog)
@@ -318,7 +317,7 @@ class CustomProductStore:
         root = raw.get(ROOT_KEY, {}) if isinstance(raw, dict) else {}
         if not isinstance(root, dict):
             return {}
-        result: Dict[str, List[Product]] = {}
+        result: dict[str, list[Product]] = {}
         for category, records in root.items():
             if not isinstance(category, str) or not isinstance(records, list):
                 continue
@@ -336,7 +335,7 @@ class CustomProductStore:
         self._cache_catalog = self._cache_copy(result)
         return result
 
-    def merge_into(self, catalog: MutableMapping[str, List[Product]]) -> None:
+    def merge_into(self, catalog: MutableMapping[str, list[Product]]) -> None:
         for category, products in self.load_catalog().items():
             destination = catalog.setdefault(category, [])
             for product in products:

@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from tpof.core.calculations import calculate_freezing, _estimate_T_zam
+from tpof.core.calculations import _estimate_T_zam, calculate_freezing
 from tpof.core.models import FreezingInputs, Product
 
 

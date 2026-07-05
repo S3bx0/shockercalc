@@ -6,7 +6,6 @@ Wynik to dataclass `FreezingResults` — UI sam decyduje jak go wyświetlić.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from .models import FreezingInputs, FreezingResults, Product
 
@@ -15,7 +14,7 @@ log = logging.getLogger(__name__)
 SECONDS_IN_HOUR: int = 3600
 
 
-def _estimate_T_zam(woda_procent: Optional[float]) -> float:
+def _estimate_T_zam(woda_procent: float | None) -> float:
     """Szacuje punkt zamarzania produktu na podstawie zawartości wody [%].
 
     Empiryczne przybliżenie inżynierskie: T_zam ≈ -0.6 · (100 / woda%)
@@ -65,7 +64,7 @@ def calculate_freezing(inputs: FreezingInputs, product: Product) -> FreezingResu
             "nie wyznacza poprawnego zapotrzebowania mocy."
         )
 
-    T_zam: Optional[float] = product.T_zam
+    T_zam: float | None = product.T_zam
     T_zam_szacunkowy = T_zam is None
     if T_zam is None:
         T_zam = _estimate_T_zam(product.wodaprocent)

@@ -6,8 +6,7 @@ jak i UI (desktop/mobile) do bezpiecznej wymiany danych.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -19,19 +18,19 @@ class Product:
 
     nazwa: str
     kategoria: str = ""
-    c1: Optional[float] = None  # ciepło właściwe powyżej zamrażania [kJ/(kg·K)]
-    c2: Optional[float] = None  # ciepło właściwe poniżej zamrażania [kJ/(kg·K)]
-    T_zam: Optional[float] = None  # punkt zamarzania [°C]
-    wodaprocent: Optional[float] = None  # zawartość wody [%]
-    L1: Optional[float] = None  # ciepło topnienia (utajone) [kJ/kg]
-    bialko: Optional[float] = None
-    tluszcz: Optional[float] = None
-    weglowodany: Optional[float] = None
-    blonnik: Optional[float] = None
-    popiol: Optional[float] = None
+    c1: float | None = None  # ciepło właściwe powyżej zamrażania [kJ/(kg·K)]
+    c2: float | None = None  # ciepło właściwe poniżej zamrażania [kJ/(kg·K)]
+    T_zam: float | None = None  # punkt zamarzania [°C]
+    wodaprocent: float | None = None  # zawartość wody [%]
+    L1: float | None = None  # ciepło topnienia (utajone) [kJ/kg]
+    bialko: float | None = None
+    tluszcz: float | None = None
+    weglowodany: float | None = None
+    blonnik: float | None = None
+    popiol: float | None = None
 
     @classmethod
-    def from_dict(cls, raw: dict, kategoria: str = "") -> "Product":
+    def from_dict(cls, raw: dict, kategoria: str = "") -> Product:
         """Tworzy Product ze słownika w formacie używanym w Table3.json."""
 
         def _num(value):

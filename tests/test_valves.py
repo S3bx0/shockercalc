@@ -6,14 +6,13 @@ import math
 import pytest
 
 from tpof.core.valves import (
-    ValveResults,
-    calculate_decompression_valves,
+    F_MAX,
+    TEMP_MAX,
+    TEMP_MIN,
+    V_MAX,
     ZAWORY,
     K,
-    V_MAX,
-    F_MAX,
-    TEMP_MIN,
-    TEMP_MAX,
+    calculate_decompression_valves,
 )
 
 

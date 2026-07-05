@@ -1,11 +1,11 @@
 """Testy jednostkowe walidatorów (pure functions)."""
 
 from tpof.core.validators import (
+    MAX_TEMPERATURE_C,
+    MIN_TEMPERATURE_C,
     is_positive_number,
     is_valid_temperature,
     parse_number,
-    MIN_TEMPERATURE_C,
-    MAX_TEMPERATURE_C,
 )
 
 

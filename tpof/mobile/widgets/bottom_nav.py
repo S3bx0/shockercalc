@@ -11,6 +11,7 @@ from kivymd.uix.label import MDLabel
 
 from tpof.mobile.constants import BRAND_CYAN, BRAND_ICE
 
+
 class BottomNavMotionIcon(Widget):
     """Wlasna lekka ikona dolnej zakladki z kontrolowana animacja."""
 

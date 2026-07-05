@@ -8,6 +8,7 @@ from kivy.metrics import dp
 from kivy.uix.widget import Widget
 from kivymd.uix.boxlayout import MDBoxLayout
 
+
 class StageIconBadge(MDBoxLayout):
     """Znak etapu wyniku z subtelnym tłem i akcentem koloru."""
 

@@ -1,12 +1,12 @@
-import json
 import gzip
 import io
+import json
 import tarfile
 from pathlib import Path
 
-import p4a_hooks
 from PIL import Image, ImageChops, ImageStat
 
+import p4a_hooks
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalcActivity.java"

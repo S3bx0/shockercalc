@@ -7,13 +7,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from tpof.mobile.entitlements import (
-    FREE_PRODUCTS_PER_CATEGORY,
-    TRIAL_DAYS,
     CORE_MODULE,
-    MODULE_VALVES,
+    FREE_PRODUCTS_PER_CATEGORY,
     MODULE_INSULATION,
+    MODULE_VALVES,
     REWARD_DAILY_AD_CAP,
     REWARD_TOKEN_PER_AD,
+    TRIAL_DAYS,
     Entitlements,
 )
 

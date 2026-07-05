@@ -8,8 +8,7 @@ import os
 import re
 import sys
 import traceback
-from typing import Mapping, Optional
-
+from collections.abc import Mapping
 
 log = logging.getLogger(__name__)
 _EVENT_RE = re.compile(r"[^a-zA-Z0-9_]")
@@ -73,12 +72,12 @@ def set_enabled(enabled: bool) -> bool:
         return False
 
 
-def log_event(name: str, parameters: Optional[Mapping[str, object]] = None) -> None:
+def log_event(name: str, parameters: Mapping[str, object] | None = None) -> None:
     activity = _activity()
     if activity is None:
         return
     safe_name = _EVENT_RE.sub("_", str(name or "event"))[:40]
-    safe_parameters = {}
+    safe_parameters: dict[str, int | float | str] = {}
     for key, value in (parameters or {}).items():
         safe_key = _EVENT_RE.sub("_", str(key))[:40]
         if isinstance(value, bool):
@@ -149,5 +148,5 @@ def install_exception_hook() -> None:
         finally:
             previous(exc_type, exc, tb)
 
-    _hook._refrigeration_telemetry_hook = True
+    _hook._refrigeration_telemetry_hook = True  # type: ignore[attr-defined]
     sys.excepthook = _hook

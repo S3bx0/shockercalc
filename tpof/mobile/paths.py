@@ -7,7 +7,6 @@ Na desktopie (testy lokalne KivyMD) korzystamy z normalnej lokalizacji projektu.
 from __future__ import annotations
 
 import os
-import sys
 from pathlib import Path
 
 

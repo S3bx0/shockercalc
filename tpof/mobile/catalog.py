@@ -6,7 +6,7 @@ be tested without importing the Kivy application.
 from __future__ import annotations
 
 import unicodedata
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
 from tpof.core import Product, list_products
 from tpof.mobile.paths import IMAGES_DIR
@@ -26,8 +26,8 @@ def _mobile_sort_key(value: str) -> str:
 
 
 def _ordered_mobile_categories(
-    categories: List[str], display_name: Optional[Callable[[str], str]] = None
-) -> tuple[List[str], List[str]]:
+    categories: list[str], display_name: Callable[[str], str] | None = None
+) -> tuple[list[str], list[str]]:
     """Umieszcza owoce i warzywa na początku, resztę sortuje alfabetycznie."""
     display_name = display_name or (lambda category: category.replace("_", " "))
     available = list(dict.fromkeys(categories))
@@ -48,7 +48,7 @@ def _is_mobile_hidden_product(category: str, product_name: str) -> bool:
     )
 
 
-def _mobile_product_names(catalog: Dict[str, List[Product]], category: str) -> List[str]:
+def _mobile_product_names(catalog: dict[str, list[Product]], category: str) -> list[str]:
     return [
         name
         for name in list_products(catalog, category)
@@ -56,7 +56,7 @@ def _mobile_product_names(catalog: Dict[str, List[Product]], category: str) -> L
     ]
 
 
-def _safe_image_path(nazwa: str) -> Optional[str]:
+def _safe_image_path(nazwa: str) -> str | None:
     """Zwraca ścieżkę do .webp/.png/.jpg dla produktu albo None."""
     for ext in (".webp", ".png", ".jpg", ".jpeg"):
         candidate = IMAGES_DIR / f"{nazwa}{ext}"
@@ -72,7 +72,7 @@ def _search_key(value: str) -> str:
     return text.replace("ł", "l")
 
 
-def _search_product_names(names: List[str], query: str) -> List[str]:
+def _search_product_names(names: list[str], query: str) -> list[str]:
     """Filtruje produkty, preferując początek nazwy i początek słowa."""
     normalized_query = _search_key(query).strip()
     if not normalized_query:

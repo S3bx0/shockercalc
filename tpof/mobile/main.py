@@ -18,12 +18,9 @@ Build APK:
 from __future__ import annotations
 
 import logging
-import math
-import os
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from tpof.core import (
     ZAWORY,
@@ -37,31 +34,52 @@ from tpof.core import (
     load_products,
 )
 from tpof.labor import (
-    CalculationInput as LaborCalculationInput,
     RATE_CONFIG_FIELDS,
-    calculate_cost_breakdown as calculate_labor_cost_breakdown,
     default_rate_config,
     rate_config_from_values,
+)
+from tpof.labor import (
+    CalculationInput as LaborCalculationInput,
+)
+from tpof.labor import (
+    calculate_cost_breakdown as calculate_labor_cost_breakdown,
+)
+from tpof.labor import (
     validate_calculation_inputs as validate_labor_inputs,
 )
+from tpof.mobile import telemetry, theme
 from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
-from tpof.mobile.entitlements import FREE_PRODUCTS_PER_CATEGORY, MODULE_VALVES, TRIAL_DAYS, Entitlements
-from tpof.mobile.paths import DATA_PATH
-from tpof.mobile import telemetry
-from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.catalog import (
     _mobile_product_names,
     _ordered_mobile_categories,
     _safe_image_path,
     _search_product_names,
 )
-from tpof.mobile.constants import *  # TODO(refactor): replace with explicit imports after app split.
+from tpof.mobile.constants import (
+    ABSOLUTE_ZERO_C,
+    APP_NAME,
+    BRAND_ICE,
+    IS_ANDROID,
+    STAGE_COLORS,
+    SURFACE_DARK,
+    TEMP_HIGH_ERROR_C,
+    TEMP_HIGH_STRONG_WARNING_C,
+    TEMP_HIGH_WARNING_C,
+    TEMP_LOW_STRONG_WARNING_C,
+    TEMP_LOW_WARNING_C,
+)
+from tpof.mobile.entitlements import (
+    FREE_PRODUCTS_PER_CATEGORY,
+    MODULE_VALVES,
+    Entitlements,
+)
+from tpof.mobile.i18n import display_category, translate
+from tpof.mobile.layout import clamp, compute_metrics
+from tpof.mobile.paths import DATA_PATH
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
+from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.validation import _numeric_input_filter
-from tpof.mobile.i18n import display_category, translate
-from tpof.mobile import theme
-from tpof.mobile.layout import clamp, compute_metrics
 
 log = logging.getLogger(__name__)
 
@@ -70,12 +88,10 @@ def main() -> None:
     try:
         from kivy.clock import Clock
         from kivy.core.window import Window
-        from kivy.graphics import Color, Ellipse, Line, Rectangle, RoundedRectangle
-        from kivy.graphics.texture import Texture
+        from kivy.graphics import Color, Rectangle
         from kivy.metrics import dp
-        from kivy.uix.image import AsyncImage
         from kivy.uix.floatlayout import FloatLayout
-        from kivy.uix.widget import Widget
+        from kivy.uix.image import AsyncImage
         from kivymd.app import MDApp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDIconButton, MDRaisedButton
@@ -85,6 +101,7 @@ def main() -> None:
         from kivymd.uix.progressbar import MDProgressBar
         from kivymd.uix.scrollview import MDScrollView
         from kivymd.uix.textfield import MDTextField
+
         from tpof.mobile.widgets import (
             BottomNavTab,
             BrandToolbar,
@@ -112,7 +129,7 @@ def main() -> None:
         log.exception("Nie udało się zarejestrować fontu DejaVuSans")
 
     telemetry.install_exception_hook()
-    catalog: Dict[str, List[Product]] = load_products(DATA_PATH)
+    catalog: dict[str, list[Product]] = load_products(DATA_PATH)
     custom_products = CustomProductStore()
     custom_products.merge_into(catalog)
     categories = list_categories(catalog)
@@ -132,16 +149,16 @@ def main() -> None:
                 pass
             Window.clearcolor = SURFACE_DARK
 
-            self._selected_category: Optional[str] = None
-            self._selected_product: Optional[str] = None
+            self._selected_category: str | None = None
+            self._selected_product: str | None = None
             self._mass_unit: str = "kg"
-            self._cat_menu: Optional[MDDropdownMenu] = None
-            self._prod_menu: Optional[MDDropdownMenu] = None
+            self._cat_menu: MDDropdownMenu | None = None
+            self._prod_menu: MDDropdownMenu | None = None
             self._product_dialog = None
             self._product_search_field = None
             self._product_results_list = None
-            self._product_dialog_names: List[str] = []
-            self._product_dialog_indexes: Dict[str, int] = {}
+            self._product_dialog_names: list[str] = []
+            self._product_dialog_indexes: dict[str, int] = {}
             self._last_results = None
             self._themed_cards = []
             self._language = "pl"
@@ -161,7 +178,7 @@ def main() -> None:
             self._valve_type = "Maxi Elebar"
             self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
             self._last_valve_results = None
-            self._valve_menu: Optional[MDDropdownMenu] = None
+            self._valve_menu: MDDropdownMenu | None = None
             self._labor_use_highways = False
             self._labor_has_additional = False
             self._last_labor_breakdown = None
@@ -338,7 +355,7 @@ def main() -> None:
             )
             field.helper_text_mode = "on_focus"
 
-        def _mark_field_error(self, field, message: Optional[str] = None):
+        def _mark_field_error(self, field, message: str | None = None):
             field.error = True
             field.helper_text = message or self._t("field_required")
             field.helper_text_mode = "on_error"
@@ -354,7 +371,7 @@ def main() -> None:
                 self._mark_field_error(field, self._t("invalid_field", name=name))
                 raise ValueError(self._t("invalid_field", name=name)) from exc
 
-        def _temperature_warning(self, field_name: str, value: float) -> Optional[str]:
+        def _temperature_warning(self, field_name: str, value: float) -> str | None:
             if value >= TEMP_HIGH_STRONG_WARNING_C:
                 return self._t(
                     "temperature_warning_high_strong",
@@ -385,7 +402,7 @@ def main() -> None:
                 )
             return None
 
-        def _validate_temperature_input(self, field, field_name: str, value: float) -> Optional[str]:
+        def _validate_temperature_input(self, field, field_name: str, value: float) -> str | None:
             if value < ABSOLUTE_ZERO_C:
                 message = self._t("temperature_error_absolute", field=field_name)
                 self._mark_field_error(field, message)
@@ -430,7 +447,7 @@ def main() -> None:
                 if field is not None:
                     self._clear_field_error(field)
 
-        def _total_text(self, total: Optional[float] = None) -> str:
+        def _total_text(self, total: float | None = None) -> str:
             value = "—" if total is None else f"{total:.2f}"
             return self._t("total_power", value=value)
 
@@ -765,7 +782,7 @@ def main() -> None:
             self._set_pro_status(self._pro_no_ads)
             self._apply_hints()
 
-        def _display_category(self, category: Optional[str]) -> str:
+        def _display_category(self, category: str | None) -> str:
             return display_category(self._language, category)
 
         def _menu_bg_color(self):
@@ -1296,7 +1313,7 @@ def main() -> None:
             )
             card.add_widget(self.lbl_total)
 
-            self.bars: Dict[str, Dict] = {}
+            self.bars: dict[str, dict] = {}
             for key, label_key, icon in [
                 ("schladzanie", "cooling", "thermometer"),
                 ("zamrozenie", "freezing", "snowflake"),
@@ -1907,7 +1924,7 @@ def main() -> None:
             *,
             min_value: int,
             allow_zero: bool,
-            default_empty: Optional[int] = None,
+            default_empty: int | None = None,
         ) -> int:
             raw = (getattr(field, "text", "") or "").strip()
             if not raw and default_empty is not None:
@@ -2481,7 +2498,7 @@ def main() -> None:
             except Exception:  # pragma: no cover - Android only
                 log.debug("setActiveAdTab nie powiodło się", exc_info=True)
 
-        def _show_product_image(self, img_path: Optional[str]) -> None:
+        def _show_product_image(self, img_path: str | None) -> None:
             self.image_box.clear_widgets()
             if img_path:
                 self.product_image.source = img_path
@@ -3198,7 +3215,7 @@ def main() -> None:
             self._last_results = None
             self._clear_main_validation()
 
-        def _build_pdf_bytes(self) -> Optional[bytes]:
+        def _build_pdf_bytes(self) -> bytes | None:
             """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
             runtime_font = _runtime_font_path()
             try:

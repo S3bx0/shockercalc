@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from decimal import Decimal
-from typing import Mapping
 
 from .models import RateConfig
-
 
 RATE_CONFIG_FIELDS = (
     "labor_hourly_rate",
@@ -25,7 +24,7 @@ RATE_CONFIG_FIELDS = (
     "workdays_per_week",
 )
 
-DEFAULT_RATE_VALUES = {
+DEFAULT_RATE_VALUES: dict[str, Decimal | int] = {
     "labor_hourly_rate": Decimal("130.0"),
     "hours_per_day": Decimal("10"),
     "travel_rate_per_km": Decimal("2.1"),
@@ -66,7 +65,8 @@ def rate_config_from_values(values: Mapping[str, object] | None = None) -> RateC
                 raise ValueError(f"{key} must be an integer value; got {value!r}.") from exc
         else:
             merged[key] = _parse_decimal(value, key)
-    rates = RateConfig(**merged)
+    # Heterogeneous unpack (Decimal fields + int workdays_per_week), validated at runtime.
+    rates = RateConfig(**merged)  # type: ignore[arg-type]
     rates.validate()
     return rates
 

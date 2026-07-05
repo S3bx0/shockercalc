@@ -7,7 +7,7 @@ stays decoupled from the Kivy application module.
 """
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 
 def clamp(value: float, min_value: float, max_value: float) -> float:

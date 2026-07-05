@@ -6,16 +6,14 @@ lub rzuca wyjątkiem. Warstwa UI (Tk/Kivy) sama decyduje, jak pokazać błąd.
 
 from __future__ import annotations
 
-from typing import Optional, Union
-
-Number = Union[int, float, str]
+Number = int | float | str
 
 # Akceptowalny zakres temperatur procesowych dla produktów spożywczych [°C]
 MIN_TEMPERATURE_C: float = -273.15
 MAX_TEMPERATURE_C: float = 200.0
 
 
-def parse_number(value: Number) -> Optional[float]:
+def parse_number(value: Number) -> float | None:
     """Parsuje liczbę, akceptując przecinek dziesiętny.
 
     Zwraca None gdy wartość nie jest liczbą.

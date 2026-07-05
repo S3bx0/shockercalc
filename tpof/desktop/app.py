@@ -10,21 +10,19 @@ import json
 import logging
 import os
 import pathlib
-from typing import Dict, List, Optional
+import tkinter as tk
+from tkinter import filedialog, messagebox, simpledialog
 
 import ttkbootstrap as ttk
-from ttkbootstrap.constants import BOTH, LEFT, RIGHT, X, W, E, NSEW, EW
-from ttkbootstrap.widgets import Meter, Floodgauge
 from PIL import Image, ImageTk
-from tkinter import messagebox, filedialog, simpledialog
-import tkinter as tk
+from ttkbootstrap.constants import BOTH, EW, LEFT, NSEW, RIGHT, E, W, X
+from ttkbootstrap.widgets import Floodgauge, Meter
 
 from tpof.core import (
     FreezingInputs,
     Product,
     calculate_freezing,
     find_product,
-    format_results_text,
     is_positive_number,
     is_valid_temperature,
     list_categories,
@@ -62,14 +60,14 @@ METER_MAX_KW = 200.0
 
 
 class FreezingCalculatorApp:
-    def __init__(self, master: ttk.Window, catalog: Dict[str, List[Product]]) -> None:
+    def __init__(self, master: ttk.Window, catalog: dict[str, list[Product]]) -> None:
         self.master = master
         self.master.title(f"{APP_TITLE} — {APP_SUBTITLE}")
         self.master.minsize(1100, 720)
         self.catalog = catalog
 
-        self.current_image_path: Optional[pathlib.Path] = None
-        self.current_photo: Optional[ImageTk.PhotoImage] = None
+        self.current_image_path: pathlib.Path | None = None
+        self.current_photo: ImageTk.PhotoImage | None = None
         self.last_results = None  # type: ignore[assignment]
 
         self.status_var = tk.StringVar(value="Gotowy. Wprowadź parametry i wybierz produkt.")
@@ -355,12 +353,10 @@ class FreezingCalculatorApp:
         # Style tagów dla wierszy (zebra + akcent na SUMA)
         try:
             style = self.master.style  # type: ignore[attr-defined]
-            bg = style.colors.bg
-            fg = style.colors.fg
             primary = style.colors.primary
             light_stripe = style.colors.inputbg
         except Exception:  # noqa: BLE001
-            bg, fg, primary, light_stripe = "#2A2A2A", "#FFFFFF", "#2780E3", "#3A3A3A"
+            primary, light_stripe = "#2780E3", "#3A3A3A"
         self.results_tree.tag_configure("stage", font=("Segoe UI", 10))
         self.results_tree.tag_configure("stage_alt", font=("Segoe UI", 10), background=light_stripe)
         self.results_tree.tag_configure(
@@ -375,7 +371,7 @@ class FreezingCalculatorApp:
         )
         self.props_frame.grid(row=1, column=1, sticky=NSEW, padx=(6, 0))
         self.props_frame.columnconfigure(1, weight=1)
-        self._props_rows: List = []
+        self._props_rows: list = []
         self._render_props([])
 
         return card
@@ -459,7 +455,7 @@ class FreezingCalculatorApp:
         placeholder = getattr(entry, "_placeholder", None)
         return "" if value == placeholder else value
 
-    def _set_image(self, path: Optional[pathlib.Path]) -> None:
+    def _set_image(self, path: pathlib.Path | None) -> None:
         target = path if (path and path.exists()) else (
             FALLBACK_IMAGE if FALLBACK_IMAGE.exists() else None
         )
@@ -475,7 +471,7 @@ class FreezingCalculatorApp:
             self.image_label.configure(image=self.current_photo, text="")
             self.image_label.image = self.current_photo
             self.current_image_path = target if target != FALLBACK_IMAGE else None
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             log.exception("Błąd ładowania zdjęcia")
             self.image_label.configure(image="", text="(błąd zdjęcia)")
             self.current_photo = None
@@ -685,7 +681,7 @@ class FreezingCalculatorApp:
             messagebox.showerror("Błąd", f"Wystąpił błąd: {e}")
             self._set_status("Błąd obliczeń — zobacz okno błędu.", level="error")
 
-    def _read_inputs(self) -> Optional[FreezingInputs]:
+    def _read_inputs(self) -> FreezingInputs | None:
         m = self._validate(self.mass_entry, "Masa musi być liczbą dodatnią.", is_positive_number)
         T_pocz = self._validate(
             self.start_temp_entry,
@@ -717,7 +713,7 @@ class FreezingCalculatorApp:
             masa_kg=masa_kg, T_pocz_C=float(T_pocz), T_konc_C=float(T_konc), czas_h=float(t)
         )
 
-    def _validate(self, entry: ttk.Entry, error_message: str, validator) -> Optional[float]:
+    def _validate(self, entry: ttk.Entry, error_message: str, validator) -> float | None:
         raw = self._get_entry_value(entry)
         value = parse_number(raw)
         if value is None or not validator(value):

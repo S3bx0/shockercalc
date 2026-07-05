@@ -37,8 +37,8 @@ import json
 import math
 import os
 import time
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Callable, Iterable, Optional
 
 TRIAL_DAYS = 1
 _TRIAL_SECONDS = TRIAL_DAYS * 24 * 60 * 60
@@ -87,12 +87,12 @@ class Entitlements:
 
     def __init__(
         self,
-        state_path: Optional[Path] = None,
+        state_path: Path | None = None,
         clock: Callable[[], float] = time.time,
     ) -> None:
         self._clock = clock
         self._path = Path(state_path) if state_path else (_state_dir() / STATE_FILE)
-        self._first_launch_ts: Optional[float] = None
+        self._first_launch_ts: float | None = None
         self._modules: set = set()
         self._reward_tokens: int = 0
         self._ad_timestamps: list = []  # epoch ostatnich obejrzanych reklam
@@ -146,7 +146,7 @@ class Entitlements:
             self._save()
 
     # --- trial -----------------------------------------------------------
-    def trial_start_ts(self) -> Optional[float]:
+    def trial_start_ts(self) -> float | None:
         return self._first_launch_ts
 
     def trial_seconds_left(self) -> float:

@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from .formatters import format_results_text
 from .models import FreezingResults
 
 
 def build_pdf_simple(
-    results: FreezingResults, font_path: Optional[Path] = None
+    results: FreezingResults, font_path: Path | None = None
 ) -> bytes:
     """Buduje prosty raport PDF z wynikami i zwraca jego bajty."""
     from fpdf import FPDF

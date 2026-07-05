@@ -6,9 +6,6 @@ stays independent from ``tpof.mobile.main`` to avoid an import cycle.
 """
 from __future__ import annotations
 
-from typing import Optional
-
-
 I18N = {
     "pl": {
         "product": "Produkt",
@@ -459,7 +456,7 @@ def translate(language: str, key: str, **kwargs) -> str:
     return text.format(**kwargs) if kwargs else text
 
 
-def display_category(language: str, category: Optional[str]) -> str:
+def display_category(language: str, category: str | None) -> str:
     """Return the display label for a product category in the given language."""
     if not category:
         return ""

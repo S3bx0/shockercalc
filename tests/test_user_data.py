@@ -9,7 +9,6 @@ from tpof.mobile.user_data import (
 )
 from tpof.mobile.validation import _numeric_input_filter
 
-
 VALID_PRODUCT = {
     "nazwa": "Produkt testowy",
     "kategoria": "Moje produkty",

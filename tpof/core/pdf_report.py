@@ -10,9 +10,7 @@ import logging
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
 
-from reportlab.lib import colors
 from reportlab.lib.colors import black, grey, lightgrey
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
@@ -24,6 +22,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.platypus import (
     Image as RImage,
+)
+from reportlab.platypus import (
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -57,7 +57,7 @@ def register_font(font_path: Path, font_name: str = DEFAULT_FONT_NAME) -> str:
 def _build_base_pdf(
     results: FreezingResults,
     font_name: str,
-    product_image_path: Optional[Path],
+    product_image_path: Path | None,
     author_text: str,
 ) -> bytes:
     """Buduje główny PDF (bez watermark/hasła) i zwraca jego bajty."""
@@ -195,8 +195,9 @@ def _encrypt(pdf_bytes: bytes, owner_password: str) -> bytes:
             use_128bit=True,
         )
     except TypeError:
-        # pypdf nowe API
-        writer.encrypt(owner_password, user_password="")
+        # Legacy pypdf fallback (older positional API); the modern keyword form
+        # above is used with the pinned version, so this branch is not reached.
+        writer.encrypt(owner_password, user_password="")  # type: ignore[misc]
     out = BytesIO()
     writer.write(out)
     return out.getvalue()
@@ -205,10 +206,10 @@ def _encrypt(pdf_bytes: bytes, owner_password: str) -> bytes:
 def build_pdf(
     results: FreezingResults,
     font_path: Path,
-    product_image_path: Optional[Path] = None,
-    watermark_image_path: Optional[Path] = None,
+    product_image_path: Path | None = None,
+    watermark_image_path: Path | None = None,
     author_text: str = "Autor:\nSebastian Milczarek\nMD-Puch Sp. z o.o.",
-    owner_password: Optional[str] = None,
+    owner_password: str | None = None,
 ) -> bytes:
     """Generuje gotowe bajty PDF.
 

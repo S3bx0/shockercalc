@@ -8,6 +8,7 @@ from kivy.graphics.texture import Texture
 from kivy.metrics import dp
 from kivy.uix.widget import Widget
 
+
 class FrostBackground(Widget):
     """Subtelne, wolno poruszajace sie lodowe refleksy pod interfejsem."""
 

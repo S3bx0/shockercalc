@@ -8,6 +8,7 @@ from kivymd.uix.label import MDLabel
 
 from tpof.mobile.constants import BRAND_CYAN
 
+
 class CenterNotice(MDBoxLayout):
     """Centralny komunikat walidacji, czytelniejszy niz dolny snackbar."""
 
