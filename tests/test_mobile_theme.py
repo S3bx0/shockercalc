@@ -45,3 +45,14 @@ def test_style_app_button_unknown_variant_falls_back_to_primary():
     button = FakeButton()
     theme.style_app_button(button, "nonexistent")
     assert button.md_bg_color == (0.04, 0.42, 0.68, 1)
+
+
+def test_style_app_button_applies_muted_palette_for_inactive_actions():
+    class FakeButton:
+        pass
+
+    button = FakeButton()
+    theme.style_app_button(button, "muted")
+    assert button.md_bg_color == (0.10, 0.18, 0.24, 1)
+    assert button.text_color == (0.72, 0.86, 0.90, 1)
+    assert button.theme_text_color == "Custom"

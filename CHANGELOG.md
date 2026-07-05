@@ -4,6 +4,27 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.2] - 2026-07-05
+
+### Zmieniono
+
+- Dopasowano przyciski w zakładce **Zawory** do aktualnej palety aplikacji:
+  aktywne tryby używają lodowego akcentu, a nieaktywne przyciski dostały
+  stonowany wariant zamiast starej szarości.
+
+### Dokumentacja / audyt
+
+- Dodano świeży audyt rozmiaru Androida z podziałem na największe składniki APK,
+  runtime Python/Kivy oraz rekomendacje bezpiecznych optymalizacji po stabilizacji
+  wersji sklepowej.
+- Dodano powtarzalny audyt grafik produktowych oraz CSV z listą kandydatów do
+  wymiany na finalny styl pop-art.
+
+### Narzędzia
+
+- Uporządkowano drobne ostrzeżenia `ruff` w skryptach pomocniczych i hookach
+  Androida.
+
 ## [1.5.1] - 2026-07-03
 
 ### Dodano

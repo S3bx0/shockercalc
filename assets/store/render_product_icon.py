@@ -8,7 +8,6 @@ Wynik: 1024×1024 PNG, 32-bit RGBA — zgodny ze specyfikacją Google Play
 """
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw

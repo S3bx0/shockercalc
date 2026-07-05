@@ -12,14 +12,13 @@ zostanie spakowany. fonttools działa wtedy w czystym Pythonie (nieco wolniej,
 ale w pełni poprawnie) — fpdf2 generuje PDF bez problemu.
 """
 
-import os
-import re
-import json
-import shutil
 import gzip
 import io
+import json
+import os
+import re
+import shutil
 import tarfile
-
 
 FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
 DEFAULT_FIREBASE_CONFIG = os.path.join(
@@ -166,7 +165,7 @@ def _patch_android_manifest(*roots):
     patched = 0
     for path in _iter_files("AndroidManifest.xml", *roots):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 text = fh.read()
         except OSError:
             continue
@@ -215,7 +214,7 @@ def _patch_python_activity_orientation(*roots):
     patched = 0
     for path in _iter_files("PythonActivity.java", *roots):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 text = fh.read()
         except OSError:
             continue
@@ -260,7 +259,7 @@ android {{
     patched = 0
     for path in _iter_files("build.gradle", *roots):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 text = fh.read()
         except OSError:
             continue
@@ -279,7 +278,7 @@ android {{
 
 def _firebase_config_matches_package(path):
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
     except (OSError, ValueError, TypeError):
         return False
@@ -309,7 +308,7 @@ def _patch_firebase_gradle(*roots, config_path=None):
     patched = 0
     for path in _iter_files("build.gradle", *roots):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 text = fh.read()
         except OSError:
             continue

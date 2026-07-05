@@ -7,7 +7,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "assets" / "brand" / "approved-emblem-reference.png"
 OUTPUT = ROOT / "assets" / "brand" / "previews" / "intro-motion-preview.gif"

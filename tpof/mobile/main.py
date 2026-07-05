@@ -1022,6 +1022,10 @@ def main() -> None:
                 (getattr(self, "btn_pdf", None), "ice"),
                 (getattr(self, "btn_clear", None), "dark"),
                 (getattr(self, "btn_pro", None), "pro"),
+                (getattr(self, "valve_btn_buy", None), "pro"),
+                (getattr(self, "valve_btn_watch", None), "ice"),
+                (getattr(self, "valve_btn_type", None), "primary"),
+                (getattr(self, "valve_btn_calc", None), "ice"),
                 (getattr(self, "labor_btn_highways", None), "primary" if getattr(self, "_labor_use_highways", False) else "dark"),
                 (getattr(self, "labor_btn_additional", None), "primary" if getattr(self, "_labor_has_additional", False) else "dark"),
                 (getattr(self, "labor_btn_rates", None), "pro"),
@@ -1029,6 +1033,7 @@ def main() -> None:
             ):
                 if button is not None:
                     self._style_app_button(button, variant)
+            self._style_valve_mode_buttons()
 
         def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
             from kivymd.uix.button import MDIconButton
@@ -2231,11 +2236,13 @@ def main() -> None:
                 self.valve_dim_box.height = 0 if k else dp(180)
                 self.valve_dim_box.opacity = 0 if k else 1
                 self.valve_dim_box.disabled = k
-            active = self.theme_cls.primary_color
-            inactive = (0.55, 0.57, 0.62, 1)
+            self._style_valve_mode_buttons()
+
+        def _style_valve_mode_buttons(self):
+            k = getattr(self, "_valve_input_mode", "K") == "K"
             if hasattr(self, "valve_btn_mode_k"):
-                self.valve_btn_mode_k.md_bg_color = active if k else inactive
-                self.valve_btn_mode_w.md_bg_color = inactive if k else active
+                self._style_app_button(self.valve_btn_mode_k, "ice" if k else "muted")
+                self._style_app_button(self.valve_btn_mode_w, "muted" if k else "ice")
 
         def _open_valve_type_menu(self, caller):
             from kivy.metrics import dp

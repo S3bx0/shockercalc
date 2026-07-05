@@ -110,6 +110,21 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     assert "self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)" not in source
 
 
+def test_przyciski_zaworow_uzywaja_brandowej_palety():
+    source = _source("tpof/mobile/main.py")
+    theme_source = _source("tpof/mobile/theme.py")
+
+    assert '"muted"' in theme_source
+    assert "def _style_valve_mode_buttons" in source
+    assert '(getattr(self, "valve_btn_buy", None), "pro")' in source
+    assert '(getattr(self, "valve_btn_watch", None), "ice")' in source
+    assert '(getattr(self, "valve_btn_type", None), "primary")' in source
+    assert '(getattr(self, "valve_btn_calc", None), "ice")' in source
+    assert 'self._style_app_button(self.valve_btn_mode_k, "ice" if k else "muted")' in source
+    assert 'self._style_app_button(self.valve_btn_mode_w, "muted" if k else "ice")' in source
+    assert "active = self.theme_cls.primary_color" not in source
+
+
 def test_nieaktywna_zakladka_nie_blokuje_dotyku():
     source = _source("tpof/mobile/main.py")
 
