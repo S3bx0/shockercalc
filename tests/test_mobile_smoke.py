@@ -192,6 +192,11 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/main.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
+    assert "def _configure_text_field" in source
+    assert "field.font_size = sp(18)" in source
+    assert "field.padding = [0, dp(12), 0, dp(8)]" in source
+    assert "self._configure_text_field(self.in_m)" in source
+    assert "self._configure_text_field(w)" in source
     assert "def _bind_keyboard_scroll" in source
     assert "def _scroll_input_into_view" in source
     assert "padding=dp(150)" in source
@@ -208,9 +213,18 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     chart_source = _source("tpof/mobile/widgets/charts.py")
 
     assert "class LaborPieChart" in chart_source
+    assert "SEGMENT_COLORS" in chart_source
+    assert "def on_touch_down" in chart_source
     assert "LaborPieChart" in widgets_source
     assert "self.labor_chart = LaborPieChart" in source
+    assert "on_release=lambda *_: self._open_labor_chart_dialog()" in source
     assert "self.labor_chart.set_breakdown(breakdown)" in source
+    assert "self.labor_chart_legend" in source
+    assert "def _render_labor_chart_legend" in source
+    assert "def _open_labor_chart_dialog" in source
+    assert "labor_chart_tap" in source
+    assert "from kivymd.uix.dialog import MDDialog" in source
+    assert "from kivymd.uix.button import MDFlatButton" in source
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():

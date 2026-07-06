@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.8] - 2026-07-06
+
+### Zmieniono
+
+- Uczytelniono wykres kosztow robocizny: wiekszy donut, legenda, podpowiedz
+  oraz okno szczegolow po dotknieciu wykresu.
+
+### Naprawiono
+
+- Poprawiono wysokosc i padding pol w zakladce Chlodnicze, zeby wpisane
+  wartosci nie byly ucinane przy aktywnej klawiaturze.
+
 ## [1.5.7] - 2026-07-06
 
 ### Dodano

@@ -1208,13 +1208,24 @@ def main() -> None:
             card.add_widget(body)
             return card
 
+        def _configure_text_field(self, field, *, height=None):
+            from kivy.metrics import dp, sp
+
+            field.size_hint_y = None
+            field.height = height or dp(70)
+            field.font_size = sp(18)
+            field.padding = [0, dp(12), 0, dp(8)]
+            field.multiline = False
+            field.write_tab = False
+            return field
+
         def _build_params_card(self, dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
             card = MDCard(
                 orientation="vertical",
                 padding=dp(14),
                 spacing=dp(10),
                 size_hint_y=None,
-                height=dp(360),
+                height=dp(392),
                 radius=[16, 16, 16, 16],
                 elevation=3,
                 md_bg_color=self._card_bg(),
@@ -1229,15 +1240,14 @@ def main() -> None:
             )
             card.add_widget(self.lbl_params_title)
 
-            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(68))
+            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(78))
             self.row_mass = row_mass
             self.in_m = MDTextField(
                 hint_text=self._t("mass"),
                 input_filter=_numeric_input_filter,
                 size_hint_x=1,
-                size_hint_y=None,
-                height=dp(60),
             )
+            self._configure_text_field(self.in_m)
             self.btn_unit = MDRaisedButton(
                 text=self._mass_unit,
                 size_hint_x=None,
@@ -1265,8 +1275,7 @@ def main() -> None:
                 hint_text=self._t("work_time"), input_filter=_numeric_input_filter
             )
             for w in (self.in_T1, self.in_T2, self.in_t):
-                w.size_hint_y = None
-                w.height = dp(60)
+                self._configure_text_field(w)
                 card.add_widget(w)
             self._bind_keyboard_scroll(
                 (self.in_m, self.in_T1, self.in_T2, self.in_t),
@@ -1879,8 +1888,28 @@ def main() -> None:
                 text_color=STAGE_COLORS["total"],
             )
             result_card.add_widget(self.labor_lbl_total)
-            self.labor_chart = LaborPieChart(size_hint_y=None, height=dp(118))
+            self.labor_chart = LaborPieChart(
+                size_hint_y=None,
+                height=dp(176),
+                on_release=lambda *_: self._open_labor_chart_dialog(),
+            )
             result_card.add_widget(self.labor_chart)
+            self.labor_chart_hint = MDLabel(
+                text=self._t("labor_chart_empty"),
+                halign="center",
+                size_hint_y=None,
+                height=dp(24),
+                theme_text_color="Hint",
+                font_style="Caption",
+            )
+            result_card.add_widget(self.labor_chart_hint)
+            self.labor_chart_legend = MDBoxLayout(
+                orientation="vertical",
+                spacing=dp(3),
+                size_hint_y=None,
+                height=0,
+            )
+            result_card.add_widget(self.labor_chart_legend)
 
             self.labor_result_labels = {}
             for attr, key in (
@@ -2044,16 +2073,163 @@ def main() -> None:
                 return "Weekly delegation"
             return mode
 
+        def _labor_chart_rows(self, breakdown):
+            if breakdown is None:
+                return []
+            label_keys = (
+                ("labor_cost", "labor_labor_cost"),
+                ("travel_cost", "labor_travel_cost"),
+                ("lift_cost", "labor_lift_cost"),
+                ("container_cost", "labor_container_cost"),
+                ("hotel_cost", "labor_hotel_cost"),
+                ("allowance_cost", "labor_allowance_cost"),
+                ("regenerative_meal_cost", "labor_meal_cost"),
+                ("additional_costs_value", "labor_additional_costs"),
+            )
+            colors = dict(LaborPieChart.SEGMENT_COLORS)
+            total = Decimal("0")
+            values = []
+            for attr, key in label_keys:
+                value = Decimal(str(getattr(breakdown, attr, Decimal("0")) or "0"))
+                if value <= 0:
+                    continue
+                total += value
+                label = self._t(key, value="").split(":")[0].strip()
+                values.append((attr, label, value, colors.get(attr, (0.79, 0.96, 1.0, 1.0))))
+            if total <= 0:
+                return []
+            return [
+                (attr, label, value, float((value / total) * Decimal("100")), color)
+                for attr, label, value, color in values
+            ]
+
+        def _format_labor_chart_money(self, value) -> str:
+            suffix = " zł" if self._language == "pl" else " PLN"
+            return f"{self._format_labor_money(value)}{suffix}"
+
+        def _render_labor_chart_legend(self, breakdown):
+            from kivy.metrics import dp, sp
+
+            legend = getattr(self, "labor_chart_legend", None)
+            if legend is None:
+                return
+            legend.clear_widgets()
+            rows = self._labor_chart_rows(breakdown)
+            hint = getattr(self, "labor_chart_hint", None)
+            if hint is not None:
+                hint.text = self._t("labor_chart_tap") if rows else self._t("labor_chart_empty")
+            if not rows:
+                legend.height = 0
+                return
+            shown = rows[:4]
+            legend.height = len(shown) * dp(28)
+            for _attr, label, value, percent, color in shown:
+                row = MDBoxLayout(
+                    orientation="horizontal",
+                    spacing=dp(6),
+                    size_hint_y=None,
+                    height=dp(28),
+                )
+                dot = MDLabel(
+                    text="●",
+                    size_hint_x=None,
+                    width=dp(18),
+                    font_size=sp(18),
+                    theme_text_color="Custom",
+                    text_color=color,
+                )
+                name = MDLabel(text=label, theme_text_color="Secondary")
+                amount = MDLabel(
+                    text=f"{percent:.0f}% · {self._format_labor_chart_money(value)}",
+                    halign="right",
+                    theme_text_color="Secondary",
+                    size_hint_x=0.72,
+                )
+                row.add_widget(dot)
+                row.add_widget(name)
+                row.add_widget(amount)
+                legend.add_widget(row)
+            if len(rows) > len(shown) and hint is not None:
+                hint.text = self._t("labor_chart_tap")
+
+        def _close_labor_chart_dialog(self):
+            dialog = getattr(self, "_labor_chart_dialog", None)
+            if dialog is not None:
+                dialog.dismiss()
+                self._labor_chart_dialog = None
+
+        def _open_labor_chart_dialog(self):
+            self._close_labor_chart_dialog()
+            breakdown = getattr(self, "_last_labor_breakdown", None)
+            rows = self._labor_chart_rows(breakdown)
+            if not rows:
+                self._show_center_notice(self._t("labor_chart_empty"))
+                return
+            from kivy.metrics import dp, sp
+            from kivymd.uix.button import MDFlatButton
+            from kivymd.uix.dialog import MDDialog
+
+            content = MDBoxLayout(
+                orientation="vertical",
+                spacing=dp(8),
+                padding=[0, dp(4), 0, 0],
+                size_hint_y=None,
+            )
+            content.bind(minimum_height=content.setter("height"))
+            chart = LaborPieChart(size_hint_y=None, height=dp(210))
+            chart.set_breakdown(breakdown)
+            content.add_widget(chart)
+            for _attr, label, value, percent, color in rows:
+                row = MDBoxLayout(
+                    orientation="horizontal",
+                    spacing=dp(8),
+                    size_hint_y=None,
+                    height=dp(34),
+                )
+                dot = MDLabel(
+                    text="●",
+                    size_hint_x=None,
+                    width=dp(20),
+                    font_size=sp(18),
+                    theme_text_color="Custom",
+                    text_color=color,
+                )
+                name = MDLabel(text=label, theme_text_color="Primary")
+                amount = MDLabel(
+                    text=f"{self._format_labor_chart_money(value)} · {percent:.1f}%",
+                    halign="right",
+                    theme_text_color="Secondary",
+                    size_hint_x=0.9,
+                )
+                row.add_widget(dot)
+                row.add_widget(name)
+                row.add_widget(amount)
+                content.add_widget(row)
+            self._labor_chart_dialog = MDDialog(
+                title=self._t("labor_chart_details"),
+                type="custom",
+                content_cls=content,
+                buttons=[
+                    MDFlatButton(
+                        text=self._t("close"),
+                        on_release=lambda *_: self._close_labor_chart_dialog(),
+                    )
+                ],
+            )
+            self._labor_chart_dialog.open()
+
         def _render_labor_results(self, breakdown):
             dash = "—"
             if not hasattr(self, "labor_lbl_total"):
                 return
+            self._last_labor_breakdown = breakdown
             self.labor_lbl_total.text = self._t(
                 "labor_total_cost",
                 value=dash if breakdown is None else self._format_labor_money(breakdown.total_cost),
             )
             if hasattr(self, "labor_chart"):
                 self.labor_chart.set_breakdown(breakdown)
+            self._render_labor_chart_legend(breakdown)
             for attr, (label, key) in getattr(self, "labor_result_labels", {}).items():
                 value = dash if breakdown is None else self._format_labor_money(getattr(breakdown, attr))
                 label.text = self._t(key, value=value)
