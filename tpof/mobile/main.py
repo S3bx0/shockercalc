@@ -108,6 +108,7 @@ def main() -> None:
             CenterNotice,
             FrostBackground,
             FrostChip,
+            LaborPieChart,
             StageIconBadge,
             StageMotionIcon,
         )
@@ -148,6 +149,10 @@ def main() -> None:
             except Exception:  # pragma: no cover - starsze KivyMD
                 pass
             Window.clearcolor = SURFACE_DARK
+            try:
+                Window.softinput_mode = "below_target"
+            except Exception:  # pragma: no cover
+                log.debug("Could not set soft keyboard mode.", exc_info=True)
 
             self._selected_category: str | None = None
             self._selected_product: str | None = None
@@ -446,6 +451,35 @@ def main() -> None:
             ):
                 if field is not None:
                     self._clear_field_error(field)
+
+        def _bind_keyboard_scroll(self, fields, scroll):
+            if scroll is None:
+                return
+            for field in fields:
+                if field is None:
+                    continue
+                field.bind(
+                    focus=lambda widget, focused, _scroll=scroll: self._on_input_focus(
+                        widget, focused, _scroll
+                    )
+                )
+
+        def _on_input_focus(self, field, focused, scroll):
+            if not focused or scroll is None:
+                return
+            Clock.schedule_once(lambda *_: self._scroll_input_into_view(field, scroll), 0.08)
+            Clock.schedule_once(lambda *_: self._scroll_input_into_view(field, scroll), 0.35)
+
+        def _scroll_input_into_view(self, field, scroll):
+            try:
+                scroll.scroll_to(field, padding=dp(150), animate=True)
+            except TypeError:
+                try:
+                    scroll.scroll_to(field)
+                except Exception:
+                    log.debug("Could not scroll focused field above keyboard.", exc_info=True)
+            except Exception:
+                log.debug("Could not scroll focused field above keyboard.", exc_info=True)
 
         def _total_text(self, total: float | None = None) -> str:
             value = "—" if total is None else f"{total:.2f}"
@@ -1234,6 +1268,10 @@ def main() -> None:
                 w.size_hint_y = None
                 w.height = dp(60)
                 card.add_widget(w)
+            self._bind_keyboard_scroll(
+                (self.in_m, self.in_T1, self.in_T2, self.in_t),
+                getattr(self, "scroll", None),
+            )
             return card
 
         def _build_action_button(self, dp, MDBoxLayout, MDRaisedButton):
@@ -1663,6 +1701,19 @@ def main() -> None:
             res_card.add_widget(self.valve_lbl_unitflow)
             content.add_widget(res_card)
 
+            self._bind_keyboard_scroll(
+                (
+                    self.valve_in_V,
+                    self.valve_in_L,
+                    self.valve_in_W,
+                    self.valve_in_H,
+                    self.valve_in_tp,
+                    self.valve_in_tz,
+                    self.valve_in_n,
+                    self.valve_in_q,
+                ),
+                scroll,
+            )
             scroll.add_widget(content)
             return scroll
 
@@ -1828,6 +1879,8 @@ def main() -> None:
                 text_color=STAGE_COLORS["total"],
             )
             result_card.add_widget(self.labor_lbl_total)
+            self.labor_chart = LaborPieChart(size_hint_y=None, height=dp(118))
+            result_card.add_widget(self.labor_chart)
 
             self.labor_result_labels = {}
             for attr, key in (
@@ -1865,6 +1918,17 @@ def main() -> None:
             result_card.add_widget(self.labor_lbl_details)
             content.add_widget(result_card)
 
+            self._bind_keyboard_scroll(
+                (
+                    self.labor_in_people,
+                    self.labor_in_days,
+                    self.labor_in_distance,
+                    self.labor_in_lifts,
+                    self.labor_in_containers,
+                    self.labor_in_additional,
+                ),
+                scroll,
+            )
             scroll.add_widget(content)
             self._set_labor_highways(False)
             self._set_labor_additional_enabled(False)
@@ -1988,6 +2052,8 @@ def main() -> None:
                 "labor_total_cost",
                 value=dash if breakdown is None else self._format_labor_money(breakdown.total_cost),
             )
+            if hasattr(self, "labor_chart"):
+                self.labor_chart.set_breakdown(breakdown)
             for attr, (label, key) in getattr(self, "labor_result_labels", {}).items():
                 value = dash if breakdown is None else self._format_labor_money(getattr(breakdown, attr))
                 label.text = self._t(key, value=value)

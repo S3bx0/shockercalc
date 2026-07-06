@@ -180,9 +180,37 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
 
     assert "def _open_labor_rates_dialog" in source
     assert "labor_rates_pro_required" in source
+    assert "labor_rates_factory" in source
     assert "self._preferences.set_labor_rate_values" in source
     assert "self._preferences.reset_labor_rate_values" in source
+    assert "def _reset_labor_rates" in source
+    assert "self._preferences.reset_labor_rate_values()" in source
     assert "self._labor_rate_config()" in source
+
+
+def test_mobilne_pola_przewijaja_sie_nad_klawiature():
+    source = _source("tpof/mobile/main.py")
+
+    assert 'Window.softinput_mode = "below_target"' in source
+    assert "def _bind_keyboard_scroll" in source
+    assert "def _scroll_input_into_view" in source
+    assert "padding=dp(150)" in source
+    assert "(self.in_m, self.in_T1, self.in_T2, self.in_t)" in source
+    assert "self.valve_in_V," in source
+    assert "self.valve_in_q," in source
+    assert "self.labor_in_people," in source
+    assert "self.labor_in_additional," in source
+
+
+def test_robocizna_ma_wykres_kolowy_kosztow():
+    source = _source("tpof/mobile/main.py")
+    widgets_source = _source("tpof/mobile/widgets/__init__.py")
+    chart_source = _source("tpof/mobile/widgets/charts.py")
+
+    assert "class LaborPieChart" in chart_source
+    assert "LaborPieChart" in widgets_source
+    assert "self.labor_chart = LaborPieChart" in source
+    assert "self.labor_chart.set_breakdown(breakdown)" in source
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():

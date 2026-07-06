@@ -4,6 +4,18 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.7] - 2026-07-06
+
+### Dodano
+
+- Dodano lekki wykres kolowy struktury kosztow w zakladce robocizny.
+
+### Naprawiono
+
+- Poprawiono przewijanie pol wejściowych przy widocznej klawiaturze telefonu
+  w zakladkach chlodniczych, zaworow i robocizny.
+- Wzmocniono regresje edytora stawek PRO, w tym resetu do wartości fabrycznych.
+
 ## [1.5.6] - 2026-07-05
 
 ### Dodano
