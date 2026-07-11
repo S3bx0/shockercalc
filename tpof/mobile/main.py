@@ -2142,6 +2142,7 @@ def main() -> None:
                 )
             except (ValueError, ArithmeticError):
                 return False
+            assert field is not None
             field.text = self._editable_currency_text(converted)
             self._labor_additional_currency = target
             self._refresh_labor_additional_hint()
