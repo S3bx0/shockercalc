@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from tpof.mobile.currency import (
     ExchangeRates,
+    convert_display_amount,
+    convert_display_amount_to_pln,
     fetch_nbp_exchange_rates,
     format_money,
     get_exchange_rates,
@@ -72,3 +74,24 @@ def test_format_money_is_only_a_presentation_conversion():
     assert format_money(original, "EUR", rates, "pl") == "10,00 EUR"
     assert format_money(original, "USD", rates, "en") == "20.00 USD"
     assert original == Decimal("40")
+
+
+def test_display_amount_is_converted_to_internal_pln():
+    rates = ExchangeRates(
+        {"PLN": Decimal("1"), "EUR": Decimal("4.25"), "USD": Decimal("3.40")},
+        date="2026-07-10",
+    )
+
+    assert convert_display_amount_to_pln(Decimal("10"), "EUR", rates) == Decimal("42.50")
+    assert convert_display_amount(Decimal("10"), "EUR", "USD", rates) == Decimal("12.50")
+
+
+def test_display_amount_conversion_requires_requested_rate():
+    rates = ExchangeRates({"PLN": Decimal("1")})
+
+    try:
+        convert_display_amount_to_pln(Decimal("10"), "EUR", rates)
+    except ValueError as exc:
+        assert "EUR" in str(exc)
+    else:
+        raise AssertionError("missing exchange rate should fail")

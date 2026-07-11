@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from math import cos, pi, sin
 
 from kivy.animation import Animation
 from kivy.core.text import Label as CoreLabel
-from kivy.graphics import Color, Ellipse, Line, Rectangle
+from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty
 from kivy.uix.widget import Widget
@@ -108,7 +109,7 @@ class LaborPieChart(Widget):
         label = CoreLabel(
             text=text,
             font_size=font_size,
-            color=color,
+            color=(1.0, 1.0, 1.0, 1.0),
             text_size=(max(dp(40), width), None),
             halign="center",
             valign="middle",
@@ -118,12 +119,46 @@ class LaborPieChart(Widget):
         return label.texture
 
     @staticmethod
-    def _draw_texture(texture, center_x: float, center_y: float) -> None:
+    def _draw_texture(texture, center_x: float, center_y: float, color) -> None:
+        Color(*color)
         Rectangle(
             texture=texture,
             pos=(center_x - texture.size[0] / 2, center_y - texture.size[1] / 2),
             size=texture.size,
         )
+
+    @staticmethod
+    def _draw_annular_segment(
+        center_x: float,
+        center_y: float,
+        inner_radius: float,
+        outer_radius: float,
+        start_angle: float,
+        end_angle: float,
+    ) -> None:
+        """Draws a crisp donut segment without rounded line caps."""
+
+        sweep = max(0.0, end_angle - start_angle)
+        if sweep <= 0:
+            return
+        steps = max(2, int(sweep / 4.0) + 1)
+        vertices: list[float] = []
+        indices: list[int] = []
+        for index in range(steps + 1):
+            angle = (start_angle + sweep * index / steps) * pi / 180.0
+            for radius in (inner_radius, outer_radius):
+                vertices.extend(
+                    (
+                        center_x + cos(angle) * radius,
+                        center_y + sin(angle) * radius,
+                        0.0,
+                        0.0,
+                    )
+                )
+        for index in range(steps):
+            base = index * 2
+            indices.extend((base, base + 1, base + 2, base + 1, base + 3, base + 2))
+        Mesh(vertices=vertices, indices=indices, mode="triangles")
 
     def _redraw(self, *_args):
         self.canvas.clear()
@@ -132,8 +167,10 @@ class LaborPieChart(Widget):
         size = min(self.width, self.height)
         center_x = self.x + self.width / 2
         center_y = self.y + self.height / 2
-        radius = size * 0.32
-        ring_width = max(dp(16), size * 0.105)
+        radius = size * 0.31
+        ring_width = max(dp(14), size * 0.09)
+        outer_radius = radius + ring_width / 2
+        ring_inner_radius = max(dp(18), radius - ring_width / 2)
         dark = bool(self.dark_mode)
         track = (0.09, 0.18, 0.24, 0.92) if dark else (0.70, 0.82, 0.87, 0.72)
         center_color = (0.045, 0.095, 0.145, 1.0) if dark else (0.91, 0.97, 0.99, 1.0)
@@ -142,12 +179,9 @@ class LaborPieChart(Widget):
 
         with self.canvas:
             Color(*track)
-            Line(circle=(center_x, center_y, radius, 0, 360), width=ring_width)
-            Color(*center_color)
-            inner_radius = max(dp(24), radius - ring_width * 0.78)
             Ellipse(
-                pos=(center_x - inner_radius, center_y - inner_radius),
-                size=(inner_radius * 2, inner_radius * 2),
+                pos=(center_x - outer_radius, center_y - outer_radius),
+                size=(outer_radius * 2, outer_radius * 2),
             )
 
             if self._total > 0 and self.progress > 0:
@@ -158,21 +192,26 @@ class LaborPieChart(Widget):
                     visible_sweep = max(0.0, sweep - gap)
                     if visible_sweep <= 0:
                         continue
-                    start = segment.start_angle
+                    start = segment.start_angle + gap / 2
                     end = start + visible_sweep
-                    Color(segment.color[0], segment.color[1], segment.color[2], 0.16)
-                    Line(
-                        circle=(center_x, center_y, radius, start, end),
-                        width=ring_width + dp(5),
-                    )
                     Color(*segment.color)
-                    Line(
-                        circle=(center_x, center_y, radius, start, end),
-                        width=ring_width,
+                    self._draw_annular_segment(
+                        center_x,
+                        center_y,
+                        ring_inner_radius,
+                        outer_radius,
+                        start,
+                        end,
                     )
 
-            Color(0.64, 0.92, 1.0, 0.22 if dark else 0.30)
-            Line(circle=(center_x, center_y, radius + ring_width * 0.62, 0, 360), width=dp(1))
+            inner_radius = max(dp(24), ring_inner_radius - dp(2))
+            Color(*center_color)
+            Ellipse(
+                pos=(center_x - inner_radius, center_y - inner_radius),
+                size=(inner_radius * 2, inner_radius * 2),
+            )
+            Color(0.64, 0.92, 1.0, 0.28 if dark else 0.34)
+            Line(circle=(center_x, center_y, outer_radius, 0, 360), width=dp(1))
 
             if self._center_label:
                 label_texture = self._label_texture(
@@ -181,7 +220,12 @@ class LaborPieChart(Widget):
                     muted_color,
                     inner_radius * 1.55,
                 )
-                self._draw_texture(label_texture, center_x, center_y + dp(10))
+                self._draw_texture(
+                    label_texture,
+                    center_x,
+                    center_y + dp(10),
+                    muted_color,
+                )
             if self._center_value:
                 value_font_size = dp(12.5 if len(self._center_value) <= 15 else 10.5)
                 value_texture = self._label_texture(
@@ -190,4 +234,9 @@ class LaborPieChart(Widget):
                     text_color,
                     inner_radius * 1.75,
                 )
-                self._draw_texture(value_texture, center_x, center_y - dp(13))
+                self._draw_texture(
+                    value_texture,
+                    center_x,
+                    center_y - dp(13),
+                    text_color,
+                )

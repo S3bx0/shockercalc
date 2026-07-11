@@ -225,6 +225,9 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "center_label=self._t(\"labor_chart_total\")" in source
     assert "Animation(progress=1.0, duration=0.75" in chart_source
     assert "prepare_cost_segments" in chart_source
+    assert "Mesh(vertices=vertices" in chart_source
+    assert "ring_width + dp(5)" not in chart_source
+    assert "self._labor_chart_dialog.size_hint_x = 0.94" in source
     assert "self.labor_chart_legend" in source
     assert "def _render_labor_chart_legend" in source
     assert "def _open_labor_chart_dialog" in source

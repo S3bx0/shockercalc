@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -40,7 +41,19 @@ def _http_fetch(code: str, timeout: float) -> dict:
         NBP_RATE_URL.format(code=code.lower()),
         headers={"Accept": "application/json", "User-Agent": "RefrigerationCalc/1"},
     )
-    with urlopen(request, timeout=timeout) as response:  # noqa: S310 - trusted NBP URL
+    context = None
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        # Desktop Python normally has a working platform certificate store.
+        context = ssl.create_default_context()
+    with urlopen(  # noqa: S310 - trusted NBP URL
+        request,
+        timeout=timeout,
+        context=context,
+    ) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -162,3 +175,44 @@ def format_money(
         text = text.replace(",", " ").replace(".", ",")
     suffix = "zł" if code == "PLN" and str(language).casefold() == "pl" else code
     return f"{text} {suffix}"
+
+
+def convert_display_amount_to_pln(
+    value,
+    currency: str,
+    exchange_rates: ExchangeRates,
+) -> Decimal:
+    """Converts a user-entered display amount to the internal PLN value."""
+
+    code = str(currency or "PLN").strip().upper()
+    if code not in SUPPORTED_DISPLAY_CURRENCIES:
+        code = "PLN"
+    rate = exchange_rates.rate_for(code)
+    if rate is None:
+        raise ValueError(f"Missing exchange rate for {code}")
+    return (Decimal(str(value)) * rate).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+
+
+def convert_display_amount(
+    value,
+    source_currency: str,
+    target_currency: str,
+    exchange_rates: ExchangeRates,
+) -> Decimal:
+    """Converts an editable amount between display currencies via PLN."""
+
+    value_pln = convert_display_amount_to_pln(
+        value,
+        source_currency,
+        exchange_rates,
+    )
+    target_rate = exchange_rates.rate_for(target_currency)
+    if target_rate is None:
+        raise ValueError(f"Missing exchange rate for {target_currency}")
+    return (value_pln / target_rate).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )

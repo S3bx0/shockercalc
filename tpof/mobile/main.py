@@ -105,6 +105,8 @@ def main() -> None:
 
         from tpof.mobile.currency import (
             SUPPORTED_DISPLAY_CURRENCIES,
+            convert_display_amount,
+            convert_display_amount_to_pln,
             default_exchange_rates,
             format_money,
             get_exchange_rates,
@@ -178,6 +180,7 @@ def main() -> None:
             self._hints_enabled = self._preferences.hints_enabled
             self._unit_system = self._preferences.unit_system
             self._display_currency = self._preferences.display_currency
+            self._labor_additional_currency = self._display_currency
             self._currency_auto_update = self._preferences.currency_auto_update
             self._exchange_rates = default_exchange_rates()
             self._currency_refresh_running = False
@@ -798,7 +801,7 @@ def main() -> None:
                 self.labor_in_distance.hint_text = self._t("labor_distance")
                 self.labor_in_lifts.hint_text = self._t("labor_lifts")
                 self.labor_in_containers.hint_text = self._t("labor_containers")
-                self.labor_in_additional.hint_text = self._t("labor_additional")
+                self._refresh_labor_additional_hint()
                 self.labor_btn_rates.text = self._t("labor_rates_button")
                 self.labor_btn_calc.text = self._t("labor_calculate")
                 self.labor_lbl_result.text = self._t("labor_result")
@@ -1839,7 +1842,7 @@ def main() -> None:
             card.add_widget(toggle_row)
 
             self.labor_in_additional = MDTextField(
-                hint_text=self._t("labor_additional"), input_filter=_numeric_input_filter
+                hint_text=self._labor_additional_hint(), input_filter=_numeric_input_filter
             )
             self.labor_in_additional.size_hint_y = None
             self.labor_in_additional.height = dp(60)
@@ -1958,7 +1961,6 @@ def main() -> None:
                     theme_text_color="Secondary",
                 )
                 self.labor_result_labels[attr] = (label, key)
-                result_card.add_widget(label)
             self.labor_lbl_mode = MDLabel(
                 text=self._t("labor_travel_mode", value="—"),
                 size_hint_y=None,
@@ -2095,6 +2097,55 @@ def main() -> None:
                 self._exchange_rates,
                 self._language,
             )
+
+        def _labor_additional_hint(self) -> str:
+            currency = getattr(
+                self,
+                "_labor_additional_currency",
+                getattr(self, "_display_currency", "PLN"),
+            )
+            return f"{self._t('labor_additional')} [{currency}]"
+
+        def _refresh_labor_additional_hint(self) -> None:
+            field = getattr(self, "labor_in_additional", None)
+            if field is not None:
+                field.hint_text = self._labor_additional_hint()
+
+        @staticmethod
+        def _editable_currency_text(value: Decimal) -> str:
+            text = format(value, "f")
+            if "." in text:
+                text = text.rstrip("0").rstrip(".")
+            return text or "0"
+
+        def _convert_labor_additional_field_currency(
+            self,
+            target_currency: str,
+        ) -> bool:
+            target = str(target_currency or "PLN").strip().upper()
+            source = getattr(self, "_labor_additional_currency", "PLN")
+            field = getattr(self, "labor_in_additional", None)
+            raw = (getattr(field, "text", "") or "").strip() if field is not None else ""
+            if not raw:
+                self._labor_additional_currency = target
+                self._refresh_labor_additional_hint()
+                return True
+            if source == target:
+                self._refresh_labor_additional_hint()
+                return True
+            try:
+                converted = convert_display_amount(
+                    Decimal(raw.replace(",", ".")),
+                    source,
+                    target,
+                    self._exchange_rates,
+                )
+            except (ValueError, ArithmeticError):
+                return False
+            field.text = self._editable_currency_text(converted)
+            self._labor_additional_currency = target
+            self._refresh_labor_additional_hint()
+            return True
 
         def _labor_travel_mode_text(self, mode: str) -> str:
             if self._language == "pl":
@@ -2291,6 +2342,7 @@ def main() -> None:
                     )
                 ],
             )
+            self._labor_chart_dialog.size_hint_x = 0.94
             self._labor_chart_dialog.open()
 
         def _render_labor_results(self, breakdown):
@@ -2497,6 +2549,20 @@ def main() -> None:
                     if self._labor_has_additional
                     else Decimal("0")
                 )
+                if self._labor_has_additional:
+                    try:
+                        additional = convert_display_amount_to_pln(
+                            additional,
+                            getattr(self, "_labor_additional_currency", "PLN"),
+                            self._exchange_rates,
+                        )
+                    except ValueError as exc:
+                        message = self._t(
+                            "labor_currency_input_missing",
+                            currency=getattr(self, "_labor_additional_currency", "PLN"),
+                        )
+                        self._mark_field_error(self.labor_in_additional, message)
+                        raise ValueError(message) from exc
                 errors = validate_labor_inputs(
                     people,
                     days,
@@ -3104,6 +3170,9 @@ def main() -> None:
         def _apply_exchange_rates(self, rates, notify: bool = False):
             self._currency_refresh_running = False
             self._exchange_rates = rates
+            self._convert_labor_additional_field_currency(
+                getattr(self, "_display_currency", "PLN")
+            )
             self._update_currency_settings_ui()
             if hasattr(self, "labor_lbl_total"):
                 self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
@@ -3114,6 +3183,7 @@ def main() -> None:
             value = str(currency or "").strip().upper()
             if value not in SUPPORTED_DISPLAY_CURRENCIES:
                 value = "PLN"
+            self._convert_labor_additional_field_currency(value)
             self._display_currency = value
             self._preferences.set_display_currency(value)
             self._update_currency_settings_ui()

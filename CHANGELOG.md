@@ -4,6 +4,30 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.10] - 2026-07-11
+
+### Naprawiono
+
+- Naprawiono pobieranie kursów NBP na Androidzie przez dołączenie aktualnego
+  magazynu certyfikatów CA i jawne użycie go dla połączeń HTTPS.
+- Pole kosztów dodatkowych używa teraz wybranej waluty, zachowuje wartość przy
+  zmianie waluty i przelicza ją do PLN przed wykonaniem obliczeń.
+- Usunięto nakładającą się poświatę małych segmentów wykresu robocizny oraz
+  poprawiono kontrast kwoty i etykiety w środku wykresu.
+- Poszerzono okno szczegółów wykresu, aby legenda i kwoty nie były ucinane na
+  wąskich ekranach.
+
+### Zmieniono
+
+- Segmenty wykresu są renderowane jako precyzyjne wycinki pierścienia zamiast
+  grubych linii z zaokrąglonymi końcami.
+- Usunięto zdublowaną listę kwot spod kompaktowej legendy wykresu.
+
+### Testy
+
+- Dodano testy konwersji edytowalnych kwot EUR i USD do wewnętrznej wartości
+  PLN oraz zabezpieczenia przed obliczeniem bez dostępnego kursu.
+
 ## [1.5.9] - 2026-07-11
 
 ### Dodano

@@ -15,7 +15,7 @@ source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.5.9
+version = 1.5.10
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.
@@ -32,7 +32,7 @@ android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczare
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
 # pod Pythonem Androidowym wybieranym przez python-for-android.
 # PDF na Androidzie generujemy czysto-pythonowym fpdf2 (+ fonttools, defusedxml).
-requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow==11.3.0,fpdf2==2.8.7,fonttools==4.63.0,defusedxml==0.7.1
+requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow==11.3.0,fpdf2==2.8.7,fonttools==4.63.0,defusedxml==0.7.1,certifi==2026.6.17
 
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
