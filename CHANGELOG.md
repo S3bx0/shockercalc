@@ -4,6 +4,32 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.9] - 2026-07-11
+
+### Dodano
+
+- Dodano warstwę prezentacji kosztów robocizny w PLN, EUR i USD bez zmiany
+  obliczeń źródłowych wykonywanych w PLN.
+- Dodano automatyczne pobieranie kursów EUR i USD z NBP, lokalny cache ostatnich
+  poprawnych kursów oraz bezpieczny tryb offline z datą kursu.
+- Dodano wybór waluty i przełącznik automatycznej aktualizacji kursów w
+  ustawieniach aplikacji.
+
+### Zmieniono
+
+- Przebudowano wykres struktury kosztów robocizny w lekkim Kivy Canvas:
+  grubszy donut, spokojniejsza paleta, przerwy i subtelny glow segmentów,
+  animacja 750 ms oraz koszt całkowity w środku.
+- Uporządkowano legendę wykresu i dodano przewijany dialog szczegółów
+  dostosowany do mniejszych ekranów.
+
+### Testy
+
+- Dodano testy pustych danych, sumy zero, pojedynczej kategorii, małych i
+  ujemnych udziałów oraz długich etykiet wykresu.
+- Dodano testy pobierania kursów NBP, cache offline, formatowania walut i
+  trwałości ustawień użytkownika.
+
 ## [1.5.8] - 2026-07-06
 
 ### Zmieniono

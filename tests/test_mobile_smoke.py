@@ -171,6 +171,9 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert "self.toolbar_snowflake = MDIconButton" in source
     assert "on_release=lambda *_: self._open_settings_dialog()" in source
     assert "units_imperial_disabled" in source
+    assert "def _refresh_exchange_rates_async" in source
+    assert "SUPPORTED_DISPLAY_CURRENCIES" in source
+    assert "self._preferences.set_display_currency(value)" in source
     assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in i18n_source
     assert languages.exists()
 
@@ -218,7 +221,10 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "LaborPieChart" in widgets_source
     assert "self.labor_chart = LaborPieChart" in source
     assert "on_release=lambda *_: self._open_labor_chart_dialog()" in source
-    assert "self.labor_chart.set_breakdown(breakdown)" in source
+    assert "self._set_labor_chart_data(" in source
+    assert "center_label=self._t(\"labor_chart_total\")" in source
+    assert "Animation(progress=1.0, duration=0.75" in chart_source
+    assert "prepare_cost_segments" in chart_source
     assert "self.labor_chart_legend" in source
     assert "def _render_labor_chart_legend" in source
     assert "def _open_labor_chart_dialog" in source

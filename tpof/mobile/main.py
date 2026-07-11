@@ -18,6 +18,7 @@ Build APK:
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -102,6 +103,12 @@ def main() -> None:
         from kivymd.uix.scrollview import MDScrollView
         from kivymd.uix.textfield import MDTextField
 
+        from tpof.mobile.currency import (
+            SUPPORTED_DISPLAY_CURRENCIES,
+            default_exchange_rates,
+            format_money,
+            get_exchange_rates,
+        )
         from tpof.mobile.widgets import (
             BottomNavTab,
             BrandToolbar,
@@ -170,6 +177,13 @@ def main() -> None:
             self._preferences = UiPreferences()
             self._hints_enabled = self._preferences.hints_enabled
             self._unit_system = self._preferences.unit_system
+            self._display_currency = self._preferences.display_currency
+            self._currency_auto_update = self._preferences.currency_auto_update
+            self._exchange_rates = default_exchange_rates()
+            self._currency_refresh_running = False
+            self._settings_currency_buttons = {}
+            self._settings_currency_auto_button = None
+            self._settings_currency_status = None
             self._custom_product_dialog = None
             self._privacy_dialog = None
             self._settings_dialog = None
@@ -271,6 +285,7 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
             Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
             Clock.schedule_once(lambda *_: self._prompt_telemetry_consent(), 2.0)
+            Clock.schedule_once(lambda *_: self._refresh_exchange_rates_async(), 1.0)
             telemetry.log_event("app_started", {"language": self._language})
             return self.root_host
 
@@ -287,6 +302,9 @@ def main() -> None:
             self._close_product_dialog()
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
+            self._update_currency_settings_ui()
+            if hasattr(self, "labor_lbl_total"):
+                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
 
         def _toggle_hints(self):
             self._hints_enabled = not self._hints_enabled
@@ -1041,6 +1059,8 @@ def main() -> None:
                 self.bottom_labor_tab.set_active(active_tab == "labor")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
+            if hasattr(self, "labor_chart"):
+                self.labor_chart.set_dark(self.theme_cls.theme_style == "Dark")
             ad_slot = getattr(self, "ad_slot", None)
             if ad_slot is not None:
                 ad_slot.md_bg_color = self._ad_slot_bg()
@@ -1888,9 +1908,18 @@ def main() -> None:
                 text_color=STAGE_COLORS["total"],
             )
             result_card.add_widget(self.labor_lbl_total)
+            self.labor_currency_note = MDLabel(
+                text=self._t("labor_currency_note_pln"),
+                halign="center",
+                size_hint_y=None,
+                height=dp(30),
+                theme_text_color="Hint",
+                font_style="Caption",
+            )
+            result_card.add_widget(self.labor_currency_note)
             self.labor_chart = LaborPieChart(
                 size_hint_y=None,
-                height=dp(176),
+                height=dp(210),
                 on_release=lambda *_: self._open_labor_chart_dialog(),
             )
             result_card.add_widget(self.labor_chart)
@@ -2060,9 +2089,12 @@ def main() -> None:
         def _format_labor_money(self, value) -> str:
             if value is None:
                 return "—"
-            amount = Decimal(str(value)).quantize(Decimal("0.01"))
-            text = f"{amount:,.2f}"
-            return text.replace(",", " ").replace(".", ",") if self._language == "pl" else text
+            return format_money(
+                value,
+                self._display_currency,
+                self._exchange_rates,
+                self._language,
+            )
 
         def _labor_travel_mode_text(self, mode: str) -> str:
             if self._language == "pl":
@@ -2104,11 +2136,25 @@ def main() -> None:
             ]
 
         def _format_labor_chart_money(self, value) -> str:
-            suffix = " zł" if self._language == "pl" else " PLN"
-            return f"{self._format_labor_money(value)}{suffix}"
+            return self._format_labor_money(value)
+
+        def _set_labor_chart_data(self, chart, breakdown, *, animate: bool = True):
+            rows = self._labor_chart_rows(breakdown)
+            items = [
+                {"key": attr, "label": label, "value": value, "color": color}
+                for attr, label, value, _percent, color in rows
+            ]
+            total = "—" if breakdown is None else self._format_labor_money(breakdown.total_cost)
+            chart.set_dark(self.theme_cls.theme_style == "Dark")
+            chart.set_data(
+                items,
+                center_label=self._t("labor_chart_total"),
+                center_value=total,
+                animate=animate,
+            )
 
         def _render_labor_chart_legend(self, breakdown):
-            from kivy.metrics import dp, sp
+            from kivy.metrics import dp
 
             legend = getattr(self, "labor_chart_legend", None)
             if legend is None:
@@ -2122,30 +2168,40 @@ def main() -> None:
                 legend.height = 0
                 return
             shown = rows[:4]
-            legend.height = len(shown) * dp(28)
+            legend.height = len(shown) * dp(42)
             for _attr, label, value, percent, color in shown:
                 row = MDBoxLayout(
                     orientation="horizontal",
-                    spacing=dp(6),
+                    spacing=dp(8),
                     size_hint_y=None,
-                    height=dp(28),
+                    height=dp(42),
                 )
-                dot = MDLabel(
-                    text="●",
-                    size_hint_x=None,
-                    width=dp(18),
-                    font_size=sp(18),
-                    theme_text_color="Custom",
-                    text_color=color,
+                swatch = MDCard(
+                    size_hint=(None, None),
+                    size=(dp(12), dp(12)),
+                    pos_hint={"center_y": 0.5},
+                    radius=[dp(3), dp(3), dp(3), dp(3)],
+                    elevation=0,
+                    md_bg_color=color,
                 )
-                name = MDLabel(text=label, theme_text_color="Secondary")
+                name = MDLabel(
+                    text=label,
+                    theme_text_color="Primary",
+                    font_size="12sp",
+                    size_hint_x=0.47,
+                    valign="middle",
+                )
+                name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
                 amount = MDLabel(
-                    text=f"{percent:.0f}% · {self._format_labor_chart_money(value)}",
+                    text=f"{percent:.1f}% · {self._format_labor_chart_money(value)}",
                     halign="right",
-                    theme_text_color="Secondary",
-                    size_hint_x=0.72,
+                    valign="middle",
+                    theme_text_color="Primary",
+                    font_size="11.5sp",
+                    size_hint_x=0.53,
                 )
-                row.add_widget(dot)
+                amount.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
+                row.add_widget(swatch)
                 row.add_widget(name)
                 row.add_widget(amount)
                 legend.add_widget(row)
@@ -2163,9 +2219,9 @@ def main() -> None:
             breakdown = getattr(self, "_last_labor_breakdown", None)
             rows = self._labor_chart_rows(breakdown)
             if not rows:
-                self._show_center_notice(self._t("labor_chart_empty"))
+                self._show_error(self._t("labor_chart_empty"))
                 return
-            from kivy.metrics import dp, sp
+            from kivy.metrics import dp
             from kivymd.uix.button import MDFlatButton
             from kivymd.uix.dialog import MDDialog
 
@@ -2174,37 +2230,56 @@ def main() -> None:
                 spacing=dp(8),
                 padding=[0, dp(4), 0, 0],
                 size_hint_y=None,
+                height=max(dp(320), min(dp(460), Window.height * 0.62)),
             )
-            content.bind(minimum_height=content.setter("height"))
             chart = LaborPieChart(size_hint_y=None, height=dp(210))
-            chart.set_breakdown(breakdown)
+            self._set_labor_chart_data(chart, breakdown, animate=True)
             content.add_widget(chart)
+            detail_scroll = MDScrollView(size_hint=(1, 1))
+            detail_list = MDBoxLayout(
+                orientation="vertical",
+                spacing=dp(4),
+                size_hint_y=None,
+            )
+            detail_list.bind(minimum_height=detail_list.setter("height"))
             for _attr, label, value, percent, color in rows:
                 row = MDBoxLayout(
                     orientation="horizontal",
                     spacing=dp(8),
                     size_hint_y=None,
-                    height=dp(34),
+                    height=dp(46),
                 )
-                dot = MDLabel(
-                    text="●",
-                    size_hint_x=None,
-                    width=dp(20),
-                    font_size=sp(18),
-                    theme_text_color="Custom",
-                    text_color=color,
+                swatch = MDCard(
+                    size_hint=(None, None),
+                    size=(dp(13), dp(13)),
+                    pos_hint={"center_y": 0.5},
+                    radius=[dp(3), dp(3), dp(3), dp(3)],
+                    elevation=0,
+                    md_bg_color=color,
                 )
-                name = MDLabel(text=label, theme_text_color="Primary")
+                name = MDLabel(
+                    text=label,
+                    theme_text_color="Primary",
+                    font_size="12sp",
+                    size_hint_x=0.48,
+                    valign="middle",
+                )
+                name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
                 amount = MDLabel(
                     text=f"{self._format_labor_chart_money(value)} · {percent:.1f}%",
                     halign="right",
-                    theme_text_color="Secondary",
-                    size_hint_x=0.9,
+                    valign="middle",
+                    theme_text_color="Primary",
+                    font_size="11.5sp",
+                    size_hint_x=0.52,
                 )
-                row.add_widget(dot)
+                amount.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
+                row.add_widget(swatch)
                 row.add_widget(name)
                 row.add_widget(amount)
-                content.add_widget(row)
+                detail_list.add_widget(row)
+            detail_scroll.add_widget(detail_list)
+            content.add_widget(detail_scroll)
             self._labor_chart_dialog = MDDialog(
                 title=self._t("labor_chart_details"),
                 type="custom",
@@ -2227,8 +2302,14 @@ def main() -> None:
                 "labor_total_cost",
                 value=dash if breakdown is None else self._format_labor_money(breakdown.total_cost),
             )
+            if hasattr(self, "labor_currency_note"):
+                self.labor_currency_note.text = self._currency_rate_note()
             if hasattr(self, "labor_chart"):
-                self.labor_chart.set_breakdown(breakdown)
+                self._set_labor_chart_data(
+                    self.labor_chart,
+                    breakdown,
+                    animate=breakdown is not None,
+                )
             self._render_labor_chart_legend(breakdown)
             for attr, (label, key) in getattr(self, "labor_result_labels", {}).items():
                 value = dash if breakdown is None else self._format_labor_money(getattr(breakdown, attr))
@@ -2972,6 +3053,98 @@ def main() -> None:
             self._preferences.set_unit_system("metric")
             self._show_error(self._t("units_metric_active"))
 
+        def _currency_cache_path(self) -> Path:
+            return self._preferences.path.parent / "exchange_rates.json"
+
+        def _currency_rate_note(self) -> str:
+            currency = getattr(self, "_display_currency", "PLN")
+            rates = getattr(self, "_exchange_rates", default_exchange_rates())
+            if currency == "PLN":
+                return self._t("labor_currency_note_pln")
+            if rates.rate_for(currency) is None:
+                return self._t("labor_currency_note_missing", currency=currency)
+            values = {"currency": currency, "date": rates.date or "—", "source": rates.source or "NBP"}
+            key = "labor_currency_note_cached" if rates.from_cache else "labor_currency_note_rate"
+            return self._t(key, **values)
+
+        def _currency_settings_status_text(self) -> str:
+            if getattr(self, "_currency_refresh_running", False):
+                return self._t("settings_currency_refreshing")
+            rates = getattr(self, "_exchange_rates", default_exchange_rates())
+            if not rates.date:
+                return self._t("settings_currency_status_missing")
+            key = "settings_currency_status_cached" if rates.from_cache else "settings_currency_status"
+            return self._t(key, date=rates.date, source=rates.source or "NBP")
+
+        def _refresh_exchange_rates_async(self, notify: bool = False):
+            if not getattr(self, "_currency_auto_update", True):
+                self._exchange_rates = get_exchange_rates(
+                    self._currency_cache_path(),
+                    auto_update=False,
+                )
+                self._update_currency_settings_ui()
+                if hasattr(self, "labor_lbl_total"):
+                    self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+                return
+            if getattr(self, "_currency_refresh_running", False):
+                return
+            self._currency_refresh_running = True
+            self._update_currency_settings_ui()
+            cache_path = self._currency_cache_path()
+
+            def worker():
+                rates = get_exchange_rates(cache_path, auto_update=True)
+                Clock.schedule_once(
+                    lambda *_: self._apply_exchange_rates(rates, notify=notify),
+                    0,
+                )
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        def _apply_exchange_rates(self, rates, notify: bool = False):
+            self._currency_refresh_running = False
+            self._exchange_rates = rates
+            self._update_currency_settings_ui()
+            if hasattr(self, "labor_lbl_total"):
+                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+            if notify and getattr(self, "_display_currency", "PLN") != "PLN":
+                self._show_error(self._currency_rate_note())
+
+        def _set_display_currency(self, currency: str):
+            value = str(currency or "").strip().upper()
+            if value not in SUPPORTED_DISPLAY_CURRENCIES:
+                value = "PLN"
+            self._display_currency = value
+            self._preferences.set_display_currency(value)
+            self._update_currency_settings_ui()
+            if hasattr(self, "labor_lbl_total"):
+                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+            if value != "PLN":
+                self._refresh_exchange_rates_async(notify=True)
+
+        def _toggle_currency_auto_update(self):
+            self._currency_auto_update = not bool(
+                getattr(self, "_currency_auto_update", True)
+            )
+            self._preferences.set_currency_auto_update(self._currency_auto_update)
+            self._update_currency_settings_ui()
+            self._refresh_exchange_rates_async(notify=True)
+
+        def _update_currency_settings_ui(self):
+            selected = getattr(self, "_display_currency", "PLN")
+            for code, button in (getattr(self, "_settings_currency_buttons", {}) or {}).items():
+                self._style_app_button(button, "ice" if code == selected else "muted")
+            auto_button = getattr(self, "_settings_currency_auto_button", None)
+            auto_update = bool(getattr(self, "_currency_auto_update", True))
+            if auto_button is not None:
+                auto_button.text = self._t(
+                    "settings_currency_auto_on" if auto_update else "settings_currency_auto_off"
+                )
+                self._style_app_button(auto_button, "ice" if auto_update else "muted")
+            status = getattr(self, "_settings_currency_status", None)
+            if status is not None:
+                status.text = self._currency_settings_status_text()
+
         def _open_settings_dialog(self):
             """Menu ustawień pod lewą śnieżynką; gotowe na kolejne sekcje."""
             self._close_product_dialog()
@@ -3046,6 +3219,59 @@ def main() -> None:
                 )
                 imperial_row.add_widget(imperial_button)
                 content.add_widget(imperial_row)
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("settings_currency_title"),
+                        theme_text_color="Custom",
+                        text_color=BRAND_ICE,
+                        font_style="Subtitle1",
+                        adaptive_height=True,
+                    )
+                )
+                content.add_widget(
+                    MDLabel(
+                        text=self._t("settings_currency_hint"),
+                        theme_text_color="Hint",
+                        font_style="Caption",
+                        adaptive_height=True,
+                    )
+                )
+                self._settings_currency_buttons = {}
+                currency_row = MDBoxLayout(
+                    orientation="horizontal",
+                    spacing=dp(8),
+                    size_hint_y=None,
+                    height=dp(42),
+                )
+                for code in SUPPORTED_DISPLAY_CURRENCIES:
+                    button = MDRaisedButton(
+                        text=code,
+                        size_hint_x=1,
+                        on_release=lambda _button, selected=code: self._set_display_currency(selected),
+                    )
+                    self._settings_currency_buttons[code] = button
+                    currency_row.add_widget(button)
+                content.add_widget(currency_row)
+                auto_row = MDBoxLayout(
+                    orientation="horizontal",
+                    size_hint_y=None,
+                    height=dp(42),
+                )
+                self._settings_currency_auto_button = MDRaisedButton(
+                    text="",
+                    size_hint_x=1,
+                    on_release=lambda *_: self._toggle_currency_auto_update(),
+                )
+                auto_row.add_widget(self._settings_currency_auto_button)
+                content.add_widget(auto_row)
+                self._settings_currency_status = MDLabel(
+                    text="",
+                    theme_text_color="Hint",
+                    font_style="Caption",
+                    adaptive_height=True,
+                )
+                content.add_widget(self._settings_currency_status)
+                self._update_currency_settings_ui()
                 self._settings_dialog = MDDialog(
                     title=self._t("settings_title"),
                     type="custom",

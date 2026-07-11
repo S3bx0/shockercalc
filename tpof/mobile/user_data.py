@@ -11,12 +11,14 @@ from pathlib import Path
 
 from tpof.core.models import Product
 from tpof.labor import default_rate_config, rate_config_from_values, rate_config_to_dict
+from tpof.mobile.currency import SUPPORTED_DISPLAY_CURRENCIES
 
 PREFERENCES_FILE = "ui_preferences.json"
 CUSTOM_PRODUCTS_FILE = "custom_products.json"
 ROOT_KEY = "zywnosc"
 LABOR_RATES_KEY = "labor_rates"
 SUPPORTED_UNIT_SYSTEMS = frozenset({"metric"})
+SUPPORTED_DISPLAY_CURRENCY_SET = frozenset(SUPPORTED_DISPLAY_CURRENCIES)
 MIN_CUSTOM_T_ZAM_C = -80.0
 MAX_CUSTOM_T_ZAM_C = 10.0
 
@@ -83,6 +85,26 @@ class UiPreferences:
         if value not in SUPPORTED_UNIT_SYSTEMS:
             value = "metric"
         self._data["unit_system"] = value
+        self._save()
+
+    @property
+    def display_currency(self) -> str:
+        value = str(self._data.get("display_currency", "PLN")).strip().upper()
+        return value if value in SUPPORTED_DISPLAY_CURRENCY_SET else "PLN"
+
+    def set_display_currency(self, currency: str) -> None:
+        value = str(currency or "PLN").strip().upper()
+        if value not in SUPPORTED_DISPLAY_CURRENCY_SET:
+            value = "PLN"
+        self._data["display_currency"] = value
+        self._save()
+
+    @property
+    def currency_auto_update(self) -> bool:
+        return bool(self._data.get("currency_auto_update", True))
+
+    def set_currency_auto_update(self, enabled: bool) -> None:
+        self._data["currency_auto_update"] = bool(enabled)
         self._save()
 
     @property

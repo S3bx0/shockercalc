@@ -53,6 +53,29 @@ def test_unit_system_file_values_fallback_to_metric(tmp_path, stored_value):
     assert UiPreferences(path).unit_system == "metric"
 
 
+def test_result_currency_defaults_and_persists(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    assert preferences.display_currency == "PLN"
+    assert preferences.currency_auto_update is True
+    preferences.set_display_currency("eur")
+    preferences.set_currency_auto_update(False)
+
+    restored = UiPreferences(path)
+    assert restored.display_currency == "EUR"
+    assert restored.currency_auto_update is False
+
+
+def test_invalid_result_currency_falls_back_to_pln(tmp_path):
+    path = tmp_path / "preferences.json"
+    preferences = UiPreferences(path)
+
+    preferences.set_display_currency("GBP")
+
+    assert UiPreferences(path).display_currency == "PLN"
+
+
 def test_labor_rate_values_persist_and_reset(tmp_path):
     path = tmp_path / "preferences.json"
     preferences = UiPreferences(path)
