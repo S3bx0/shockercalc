@@ -106,11 +106,25 @@ class LaborPieChart(Widget):
         cached = self._texture_cache.get(key)
         if cached is not None:
             return cached
-        label = CoreLabel(
-            text=text,
+        available_width = max(dp(40), width)
+        display_text = text.replace(" ", "\N{NO-BREAK SPACE}")
+        measurement = CoreLabel(
+            text=display_text,
             font_size=font_size,
             color=(1.0, 1.0, 1.0, 1.0),
-            text_size=(max(dp(40), width), None),
+        )
+        measurement.refresh()
+        fitted_size = font_size
+        if measurement.texture.size[0] > available_width:
+            fitted_size = max(
+                dp(8),
+                font_size * available_width / measurement.texture.size[0] * 0.94,
+            )
+        label = CoreLabel(
+            text=display_text,
+            font_size=fitted_size,
+            color=(1.0, 1.0, 1.0, 1.0),
+            text_size=(available_width, None),
             halign="center",
             valign="middle",
         )
@@ -186,9 +200,11 @@ class LaborPieChart(Widget):
 
             if self._total > 0 and self.progress > 0:
                 progress = max(0.0, min(1.0, float(self.progress)))
+                multiple_segments = len(self._segments) > 1
                 for segment in self._segments:
                     sweep = segment.sweep_angle * progress
-                    gap = min(2.2, max(0.35, sweep * 0.08))
+                    # Keep tiny positive costs visible and avoid a false gap for 100%.
+                    gap = min(2.2, sweep * 0.18) if multiple_segments else 0.0
                     visible_sweep = max(0.0, sweep - gap)
                     if visible_sweep <= 0:
                         continue

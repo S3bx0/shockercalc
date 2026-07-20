@@ -18,9 +18,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.10" in spec
-    assert '__version__ = "1.5.10"' in package_init
-    assert 'version = "1.5.10"' in pyproject
+    assert "version = 1.5.11" in spec
+    assert '__version__ = "1.5.11"' in package_init
+    assert 'version = "1.5.11"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -90,16 +90,14 @@ def test_native_splash_is_lightweight_and_started_by_activity():
     assert intro.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
 
 
-def test_closed_test_build_expires_and_only_links_to_google_play():
+def test_release_has_no_time_limited_test_build_gate():
     source = ACTIVITY.read_text(encoding="utf-8")
 
-    assert "TEST_BUILD_EXPIRES_AT_EPOCH_MS = 1784152800000L" in source
-    assert "if (isClosedTestBuildExpired())" in source
-    assert "showExpiredBuildGate();" in source
-    assert "market://details?id=" in source
-    assert "https://play.google.com/store/apps/details?id=" in source
-    assert "Ta wersja testowa działała do 15 lipca 2026" in source
-    assert "public void onBackPressed()" in source
+    assert "TEST_BUILD_EXPIRES_AT_EPOCH_MS" not in source
+    assert "isClosedTestBuildExpired" not in source
+    assert "showExpiredBuildGate" not in source
+    assert "expiredBuildOverlay" not in source
+    assert "Test version expired" not in source
 
 
 def test_intro_final_frame_matches_approved_emblem():

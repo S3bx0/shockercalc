@@ -177,6 +177,25 @@ def format_money(
     return f"{text} {suffix}"
 
 
+def format_exchange_rate(
+    currency: str,
+    exchange_rates: ExchangeRates,
+    language: str,
+) -> str | None:
+    """Formats one display-currency rate as PLN per currency unit."""
+
+    code = str(currency or "").strip().upper()
+    if code not in SUPPORTED_DISPLAY_CURRENCIES:
+        return None
+    rate = exchange_rates.rate_for(code)
+    if rate is None:
+        return None
+    value = f"{rate.quantize(Decimal('0.0001')):.4f}"
+    if str(language).casefold() == "pl":
+        value = value.replace(".", ",")
+    return f"1 {code} = {value} PLN"
+
+
 def convert_display_amount_to_pln(
     value,
     currency: str,

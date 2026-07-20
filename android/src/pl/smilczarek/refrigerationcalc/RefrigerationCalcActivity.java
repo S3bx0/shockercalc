@@ -7,8 +7,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,10 +23,6 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import com.android.billingclient.api.AcknowledgePurchaseParams;
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
@@ -111,9 +105,6 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
     private static final String PREF_TELEMETRY_SET = "firebase_telemetry_preference_set";
     private static final String PREF_TELEMETRY_ENABLED = "firebase_telemetry_enabled";
-    // Closed-test guard only. Disable/remove this for the production Play release.
-    // The closed-test build works through 2026-07-15 in Europe/Warsaw.
-    private static final long TEST_BUILD_EXPIRES_AT_EPOCH_MS = 1784152800000L;
 
     private AdView bannerAdView;
     private FrameLayout bannerContainer;
@@ -135,18 +126,12 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private boolean firebaseTelemetryAvailable;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
-    private FrameLayout expiredBuildOverlay;
-    private boolean storeRedirectLaunched;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         getWindow().setBackgroundDrawableResource(android.R.color.white);
         super.onCreate(savedInstanceState);
         configureEdgeToEdge();
-        if (isClosedTestBuildExpired()) {
-            showExpiredBuildGate();
-            return;
-        }
         showAnimatedIntro();
         initializeFirebaseTelemetry();
         initializeBilling();
@@ -208,126 +193,6 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                 ((ViewGroup) parent).removeView(splashOverlay);
             }
             splashOverlay = null;
-        }
-    }
-
-    private boolean isClosedTestBuildExpired() {
-        return System.currentTimeMillis() >= TEST_BUILD_EXPIRES_AT_EPOCH_MS;
-    }
-
-    private void showExpiredBuildGate() {
-        removeAnimatedIntro();
-        hideBanner();
-
-        if (expiredBuildOverlay != null) {
-            expiredBuildOverlay.bringToFront();
-            return;
-        }
-
-        final View decor = getWindow().getDecorView();
-        if (!(decor instanceof ViewGroup)) {
-            return;
-        }
-
-        final boolean polish = "pl".equalsIgnoreCase(
-                getResources().getConfiguration().getLocales().get(0).getLanguage());
-        expiredBuildOverlay = new FrameLayout(this);
-        expiredBuildOverlay.setBackgroundColor(Color.rgb(244, 251, 255));
-        expiredBuildOverlay.setClickable(true);
-        expiredBuildOverlay.setFocusable(true);
-        expiredBuildOverlay.setImportantForAccessibility(
-                View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-
-        final LinearLayout panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setGravity(Gravity.CENTER_HORIZONTAL);
-        panel.setPadding(dp(28), dp(28), dp(28), dp(28));
-
-        final int iconId = getResources().getIdentifier(
-                "icon", "mipmap", getPackageName());
-        if (iconId != 0) {
-            final ImageView icon = new ImageView(this);
-            icon.setImageResource(iconId);
-            icon.setContentDescription(null);
-            panel.addView(icon, new LinearLayout.LayoutParams(dp(132), dp(132)));
-        }
-
-        final TextView title = new TextView(this);
-        title.setText(polish ? "Wersja testowa wygasła" : "Test version expired");
-        title.setTextColor(Color.rgb(3, 30, 62));
-        title.setTextSize(25f);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setGravity(Gravity.CENTER);
-        final LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        titleParams.topMargin = dp(24);
-        panel.addView(title, titleParams);
-
-        final TextView message = new TextView(this);
-        message.setText(polish
-                ? "Ta wersja testowa działała do 15 lipca 2026. Pobierz aktualne wydanie Refrigeration Calc z Google Play."
-                : "This test build was available through 15 July 2026. Download the current Refrigeration Calc release from Google Play.");
-        message.setTextColor(Color.rgb(63, 80, 96));
-        message.setTextSize(16f);
-        message.setGravity(Gravity.CENTER);
-        message.setLineSpacing(0f, 1.15f);
-        final LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        messageParams.topMargin = dp(14);
-        panel.addView(message, messageParams);
-
-        final Button storeButton = new Button(this);
-        storeButton.setText(polish ? "Pobierz z Google Play" : "Get it on Google Play");
-        storeButton.setTextColor(Color.WHITE);
-        storeButton.setTextSize(16f);
-        storeButton.setAllCaps(false);
-        final GradientDrawable buttonBackground = new GradientDrawable();
-        buttonBackground.setColor(Color.rgb(27, 143, 228));
-        buttonBackground.setCornerRadius(dp(8));
-        storeButton.setBackground(buttonBackground);
-        storeButton.setOnClickListener(view -> openGooglePlayListing());
-        final LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(54));
-        buttonParams.topMargin = dp(26);
-        panel.addView(storeButton, buttonParams);
-
-        final FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER);
-        panelParams.leftMargin = dp(28);
-        panelParams.rightMargin = dp(28);
-        expiredBuildOverlay.addView(panel, panelParams);
-        ((ViewGroup) decor).addView(
-                expiredBuildOverlay,
-                new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT));
-        expiredBuildOverlay.bringToFront();
-
-        if (!storeRedirectLaunched) {
-            storeRedirectLaunched = true;
-            expiredBuildOverlay.postDelayed(this::openGooglePlayListing, 900L);
-        }
-    }
-
-    private void openGooglePlayListing() {
-        final String packageName = getPackageName();
-        final Intent marketIntent = new Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("market://details?id=" + packageName));
-        marketIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        try {
-            startActivity(marketIntent);
-        } catch (Exception ignored) {
-            final Intent webIntent = new Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
-            webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(webIntent);
         }
     }
 
@@ -1408,10 +1273,6 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     @Override
     protected void onResume() {
         super.onResume();
-        if (isClosedTestBuildExpired()) {
-            showExpiredBuildGate();
-            return;
-        }
         if (bannerAdView != null && !isProNoAdsActive()) {
             bannerAdView.resume();
         }
@@ -1431,24 +1292,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     }
 
     @Override
-    public void onBackPressed() {
-        if (isClosedTestBuildExpired()) {
-            showExpiredBuildGate();
-            return;
-        }
-        super.onBackPressed();
-    }
-
-    @Override
     protected void onDestroy() {
         removeAnimatedIntro();
-        if (expiredBuildOverlay != null) {
-            ViewParent parent = expiredBuildOverlay.getParent();
-            if (parent instanceof ViewGroup) {
-                ((ViewGroup) parent).removeView(expiredBuildOverlay);
-            }
-            expiredBuildOverlay = null;
-        }
         hideBanner();
         if (billingClient != null) {
             billingClient.endConnection();

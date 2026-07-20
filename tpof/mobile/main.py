@@ -108,6 +108,7 @@ def main() -> None:
             convert_display_amount,
             convert_display_amount_to_pln,
             default_exchange_rates,
+            format_exchange_rate,
             format_money,
             get_exchange_rates,
         )
@@ -185,6 +186,7 @@ def main() -> None:
             self._exchange_rates = default_exchange_rates()
             self._currency_refresh_running = False
             self._settings_currency_buttons = {}
+            self._settings_currency_rate_labels = {}
             self._settings_currency_auto_button = None
             self._settings_currency_status = None
             self._custom_product_dialog = None
@@ -3110,6 +3112,10 @@ def main() -> None:
             if dialog is not None:
                 dialog.dismiss()
                 self._settings_dialog = None
+            self._settings_currency_buttons = {}
+            self._settings_currency_rate_labels = {}
+            self._settings_currency_auto_button = None
+            self._settings_currency_status = None
 
         def _set_unit_system(self, unit_system: str):
             # TODO: Implement full Imperial/US input and output conversion before enabling.
@@ -3205,6 +3211,12 @@ def main() -> None:
             selected = getattr(self, "_display_currency", "PLN")
             for code, button in (getattr(self, "_settings_currency_buttons", {}) or {}).items():
                 self._style_app_button(button, "ice" if code == selected else "muted")
+            rates = getattr(self, "_exchange_rates", default_exchange_rates())
+            rate_labels = getattr(self, "_settings_currency_rate_labels", {}) or {}
+            for code, label in rate_labels.items():
+                label.text = format_exchange_rate(code, rates, self._language) or self._t(
+                    "settings_currency_rate_missing", currency=code
+                )
             auto_button = getattr(self, "_settings_currency_auto_button", None)
             auto_update = bool(getattr(self, "_currency_auto_update", True))
             if auto_button is not None:
@@ -3223,14 +3235,16 @@ def main() -> None:
                 from kivy.metrics import dp
                 from kivymd.uix.boxlayout import MDBoxLayout
                 from kivymd.uix.button import MDFlatButton, MDRaisedButton
+                from kivymd.uix.card import MDCard
                 from kivymd.uix.dialog import MDDialog
                 from kivymd.uix.label import MDLabel
 
                 content = MDBoxLayout(
                     orientation="vertical",
                     spacing=dp(10),
-                    adaptive_height=True,
+                    size_hint_y=None,
                 )
+                content.bind(minimum_height=content.setter("height"))
                 content.add_widget(
                     MDLabel(
                         text=self._t("settings_intro"),
@@ -3323,6 +3337,44 @@ def main() -> None:
                     self._settings_currency_buttons[code] = button
                     currency_row.add_widget(button)
                 content.add_widget(currency_row)
+
+                rates_card = MDCard(
+                    orientation="vertical",
+                    padding=[dp(12), dp(10), dp(12), dp(10)],
+                    spacing=dp(6),
+                    size_hint_y=None,
+                    height=dp(270),
+                    radius=[dp(14), dp(14), dp(14), dp(14)],
+                    elevation=2,
+                    md_bg_color=self._card_bg(),
+                )
+                rates_card.add_widget(
+                    MDLabel(
+                        text=self._t("settings_currency_rates_title"),
+                        theme_text_color="Custom",
+                        text_color=BRAND_ICE,
+                        font_style="Subtitle2",
+                        size_hint_y=None,
+                        height=dp(28),
+                    )
+                )
+                self._settings_currency_rate_labels = {}
+                for code in SUPPORTED_DISPLAY_CURRENCIES:
+                    rate_label = MDLabel(
+                        text="",
+                        theme_text_color="Primary",
+                        font_style="Body2",
+                        halign="center",
+                        valign="middle",
+                        size_hint_y=None,
+                        height=dp(32),
+                    )
+                    rate_label.bind(
+                        size=lambda widget, size: setattr(widget, "text_size", size)
+                    )
+                    self._settings_currency_rate_labels[code] = rate_label
+                    rates_card.add_widget(rate_label)
+
                 auto_row = MDBoxLayout(
                     orientation="horizontal",
                     size_hint_y=None,
@@ -3334,19 +3386,33 @@ def main() -> None:
                     on_release=lambda *_: self._toggle_currency_auto_update(),
                 )
                 auto_row.add_widget(self._settings_currency_auto_button)
-                content.add_widget(auto_row)
+                rates_card.add_widget(auto_row)
                 self._settings_currency_status = MDLabel(
                     text="",
                     theme_text_color="Hint",
                     font_style="Caption",
-                    adaptive_height=True,
+                    halign="center",
+                    valign="middle",
+                    size_hint_y=None,
+                    height=dp(54),
                 )
-                content.add_widget(self._settings_currency_status)
+                self._settings_currency_status.bind(
+                    size=lambda widget, size: setattr(widget, "text_size", size)
+                )
+                rates_card.add_widget(self._settings_currency_status)
+                content.add_widget(rates_card)
+
+                settings_scroll = MDScrollView(
+                    size_hint=(1, None),
+                    height=max(dp(300), min(dp(560), Window.height * 0.68)),
+                    do_scroll_x=False,
+                )
+                settings_scroll.add_widget(content)
                 self._update_currency_settings_ui()
                 self._settings_dialog = MDDialog(
                     title=self._t("settings_title"),
                     type="custom",
-                    content_cls=content,
+                    content_cls=settings_scroll,
                     buttons=[
                         MDFlatButton(
                             text=self._t("close"),

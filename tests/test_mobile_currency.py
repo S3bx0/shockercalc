@@ -5,6 +5,7 @@ from tpof.mobile.currency import (
     convert_display_amount,
     convert_display_amount_to_pln,
     fetch_nbp_exchange_rates,
+    format_exchange_rate,
     format_money,
     get_exchange_rates,
     load_cached_rates,
@@ -74,6 +75,18 @@ def test_format_money_is_only_a_presentation_conversion():
     assert format_money(original, "EUR", rates, "pl") == "10,00 EUR"
     assert format_money(original, "USD", rates, "en") == "20.00 USD"
     assert original == Decimal("40")
+
+
+def test_format_exchange_rate_shows_pln_per_unit_for_settings_card():
+    rates = ExchangeRates(
+        {"PLN": Decimal("1"), "EUR": Decimal("4.2519"), "USD": Decimal("3.905")}
+    )
+
+    assert format_exchange_rate("PLN", rates, "pl") == "1 PLN = 1,0000 PLN"
+    assert format_exchange_rate("EUR", rates, "pl") == "1 EUR = 4,2519 PLN"
+    assert format_exchange_rate("USD", rates, "en") == "1 USD = 3.9050 PLN"
+    assert format_exchange_rate("GBP", rates, "en") is None
+    assert format_exchange_rate("EUR", ExchangeRates({"PLN": Decimal("1")}), "en") is None
 
 
 def test_display_amount_is_converted_to_internal_pln():

@@ -4,5 +4,5 @@ Pakiet `tpof.core` zawiera logikę niezależną od UI (Tkinter/Kivy)
 — może być importowany zarówno przez aplikację desktopową, jak i mobilną.
 """
 
-__version__ = "1.5.10"
+__version__ = "1.5.11"
 __app_name__ = "Refrigeration Calc"

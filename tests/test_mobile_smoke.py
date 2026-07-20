@@ -174,6 +174,10 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert "def _refresh_exchange_rates_async" in source
     assert "SUPPORTED_DISPLAY_CURRENCIES" in source
     assert "self._preferences.set_display_currency(value)" in source
+    assert "settings_currency_rates_title" in source
+    assert "self._settings_currency_rate_labels" in source
+    assert "format_exchange_rate(code, rates, self._language)" in source
+    assert "content_cls=settings_scroll" in source
     assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in i18n_source
     assert languages.exists()
 
@@ -226,6 +230,8 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "Animation(progress=1.0, duration=0.75" in chart_source
     assert "prepare_cost_segments" in chart_source
     assert "Mesh(vertices=vertices" in chart_source
+    assert "gap = min(2.2, sweep * 0.18) if multiple_segments else 0.0" in chart_source
+    assert "font_size * available_width / measurement.texture.size[0]" in chart_source
     assert "ring_width + dp(5)" not in chart_source
     assert "self._labor_chart_dialog.size_hint_x = 0.94" in source
     assert "self.labor_chart_legend" in source

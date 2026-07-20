@@ -4,6 +4,31 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [1.5.11] - 2026-07-20
+
+### Dodano
+
+- Dodano przewijalną kartę kursów PLN, EUR i USD w ustawieniach. Karta pokazuje
+  wartość jednej jednostki każdej waluty w PLN, datę danych i źródło NBP.
+
+### Naprawiono
+
+- Bardzo małe, dodatnie koszty nie znikają już z wykresu robocizny przez zbyt
+  szeroką minimalną przerwę pomiędzy segmentami.
+- Kwota w środku wykresu jest automatycznie zmniejszana zamiast zawijania i
+  nachodzenia na etykietę kosztu całkowitego.
+- Ustawienia są przewijane na mniejszych ekranach po dodaniu karty kursów.
+
+### Usunięto
+
+- Usunięto całkowicie ograniczenie czasowe wersji testowej oraz ekran blokujący
+  aplikację po zapisanej w kodzie dacie.
+
+### Testy
+
+- Dodano test formatu wartości kursów w karcie ustawień i regresje układu karty
+  oraz renderowania małych segmentów wykresu.
+
 ## [1.5.10] - 2026-07-11
 
 ### Naprawiono
