@@ -38,7 +38,9 @@ def verify_legal_bundle(aab_path: Path) -> set[str]:
             raise ValueError(f"{aab_path}: missing assets/private.tar")
         private_tar = bundle.read(private_name)
 
-    with tarfile.open(fileobj=io.BytesIO(private_tar), mode="r:") as archive:
+    # Buildozer keeps the historical ``private.tar`` name even when the
+    # payload is gzip-compressed, so let tarfile detect the actual format.
+    with tarfile.open(fileobj=io.BytesIO(private_tar), mode="r:*") as archive:
         members = _normalized_tar_members(archive)
         missing = REQUIRED_LEGAL_FILES.difference(members)
         if missing:

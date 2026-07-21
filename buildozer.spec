@@ -9,7 +9,7 @@ package.domain = pl.smilczarek
 
 # Katalogi źródłowe
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,gif,webp,ttf,json,kv,atlas
+source.include_exts = py,png,jpg,jpeg,gif,webp,ttf,json,kv,atlas,0-only
 source.include_patterns = LICENSE,EULA,AI_USAGE_POLICY,THIRD_PARTY_NOTICES,legal/*
 source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets/watermark.png,assets/icon.png,assets/icon-192.png,assets/icon-48.png,assets/presplash.png,android/**,tpof/desktop/**
 source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia

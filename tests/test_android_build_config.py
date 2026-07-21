@@ -124,6 +124,7 @@ def test_launcher_uses_current_icon_as_static_presplash():
     assert "android.presplash_color = #FFFFFF" in spec
     assert "android.add_resources = %(source.dir)s/android/res" in spec
     assert "source.include_exts = py,png,jpg,jpeg,gif,webp" in spec
+    assert "atlas,0-only" in spec
     assert (
         "source.include_patterns = "
         "LICENSE,EULA,AI_USAGE_POLICY,THIRD_PARTY_NOTICES,legal/*"
