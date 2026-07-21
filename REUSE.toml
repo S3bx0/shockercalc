@@ -1,0 +1,49 @@
+version = 1
+SPDX-PackageName = "Refrigeration Calc"
+SPDX-PackageSupplier = "Sebastian Milczarek <milczarek.sebastian@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/S3bx0/shockercalc"
+
+[[annotations]]
+path = [
+    "tpof/**",
+    "android/**",
+    "tests/**",
+    "tools/**",
+    "docs/**",
+    ".github/**",
+    "main.py",
+    "run.py",
+    "p4a_hooks.py",
+    "buildozer.spec",
+    "pyproject.toml",
+    "requirements*.txt",
+    "README.md",
+    "ROADMAP.md",
+    "assets/Table3.json",
+    "assets/images/**",
+    "assets/brand/**",
+    "assets/store/**",
+    "assets/*.png",
+    ".well-known/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Sebastian Milczarek"
+SPDX-License-Identifier = "LicenseRef-RefrigerationCalc-Proprietary-1.0"
+
+[[annotations]]
+path = "assets/fonts/DejaVuSans.ttf"
+precedence = "override"
+SPDX-FileCopyrightText = "2003 Bitstream, Inc.; DejaVu font contributors"
+SPDX-License-Identifier = "LicenseRef-Bitstream-Vera"
+
+[[annotations]]
+path = ["legal/**", "THIRD_PARTY_NOTICES", "LICENSES/LicenseRef-Third-Party-Notices.txt"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Respective third-party copyright holders"
+SPDX-License-Identifier = "LicenseRef-Third-Party-Notices"
+
+[[annotations]]
+path = ["LICENSE", "EULA", "AI_USAGE_POLICY", "LICENSES/LicenseRef-RefrigerationCalc-Proprietary-1.0.txt", "REUSE.toml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Sebastian Milczarek"
+SPDX-License-Identifier = "LicenseRef-RefrigerationCalc-Proprietary-1.0"

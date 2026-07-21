@@ -69,6 +69,7 @@ from tpof.mobile.constants import (
     TEMP_LOW_WARNING_C,
 )
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
+from tpof.mobile.dialogs.legal import LegalDialogController
 from tpof.mobile.dialogs.settings import SettingsDialogController
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
@@ -77,7 +78,7 @@ from tpof.mobile.entitlements import (
 )
 from tpof.mobile.i18n import display_category, translate
 from tpof.mobile.layout import clamp, compute_metrics
-from tpof.mobile.paths import DATA_PATH
+from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.tabs.labor import LaborTabController, LaborTabPresenter
@@ -202,6 +203,10 @@ def main() -> None:
             self._last_labor_breakdown = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._legal_dialog_controller = LegalDialogController(
+                translate=self._t,
+                project_root=PROJECT_ROOT,
+            )
             self._settings_dialog_controller = SettingsDialogController(
                 translate=self._t,
                 style_button=self._style_app_button,
@@ -214,6 +219,7 @@ def main() -> None:
                 on_set_unit_system=self._set_unit_system,
                 on_set_display_currency=self._set_display_currency,
                 on_toggle_auto_update=self._toggle_currency_auto_update,
+                on_open_legal=self._open_legal_dialog,
             )
             self._labor_rates_dialog_controller = LaborRatesDialogController(
                 translate=self._t,
@@ -2898,6 +2904,11 @@ def main() -> None:
             self._close_product_dialog()
             if self._settings_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "general"})
+
+        def _open_legal_dialog(self):
+            self._close_settings_dialog()
+            if self._legal_dialog_controller.open():
+                telemetry.log_event("settings_opened", {"section": "legal"})
 
         def _close_privacy_dialog(self):
             dialog = getattr(self, "_privacy_dialog", None)

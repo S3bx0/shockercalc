@@ -1,0 +1,11 @@
+Refrigeration Calc — Source-Available Proprietary License 1.0
+SPDX-License-Identifier: LicenseRef-RefrigerationCalc-Proprietary-1.0
+Copyright © 2026 Sebastian Milczarek. All rights reserved.
+
+This SPDX LicenseRef identifies Author Materials governed by the complete
+license text in the repository-root LICENSE file. That complete LICENSE is
+incorporated here by reference and controls in case of any discrepancy.
+
+No permission is granted except the limited permission to view described in
+LICENSE. All AI and text-and-data-mining rights are expressly reserved.
+Permission contact: milczarek.sebastian@gmail.com

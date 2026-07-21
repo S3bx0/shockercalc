@@ -1,0 +1,5 @@
+This LicenseRef marks an aggregate notice containing multiple independent
+third-party works and license terms. The complete component-by-component
+copyright and license information is in the repository-root
+THIRD_PARTY_NOTICES file and in the upstream license files embedded with the
+packaged dependencies. No single license is asserted for the aggregate.

@@ -1,0 +1,145 @@
+Refrigeration Calc — End-User License Agreement 1.0
+Copyright © 2026 Sebastian Milczarek. All rights reserved.
+Effective date: 21 July 2026
+
+================================================================================
+POLSKI — WERSJA WIĄŻĄCA
+================================================================================
+
+Niniejsza umowa licencyjna („EULA”) dotyczy oficjalnej binarnej wersji
+aplikacji Refrigeration Calc udostępnianej przez Autora w Google Play lub innym
+wyraźnie wskazanym kanale.
+
+1. Udzielenie licencji
+
+Autor udziela użytkownikowi ograniczonej, niewyłącznej, niezbywalnej i
+niesublicencjonowalnej licencji na pobranie, zainstalowanie i używanie
+oficjalnej aplikacji na obsługiwanych urządzeniach do własnych, wewnętrznych
+celów prywatnych lub zawodowych. Zakupy, subskrypcje i zasady instalowania na
+urządzeniach podlegają również warunkom Google Play.
+
+2. Ograniczenia
+
+Bez pisemnej zgody Autora użytkownik nie może rozpowszechniać, odsprzedawać,
+wynajmować, sublicencjonować, publikować, modyfikować ani tworzyć utworów
+zależnych aplikacji; pozyskiwać kodu źródłowego; obchodzić płatności, reklamy,
+uprawnienia PRO lub zabezpieczenia; używać aplikacji albo jej danych do budowy
+konkurencyjnego produktu; ani używać ich do treningu lub działania systemów AI
+w sposób zabroniony w AI_USAGE_POLICY.
+
+Zakazy inżynierii wstecznej, dekompilacji i modyfikacji obowiązują wyłącznie w
+zakresie dozwolonym przez prawo. Nie ograniczają praw udzielonych przez licencje
+komponentów osób trzecich. W szczególności użytkownik może modyfikować,
+zastępować, ponownie łączyć i debugować komponenty objęte GNU LGPL w zakresie
+wymaganym przez LGPL. Informacje i odpowiedni kod wskazuje
+THIRD_PARTY_NOTICES.
+
+3. Własność i komponenty osób trzecich
+
+Autor zachowuje prawa do aplikacji i Materiałów Autora. Biblioteki, fonty,
+certyfikaty i inne komponenty osób trzecich zachowują własne licencje. Ich
+wykaz znajduje się w THIRD_PARTY_NOTICES i katalogu legal, dostępnych również z
+poziomu ustawień aplikacji.
+
+4. Obliczenia techniczne
+
+Aplikacja jest narzędziem pomocniczym. Wyniki nie są projektem wykonawczym,
+certyfikatem, poradą prawną ani gwarancją doboru urządzenia. Użytkownik powinien
+zweryfikować obliczenia, dane wejściowe, warunki instalacji, dokumentację
+producenta, normy oraz przepisy z udziałem odpowiednio wykwalifikowanej osoby.
+
+5. Dane, usługi zewnętrzne i internet
+
+Niektóre funkcje korzystają z Google Play, AdMob, Firebase, UMP lub NBP i mogą
+podlegać odrębnym warunkom oraz politykom prywatności. Zasady przetwarzania
+danych opisuje polityka prywatności aplikacji. Funkcje obliczeniowe mogą działać
+offline, natomiast reklamy, zakupy, telemetria za zgodą i aktualizacja kursów
+walut wymagają połączenia.
+
+6. Aktualizacje i zakończenie
+
+Autor może udostępniać aktualizacje, zmieniać funkcje lub zakończyć wsparcie z
+uwzględnieniem obowiązującego prawa i zobowiązań sklepu. Istotne naruszenie EULA
+powoduje wygaśnięcie licencji, z zachowaniem praw konsumenckich i licencji osób
+trzecich.
+
+7. Gwarancje i odpowiedzialność
+
+W maksymalnym zakresie dozwolonym przez prawo aplikacja jest udostępniana „tak
+jak jest”. Autor nie gwarantuje nieprzerwanego działania ani przydatności do
+konkretnego projektu. Żadne postanowienie EULA nie wyłącza ani nie ogranicza
+bezwzględnie obowiązujących praw konsumenta lub odpowiedzialności, której nie
+można zgodnie z prawem wyłączyć.
+
+8. Kontakt
+
+Pytania licencyjne: milczarek.sebastian@gmail.com
+
+================================================================================
+ENGLISH — INFORMATIONAL TRANSLATION
+================================================================================
+
+This EULA applies to the official Refrigeration Calc binary distributed by the
+Author through Google Play or another channel expressly designated by him.
+
+1. License grant
+
+The Author grants a limited, non-exclusive, non-transferable and
+non-sublicensable license to download, install and use the official application
+on supported devices for the user's own internal personal or professional
+purposes. Purchases, subscriptions and device installation are also governed
+by Google Play terms.
+
+2. Restrictions
+
+Without written permission, the user must not distribute, resell, rent,
+sublicense, publish, modify or create derivative works; obtain source code;
+circumvent payments, advertising, PRO entitlements or security; use the
+application or its data to build a competing product; or use it for AI systems
+as prohibited by AI_USAGE_POLICY.
+
+Reverse-engineering, decompilation and modification restrictions apply only to
+the extent permitted by law and do not restrict third-party license rights. In
+particular, the user may modify, replace, relink and debug GNU LGPL-covered
+components to the extent required by LGPL. THIRD_PARTY_NOTICES identifies the
+relevant information and code.
+
+3. Ownership and third-party components
+
+The Author retains rights in the application and Author Materials. Third-party
+libraries, fonts, certificates and other components retain their own licenses,
+listed in THIRD_PARTY_NOTICES and the legal directory and made accessible from
+the application's settings.
+
+4. Technical calculations
+
+The application is an auxiliary tool. Results are not an engineering design,
+certificate, legal advice or equipment-selection guarantee. Users must verify
+inputs, results, installation conditions, manufacturer documentation,
+standards and applicable law with a suitably qualified person.
+
+5. Data, third-party services and connectivity
+
+Some functions use Google Play, AdMob, Firebase, UMP or NBP and may be governed
+by separate terms and privacy policies. Processing is described in the
+application privacy policy. Calculations may operate offline, while ads,
+purchases, consent-based telemetry and currency updates require connectivity.
+
+6. Updates and termination
+
+The Author may provide updates, change features or discontinue support subject
+to applicable law and store obligations. A material breach terminates this
+license, without prejudice to consumer and third-party license rights.
+
+7. Warranty and liability
+
+To the maximum extent permitted by law, the application is provided “as is”.
+The Author does not promise uninterrupted operation or fitness for a specific
+project. Nothing in this EULA excludes mandatory consumer rights or liability
+that cannot lawfully be excluded.
+
+8. Contact
+
+Licensing questions: milczarek.sebastian@gmail.com
+
+If the Polish and English texts differ, the Polish text prevails.

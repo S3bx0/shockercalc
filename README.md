@@ -3,10 +3,17 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-> **⚠️ Oprogramowanie własnościowe.** Ten kod jest udostępniony publicznie
-> wyłącznie do wglądu. **Nie wolno** go kopiować, używać, modyfikować ani
-> rozpowszechniać bez pisemnej zgody autora. Szczegóły w pliku
-> [`LICENSE`](LICENSE).
+> **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
+> nie jest projektem open source. Kod jest dostępny wyłącznie na warunkach
+> [`LICENSE`](LICENSE), a wszystkie prawa do użycia w AI i text-and-data mining
+> są wyraźnie zastrzeżone w [`AI_USAGE_POLICY`](AI_USAGE_POLICY). Warunki dla
+> użytkowników oficjalnej aplikacji określa [`EULA`](EULA). Komponenty osób
+> trzecich zachowują własne licencje opisane w
+> [`THIRD_PARTY_NOTICES`](THIRD_PARTY_NOTICES).
+
+Instrukcje budowania i testowania poniżej są dokumentacją techniczną dla
+Autora i osób przez niego upoważnionych. Same w sobie nie udzielają prawa do
+uruchamiania, kompilowania ani modyfikowania programu.
 
 ## Struktura projektu
 

@@ -1,0 +1,148 @@
+Refrigeration Calc — Third-Party Notices
+Generated for mobile release 1.5.11 on 21 July 2026.
+
+Refrigeration Calc remains proprietary. The following components are not owned
+by Sebastian Milczarek and remain governed by their own licenses. Nothing in
+the Refrigeration Calc proprietary license limits rights granted by those
+licenses.
+
+Android runtime — direct components
+===================================
+
+Python 3.13.14
+  License: Python Software Foundation License 2.0
+  Source: https://www.python.org/downloads/release/python-31314/
+  Copyright © Python Software Foundation and contributors.
+
+Kivy 2.3.1
+  License: MIT
+  Source: https://github.com/kivy/kivy/tree/2.3.1
+  Copyright © Kivy Team and contributors.
+  Kivy also distributes Roboto/Roboto Mono under Apache-2.0, DejaVuSans under
+  its own permissive font license, and some historical UI material under
+  LGPL-2.1. See Kivy's LICENSE and bundled license files.
+
+KivyMD 1.2.0
+  License: MIT
+  Source: https://github.com/kivymd/KivyMD/tree/1.2.0
+  Copyright © KivyMD authors and contributors.
+  Bundled Roboto font: Apache-2.0. Material Design Icons font: SIL OFL-1.1.
+
+Pillow 11.3.0
+  License: MIT-CMU
+  Source: https://github.com/python-pillow/Pillow/tree/11.3.0
+  Copyright © Secret Labs AB, Fredrik Lundh and Pillow contributors.
+
+fpdf2 2.8.7
+  License: GNU LGPL-3.0-only
+  Source: https://github.com/py-pdf/fpdf2/tree/2.8.7
+  Package/source archive: https://pypi.org/project/fpdf2/2.8.7/
+  Copyright © fpdf2 authors and contributors.
+
+  Refrigeration Calc uses fpdf2 as a library for PDF generation. A copy of
+  LGPL-3.0 and the incorporated GPL-3.0 is included in legal/. The exact
+  application source and build scripts for a released binary are available at
+  the matching tag v<application-version> at:
+  https://github.com/S3bx0/shockercalc/tags
+
+  Recipients may modify, replace, relink and reverse engineer fpdf2 solely for
+  debugging modifications to that LGPL-covered component, as required by the
+  LGPL. Requests for additional corresponding material may be sent to
+  milczarek.sebastian@gmail.com.
+
+fontTools 4.63.0
+  License: MIT
+  Source: https://github.com/fonttools/fonttools/tree/4.63.0
+  Copyright © Just van Rossum, BeOpen.com, CNRI and contributors.
+
+defusedxml 0.7.1
+  License: Python Software Foundation License
+  Source: https://github.com/tiran/defusedxml/tree/v0.7.1
+  Copyright © Christian Heimes and contributors.
+
+certifi 2026.6.17
+  License: Mozilla Public License 2.0
+  Source: https://github.com/certifi/python-certifi
+  Package/source archive: https://pypi.org/project/certifi/2026.6.17/
+  Copyright © Kenneth Reitz and certifi contributors.
+  The CA bundle is derived from Mozilla's root-certificate collection.
+
+python-for-android, PyJNIus and Buildozer
+  License: MIT (individual project notices apply)
+  Sources:
+    https://github.com/kivy/python-for-android
+    https://github.com/kivy/pyjnius
+    https://github.com/kivy/buildozer
+  Copyright © their respective authors and contributors.
+
+Transitive Python packages present in the Android runtime include requests
+2.34.2, urllib3 2.7.0, idna 3.18, chardet 7.4.3, filetype 1.2.0, setuptools
+83.0.0 and six 1.17.0, together with dependencies vendored by setuptools.
+Their original dist-info license and notice files remain embedded in the
+application's Python bundle. Those package-native files are authoritative for
+the exact binary delivered to the user.
+
+Desktop-only direct components
+==============================
+
+Pillow 12.2.0 — MIT-CMU — https://pypi.org/project/Pillow/12.2.0/
+ReportLab 5.0.0 — BSD — https://pypi.org/project/reportlab/5.0.0/
+pypdf 6.13.3 — BSD-3-Clause — https://pypi.org/project/pypdf/6.13.3/
+ttkbootstrap 1.20.3 — MIT — https://pypi.org/project/ttkbootstrap/1.20.3/
+
+Android and Google SDK components
+=================================
+
+The application also depends on AndroidX Core 1.18.0, AndroidX Fragment 1.8.9,
+Google Mobile Ads 25.4.0, Google Play Billing 9.1.0, Google User Messaging
+Platform 4.0.0, Firebase Analytics 23.2.0, Firebase Crashlytics 20.0.6 and
+Firebase Remote Config 23.1.0. These components are distributed under their
+respective Google/Android SDK terms and, where applicable, Apache-2.0 and
+third-party open-source notices included by their publishers.
+
+  AndroidX licenses: https://source.android.com/docs/setup/about/licenses
+  Google APIs Terms: https://developers.google.com/terms
+  Google Mobile Ads SDK terms: https://developers.google.com/admob/terms
+  Google Play services terms: https://developers.google.com/android/terms
+
+Fonts and assets
+================
+
+assets/fonts/DejaVuSans.ttf
+  Copyright © 2003 Bitstream, Inc.; DejaVu changes are in the public domain.
+  License: Bitstream Vera font license with DejaVu additions.
+  Source and license: https://dejavu-fonts.github.io/License.html
+  The font file is a third-party component and is not covered by the
+  Refrigeration Calc proprietary license.
+
+Kivy/KivyMD may bundle Roboto, Roboto Mono, Material Design Icons and DejaVu
+font files under the licenses identified above. Product images, brand artwork
+and application data are Author Materials unless a file-specific notice says
+otherwise.
+
+Common permissive license notice
+================================
+
+For components identified above as MIT-licensed:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Additional license texts and authoritative upstream notices remain available
+from the source links above. If this list and an upstream notice differ, the
+upstream license shipped with the exact component controls.

@@ -30,6 +30,7 @@ def _controller(styles):
         on_set_unit_system=lambda _value: None,
         on_set_display_currency=lambda _value: None,
         on_toggle_auto_update=lambda: None,
+        on_open_legal=lambda: None,
     )
 
 

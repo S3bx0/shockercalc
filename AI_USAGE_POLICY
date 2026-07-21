@@ -1,0 +1,52 @@
+Refrigeration Calc — AI and Text-and-Data-Mining Policy 1.0
+Copyright © 2026 Sebastian Milczarek. All rights reserved.
+
+Machine-readable summary
+------------------------
+SPDX-License-Identifier: LicenseRef-RefrigerationCalc-Proprietary-1.0
+TDM-Reservation: 1
+AI-Training: prohibited
+AI-Fine-Tuning: prohibited
+AI-Evaluation: prohibited
+AI-Embeddings: prohibited
+AI-RAG-Indexing: prohibited
+AI-Prompt-Submission: prohibited
+Dataset-Inclusion: prohibited
+Automated-Code-Reconstruction: prohibited
+Permission-Contact: milczarek.sebastian@gmail.com
+
+POLSKI
+------
+
+Autor wyraźnie zastrzega prawa do eksploracji tekstów i danych w rozumieniu
+art. 4 ust. 3 dyrektywy (UE) 2019/790 oraz przepisów ją wdrażających.
+
+Bez uprzedniej pisemnej zgody Autora nie wolno kopiować, pobierać, scrapować,
+indeksować, osadzać, przesyłać ani w inny sposób przetwarzać należących do
+Autora elementów repozytorium w celu trenowania, dostrajania, testowania lub
+obsługi systemów uczenia maszynowego albo generatywnej AI. Zakaz obejmuje
+również zewnętrznych asystentów kodowania, publiczne i prywatne zbiory danych,
+embeddingi, bazy wektorowe i RAG oraz generowanie konkurencyjnych implementacji.
+
+Polityka nie zmienia licencji komponentów osób trzecich i nie ogranicza praw,
+których nie można wyłączyć. Nie wiąże Autora ani osób i usług wyraźnie
+upoważnionych przez Autora na piśmie w zakresie tego upoważnienia.
+
+ENGLISH
+-------
+
+The Author expressly reserves text-and-data-mining rights under Article 4(3)
+of Directive (EU) 2019/790 and implementing law.
+
+Without the Author's prior written permission, no Author-owned repository
+material may be copied, downloaded, scraped, indexed, embedded, submitted or
+otherwise processed to train, fine-tune, test or operate machine-learning or
+generative-AI systems. This includes external coding assistants, public or
+private datasets, embeddings, vector databases, RAG and generation of
+competing implementations.
+
+This policy does not change third-party licenses or restrict non-waivable
+rights. It does not bind the Author or persons and services expressly
+authorized in writing by the Author within that authorization.
+
+This policy supplements LICENSE. If they differ, LICENSE controls.
