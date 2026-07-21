@@ -16,6 +16,13 @@ REQUIRED_LEGAL_FILES = {
     "legal/GPL-3.0-only",
     "legal/LGPL-3.0-only",
 }
+CONTACT_EMAIL = "milczarek.sebastian1988@gmail.com"
+CONTACT_FILES = {
+    "LICENSE",
+    "EULA",
+    "AI_USAGE_POLICY",
+    "THIRD_PARTY_NOTICES",
+}
 
 
 def _normalized_tar_members(archive: tarfile.TarFile) -> dict[str, tarfile.TarInfo]:
@@ -67,6 +74,11 @@ def verify_legal_bundle(aab_path: Path) -> set[str]:
     for name, marker in checks.items():
         if marker not in contents[name]:
             raise ValueError(f"{aab_path}: {name} does not contain {marker!r}")
+    for name in CONTACT_FILES:
+        if CONTACT_EMAIL not in contents[name]:
+            raise ValueError(
+                f"{aab_path}: {name} does not contain contact {CONTACT_EMAIL!r}"
+            )
     return packaged
 
 

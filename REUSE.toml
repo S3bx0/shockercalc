@@ -1,6 +1,6 @@
 version = 1
 SPDX-PackageName = "Refrigeration Calc"
-SPDX-PackageSupplier = "Sebastian Milczarek <milczarek.sebastian@gmail.com>"
+SPDX-PackageSupplier = "Sebastian Milczarek <milczarek.sebastian1988@gmail.com>"
 SPDX-PackageDownloadLocation = "https://github.com/S3bx0/shockercalc"
 
 [[annotations]]
