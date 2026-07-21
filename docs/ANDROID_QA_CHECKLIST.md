@@ -27,9 +27,10 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 
 ## Build testowy
 
-- Stała `TEST_BUILD_EXPIRES_AT_EPOCH_MS` dotyczy wyłącznie zamkniętych testów.
-- Przed wydaniem produkcyjnym trzeba podbić `versionCode` i wyłączyć/usunąć
-  blokadę terminu testowego.
+- Blokada terminu testowego została całkowicie usunięta z Activity.
+- `tests/test_android_build_config.py` sprawdza, że stała, gate, overlay i tekst
+  wygasania nie wróciły do kodu.
+- Każdy build wysyłany do Google Play nadal musi mieć rosnący `versionCode`.
 
 ## TODO techniczne
 

@@ -1,6 +1,10 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-03: `tpof/mobile/main.py` ma ponad 4400 linii i zawiera jednocześnie motyw, lokalizację, widżety, dialogi, zakładki, integracje Androida oraz logikę ekranową. Dalsze zmiany warto robić etapami, bez zmiany wzorów obliczeniowych.
+Stan na 2026-07-21: `tpof/mobile/main.py` ma około 3500 linii. Motyw,
+lokalizacja, widżety, dialog ustawień, dialog stawek i budowa widoku robocizny
+są już wydzielone. W pliku nadal pozostają integracje Androida oraz orkiestracja
+logiki ekranowej. Dalsze zmiany robimy etapami, bez zmiany wzorów
+obliczeniowych.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
