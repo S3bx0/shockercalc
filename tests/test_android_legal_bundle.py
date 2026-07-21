@@ -12,7 +12,7 @@ from tools.verify_android_legal_bundle import (
 )
 
 
-def _write_aab(path, *, omitted=frozenset()):
+def _write_aab(path, *, omitted=frozenset(), compressed=True):
     markers = {
         "LICENSE": "LicenseRef-RefrigerationCalc-Proprietary-1.0",
         "EULA": "End-User License Agreement",
@@ -22,7 +22,8 @@ def _write_aab(path, *, omitted=frozenset()):
         "legal/LGPL-3.0-only": "GNU LESSER GENERAL PUBLIC LICENSE",
     }
     private = io.BytesIO()
-    with tarfile.open(fileobj=private, mode="w") as archive:
+    mode = "w:gz" if compressed else "w"
+    with tarfile.open(fileobj=private, mode=mode) as archive:
         for name, marker in markers.items():
             if name in omitted:
                 continue
@@ -34,9 +35,16 @@ def _write_aab(path, *, omitted=frozenset()):
         bundle.writestr("base/assets/private.tar", private.getvalue())
 
 
-def test_android_legal_bundle_accepts_complete_offline_notices(tmp_path):
+def test_android_legal_bundle_accepts_buildozer_gzip_private_tar(tmp_path):
     aab = tmp_path / "app.aab"
     _write_aab(aab)
+
+    assert verify_legal_bundle(aab) == REQUIRED_LEGAL_FILES
+
+
+def test_android_legal_bundle_accepts_uncompressed_private_tar(tmp_path):
+    aab = tmp_path / "app.aab"
+    _write_aab(aab, compressed=False)
 
     assert verify_legal_bundle(aab) == REQUIRED_LEGAL_FILES
 
