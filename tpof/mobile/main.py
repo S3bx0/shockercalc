@@ -35,15 +35,14 @@ from tpof.core import (
     load_products,
 )
 from tpof.labor import (
-    RATE_CONFIG_FIELDS,
-    default_rate_config,
-    rate_config_from_values,
-)
-from tpof.labor import (
     CalculationInput as LaborCalculationInput,
 )
 from tpof.labor import (
     calculate_cost_breakdown as calculate_labor_cost_breakdown,
+)
+from tpof.labor import (
+    default_rate_config,
+    rate_config_from_values,
 )
 from tpof.labor import (
     validate_calculation_inputs as validate_labor_inputs,
@@ -69,6 +68,8 @@ from tpof.mobile.constants import (
     TEMP_LOW_STRONG_WARNING_C,
     TEMP_LOW_WARNING_C,
 )
+from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
+from tpof.mobile.dialogs.settings import SettingsDialogController
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
     MODULE_VALVES,
@@ -79,6 +80,7 @@ from tpof.mobile.layout import clamp, compute_metrics
 from tpof.mobile.paths import DATA_PATH
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
+from tpof.mobile.tabs.labor import LaborTabController, LaborTabPresenter
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.validation import _numeric_input_filter
 
@@ -108,7 +110,6 @@ def main() -> None:
             convert_display_amount,
             convert_display_amount_to_pln,
             default_exchange_rates,
-            format_exchange_rate,
             format_money,
             get_exchange_rates,
         )
@@ -185,16 +186,9 @@ def main() -> None:
             self._currency_auto_update = self._preferences.currency_auto_update
             self._exchange_rates = default_exchange_rates()
             self._currency_refresh_running = False
-            self._settings_currency_buttons = {}
-            self._settings_currency_rate_labels = {}
-            self._settings_currency_auto_button = None
-            self._settings_currency_status = None
             self._custom_product_dialog = None
             self._privacy_dialog = None
-            self._settings_dialog = None
             self._telemetry_dialog = None
-            self._labor_rate_dialog = None
-            self._labor_rate_fields = {}
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
@@ -208,6 +202,60 @@ def main() -> None:
             self._last_labor_breakdown = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._settings_dialog_controller = SettingsDialogController(
+                translate=self._t,
+                style_button=self._style_app_button,
+                card_bg=self._card_bg,
+                get_display_currency=lambda: self._display_currency,
+                get_exchange_rates=lambda: self._exchange_rates,
+                get_language=lambda: self._language,
+                get_auto_update=lambda: self._currency_auto_update,
+                get_status_text=self._currency_settings_status_text,
+                on_set_unit_system=self._set_unit_system,
+                on_set_display_currency=self._set_display_currency,
+                on_toggle_auto_update=self._toggle_currency_auto_update,
+            )
+            self._labor_rates_dialog_controller = LaborRatesDialogController(
+                translate=self._t,
+                get_values=lambda: self._preferences.labor_rate_values,
+                save_values=self._preferences.set_labor_rate_values,
+                reset_values=self._preferences.reset_labor_rate_values,
+                clear_field_error=self._clear_field_error,
+                mark_field_error=self._mark_field_error,
+                numeric_input_filter=_numeric_input_filter,
+                invalidate_results=self._invalidate_labor_results,
+                show_message=self._show_error,
+                on_opened=lambda: telemetry.log_event(
+                    "settings_opened", {"section": "labor_rates"}
+                ),
+                on_saved=lambda: telemetry.log_event(
+                    "settings_saved", {"section": "labor_rates"}
+                ),
+                on_reset=lambda: telemetry.log_event(
+                    "settings_reset", {"section": "labor_rates"}
+                ),
+                report_exception=telemetry.record_exception,
+            )
+            self._labor_tab_presenter = LaborTabPresenter(
+                translate=self._t,
+                get_language=lambda: self._language,
+                chart_colors=LaborPieChart.SEGMENT_COLORS,
+            )
+            self._labor_tab_controller = LaborTabController(
+                translate=self._t,
+                card_bg=self._card_bg,
+                total_color=STAGE_COLORS["total"],
+                chart_factory=LaborPieChart,
+                numeric_input_filter=_numeric_input_filter,
+                additional_hint=self._labor_additional_hint,
+                register_themed_card=self._themed_cards.append,
+                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                on_toggle_highways=self._toggle_labor_highways,
+                on_toggle_additional=self._toggle_labor_additional,
+                on_calculate=self._calculate_labor,
+                on_open_rates=self._open_labor_rates_dialog,
+                on_open_chart=self._open_labor_chart_dialog,
+            )
 
             self.root_host = FloatLayout()
             with self.root_host.canvas.before:
@@ -258,9 +306,7 @@ def main() -> None:
                 dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
             )
             self.valve_scroll.size_hint = (1, 1)
-            self.labor_scroll = self._build_labor_tab(
-                dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
-            )
+            self.labor_scroll = self._build_labor_tab()
             self.labor_scroll.size_hint = (1, 1)
             self.tab_content_host.add_widget(self.scroll)
             self.tab_content_host.add_widget(self.valve_scroll)
@@ -1751,251 +1797,38 @@ def main() -> None:
             scroll.add_widget(content)
             return scroll
 
-        def _build_labor_tab(self, dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
-            scroll = MDScrollView()
-            content = MDBoxLayout(
-                orientation="vertical",
-                padding=[dp(16), dp(14), dp(16), dp(18)],
-                spacing=dp(14),
-                size_hint_y=None,
-            )
-            content.bind(minimum_height=content.setter("height"))
-
-            card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(10),
-                size_hint_y=None,
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            card.bind(minimum_height=card.setter("height"))
-            self._themed_cards.append(card)
-            self.labor_card = card
-
-            self.labor_lbl_title = MDLabel(
-                text=self._t("labor_title"),
-                font_style="H6",
-                size_hint_y=None,
-                height=dp(36),
-            )
-            card.add_widget(self.labor_lbl_title)
-
-            self.labor_lbl_hint = MDLabel(
-                text=self._t("labor_hint"),
-                font_style="Caption",
-                theme_text_color="Hint",
-                size_hint_y=None,
-                height=dp(38),
-            )
-            card.add_widget(self.labor_lbl_hint)
-
-            self.labor_in_people = MDTextField(
-                hint_text=self._t("labor_people"), input_filter="int"
-            )
-            self.labor_in_days = MDTextField(
-                hint_text=self._t("labor_days"), input_filter="int"
-            )
-            self.labor_in_distance = MDTextField(
-                hint_text=self._t("labor_distance"), input_filter="int"
-            )
-            self.labor_in_lifts = MDTextField(
-                hint_text=self._t("labor_lifts"), input_filter="int"
-            )
-            self.labor_in_containers = MDTextField(
-                hint_text=self._t("labor_containers"), input_filter="int"
-            )
-            for field in (
-                self.labor_in_people,
-                self.labor_in_days,
-                self.labor_in_distance,
-                self.labor_in_lifts,
-                self.labor_in_containers,
-            ):
-                field.size_hint_y = None
-                field.height = dp(60)
-                card.add_widget(field)
-
-            toggle_row = MDBoxLayout(
-                orientation="horizontal",
-                spacing=dp(8),
-                size_hint_y=None,
-                height=dp(46),
-            )
-            self.labor_btn_highways = MDRaisedButton(
-                text=self._t("labor_highways_off"),
-                size_hint_x=0.5,
-                size_hint_y=None,
-                height=dp(44),
-                font_size="13sp",
-                on_release=lambda *_: self._toggle_labor_highways(),
-            )
-            self.labor_btn_additional = MDRaisedButton(
-                text=self._t("labor_additional_off"),
-                size_hint_x=0.5,
-                size_hint_y=None,
-                height=dp(44),
-                font_size="13sp",
-                on_release=lambda *_: self._toggle_labor_additional(),
-            )
-            toggle_row.add_widget(self.labor_btn_highways)
-            toggle_row.add_widget(self.labor_btn_additional)
-            card.add_widget(toggle_row)
-
-            self.labor_in_additional = MDTextField(
-                hint_text=self._labor_additional_hint(), input_filter=_numeric_input_filter
-            )
-            self.labor_in_additional.size_hint_y = None
-            self.labor_in_additional.height = dp(60)
-            self.labor_additional_box = MDBoxLayout(
-                orientation="vertical", size_hint_y=None, height=0
-            )
-            self.labor_additional_box.add_widget(self.labor_in_additional)
-            card.add_widget(self.labor_additional_box)
-
-            self.labor_btn_calc = MDRaisedButton(
-                text=self._t("labor_calculate"),
-                icon="calculator-variant",
-                size_hint_x=0.64,
-                size_hint_y=None,
-                height=dp(50),
-                font_size="15sp",
-                on_release=lambda *_: self._calculate_labor(),
-            )
-            self.labor_btn_rates = MDRaisedButton(
-                text=self._t("labor_rates_button"),
-                icon="tune-variant",
-                size_hint_x=0.36,
-                size_hint_y=None,
-                height=dp(50),
-                font_size="13sp",
-                on_release=lambda *_: self._open_labor_rates_dialog(),
-            )
-            action_row = MDBoxLayout(
-                orientation="horizontal",
-                spacing=dp(8),
-                size_hint_y=None,
-                height=dp(52),
-            )
-            action_row.add_widget(self.labor_btn_rates)
-            action_row.add_widget(self.labor_btn_calc)
-            card.add_widget(action_row)
-            content.add_widget(card)
-
-            result_card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(8),
-                size_hint_y=None,
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            result_card.bind(minimum_height=result_card.setter("height"))
-            self._themed_cards.append(result_card)
-            self.labor_result_card = result_card
-
-            self.labor_lbl_result = MDLabel(
-                text=self._t("labor_result"),
-                font_style="H6",
-                size_hint_y=None,
-                height=dp(36),
-            )
-            result_card.add_widget(self.labor_lbl_result)
-            self.labor_lbl_total = MDLabel(
-                text=self._t("labor_total_cost", value="—"),
-                font_style="H6",
-                halign="center",
-                size_hint_y=None,
-                height=dp(44),
-                theme_text_color="Custom",
-                text_color=STAGE_COLORS["total"],
-            )
-            result_card.add_widget(self.labor_lbl_total)
-            self.labor_currency_note = MDLabel(
-                text=self._t("labor_currency_note_pln"),
-                halign="center",
-                size_hint_y=None,
-                height=dp(30),
-                theme_text_color="Hint",
-                font_style="Caption",
-            )
-            result_card.add_widget(self.labor_currency_note)
-            self.labor_chart = LaborPieChart(
-                size_hint_y=None,
-                height=dp(210),
-                on_release=lambda *_: self._open_labor_chart_dialog(),
-            )
-            result_card.add_widget(self.labor_chart)
-            self.labor_chart_hint = MDLabel(
-                text=self._t("labor_chart_empty"),
-                halign="center",
-                size_hint_y=None,
-                height=dp(24),
-                theme_text_color="Hint",
-                font_style="Caption",
-            )
-            result_card.add_widget(self.labor_chart_hint)
-            self.labor_chart_legend = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(3),
-                size_hint_y=None,
-                height=0,
-            )
-            result_card.add_widget(self.labor_chart_legend)
-
-            self.labor_result_labels = {}
-            for attr, key in (
-                ("labor_cost", "labor_labor_cost"),
-                ("travel_cost", "labor_travel_cost"),
-                ("lift_cost", "labor_lift_cost"),
-                ("container_cost", "labor_container_cost"),
-                ("hotel_cost", "labor_hotel_cost"),
-                ("allowance_cost", "labor_allowance_cost"),
-                ("regenerative_meal_cost", "labor_meal_cost"),
-                ("additional_costs_value", "labor_additional_costs"),
-            ):
-                label = MDLabel(
-                    text=self._t(key, value="—"),
-                    size_hint_y=None,
-                    height=dp(28),
-                    theme_text_color="Secondary",
-                )
-                self.labor_result_labels[attr] = (label, key)
-            self.labor_lbl_mode = MDLabel(
-                text=self._t("labor_travel_mode", value="—"),
-                size_hint_y=None,
-                height=dp(28),
-                theme_text_color="Secondary",
-            )
-            self.labor_lbl_details = MDLabel(
-                text=self._t("labor_travel_details", trips="—", toll_days="—", nights="—"),
-                size_hint_y=None,
-                height=dp(32),
-                theme_text_color="Hint",
-                font_style="Caption",
-            )
-            result_card.add_widget(self.labor_lbl_mode)
-            result_card.add_widget(self.labor_lbl_details)
-            content.add_widget(result_card)
-
-            self._bind_keyboard_scroll(
-                (
-                    self.labor_in_people,
-                    self.labor_in_days,
-                    self.labor_in_distance,
-                    self.labor_in_lifts,
-                    self.labor_in_containers,
-                    self.labor_in_additional,
-                ),
-                scroll,
-            )
-            scroll.add_widget(content)
+        def _build_labor_tab(self):
+            view = self._labor_tab_controller.build()
+            # Tymczasowa warstwa zgodności. Kolejny etap przeniesie odczyt
+            # widgetów i stan obliczeń bezpośrednio do kontrolera zakładki.
+            self.labor_card = view.input_card
+            self.labor_lbl_title = view.title_label
+            self.labor_lbl_hint = view.hint_label
+            self.labor_in_people = view.people_input
+            self.labor_in_days = view.days_input
+            self.labor_in_distance = view.distance_input
+            self.labor_in_lifts = view.lifts_input
+            self.labor_in_containers = view.containers_input
+            self.labor_btn_highways = view.highways_button
+            self.labor_btn_additional = view.additional_button
+            self.labor_in_additional = view.additional_input
+            self.labor_additional_box = view.additional_box
+            self.labor_btn_calc = view.calculate_button
+            self.labor_btn_rates = view.rates_button
+            self.labor_result_card = view.result_card
+            self.labor_lbl_result = view.result_title_label
+            self.labor_lbl_total = view.total_label
+            self.labor_currency_note = view.currency_note
+            self.labor_chart = view.chart
+            self.labor_chart_hint = view.chart_hint
+            self.labor_chart_legend = view.chart_legend
+            self.labor_result_labels = view.result_labels
+            self.labor_lbl_mode = view.travel_mode_label
+            self.labor_lbl_details = view.travel_details_label
             self._set_labor_highways(False)
             self._set_labor_additional_enabled(False)
             self._render_labor_results(None)
-            return scroll
+            return view.scroll
 
         def _set_labor_highways(self, enabled: bool):
             self._labor_use_highways = bool(enabled)
@@ -2151,43 +1984,10 @@ def main() -> None:
             return True
 
         def _labor_travel_mode_text(self, mode: str) -> str:
-            if self._language == "pl":
-                return mode
-            if mode == "Dojazd dzienny":
-                return "Daily travel"
-            if mode == "Delegacja tygodniowa":
-                return "Weekly delegation"
-            return mode
+            return self._labor_tab_presenter.travel_mode_text(mode)
 
         def _labor_chart_rows(self, breakdown):
-            if breakdown is None:
-                return []
-            label_keys = (
-                ("labor_cost", "labor_labor_cost"),
-                ("travel_cost", "labor_travel_cost"),
-                ("lift_cost", "labor_lift_cost"),
-                ("container_cost", "labor_container_cost"),
-                ("hotel_cost", "labor_hotel_cost"),
-                ("allowance_cost", "labor_allowance_cost"),
-                ("regenerative_meal_cost", "labor_meal_cost"),
-                ("additional_costs_value", "labor_additional_costs"),
-            )
-            colors = dict(LaborPieChart.SEGMENT_COLORS)
-            total = Decimal("0")
-            values = []
-            for attr, key in label_keys:
-                value = Decimal(str(getattr(breakdown, attr, Decimal("0")) or "0"))
-                if value <= 0:
-                    continue
-                total += value
-                label = self._t(key, value="").split(":")[0].strip()
-                values.append((attr, label, value, colors.get(attr, (0.79, 0.96, 1.0, 1.0))))
-            if total <= 0:
-                return []
-            return [
-                (attr, label, value, float((value / total) * Decimal("100")), color)
-                for attr, label, value, color in values
-            ]
+            return self._labor_tab_presenter.chart_rows(breakdown)
 
         def _format_labor_chart_money(self, value) -> str:
             return self._format_labor_money(value)
@@ -2195,8 +1995,13 @@ def main() -> None:
         def _set_labor_chart_data(self, chart, breakdown, *, animate: bool = True):
             rows = self._labor_chart_rows(breakdown)
             items = [
-                {"key": attr, "label": label, "value": value, "color": color}
-                for attr, label, value, _percent, color in rows
+                {
+                    "key": row.key,
+                    "label": row.label,
+                    "value": row.value,
+                    "color": row.color,
+                }
+                for row in rows
             ]
             total = "—" if breakdown is None else self._format_labor_money(breakdown.total_cost)
             chart.set_dark(self.theme_cls.theme_style == "Dark")
@@ -2223,7 +2028,7 @@ def main() -> None:
                 return
             shown = rows[:4]
             legend.height = len(shown) * dp(42)
-            for _attr, label, value, percent, color in shown:
+            for chart_row in shown:
                 row = MDBoxLayout(
                     orientation="horizontal",
                     spacing=dp(8),
@@ -2236,10 +2041,10 @@ def main() -> None:
                     pos_hint={"center_y": 0.5},
                     radius=[dp(3), dp(3), dp(3), dp(3)],
                     elevation=0,
-                    md_bg_color=color,
+                    md_bg_color=chart_row.color,
                 )
                 name = MDLabel(
-                    text=label,
+                    text=chart_row.label,
                     theme_text_color="Primary",
                     font_size="12sp",
                     size_hint_x=0.47,
@@ -2247,7 +2052,10 @@ def main() -> None:
                 )
                 name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
                 amount = MDLabel(
-                    text=f"{percent:.1f}% · {self._format_labor_chart_money(value)}",
+                    text=(
+                        f"{chart_row.percent:.1f}% · "
+                        f"{self._format_labor_chart_money(chart_row.value)}"
+                    ),
                     halign="right",
                     valign="middle",
                     theme_text_color="Primary",
@@ -2296,7 +2104,7 @@ def main() -> None:
                 size_hint_y=None,
             )
             detail_list.bind(minimum_height=detail_list.setter("height"))
-            for _attr, label, value, percent, color in rows:
+            for chart_row in rows:
                 row = MDBoxLayout(
                     orientation="horizontal",
                     spacing=dp(8),
@@ -2309,10 +2117,10 @@ def main() -> None:
                     pos_hint={"center_y": 0.5},
                     radius=[dp(3), dp(3), dp(3), dp(3)],
                     elevation=0,
-                    md_bg_color=color,
+                    md_bg_color=chart_row.color,
                 )
                 name = MDLabel(
-                    text=label,
+                    text=chart_row.label,
                     theme_text_color="Primary",
                     font_size="12sp",
                     size_hint_x=0.48,
@@ -2320,7 +2128,10 @@ def main() -> None:
                 )
                 name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
                 amount = MDLabel(
-                    text=f"{self._format_labor_chart_money(value)} · {percent:.1f}%",
+                    text=(
+                        f"{self._format_labor_chart_money(chart_row.value)} · "
+                        f"{chart_row.percent:.1f}%"
+                    ),
                     halign="right",
                     valign="middle",
                     theme_text_color="Primary",
@@ -2389,135 +2200,15 @@ def main() -> None:
                 self._preferences.reset_labor_rate_values()
                 return default_rate_config()
 
-        def _close_labor_rates_dialog(self):
-            dialog = getattr(self, "_labor_rate_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._labor_rate_dialog = None
-
-        def _labor_rate_text_values(self):
-            values = self._preferences.labor_rate_values
-            return {key: str(values.get(key, "")) for key in RATE_CONFIG_FIELDS}
-
         def _open_labor_rates_dialog(self):
             if not self._pro_no_ads:
                 self._show_error(self._t("labor_rates_pro_required"))
                 return
-            self._close_labor_rates_dialog()
-            try:
-                from kivy.metrics import dp
-                from kivy.uix.scrollview import ScrollView
-                from kivymd.uix.boxlayout import MDBoxLayout
-                from kivymd.uix.button import MDFlatButton, MDRaisedButton
-                from kivymd.uix.dialog import MDDialog
-                from kivymd.uix.label import MDLabel
-                from kivymd.uix.textfield import MDTextField
-
-                outer = MDBoxLayout(
-                    orientation="vertical",
-                    spacing=dp(8),
-                    size_hint_y=None,
-                    height=dp(540),
-                )
-                outer.add_widget(
-                    MDLabel(
-                        text=self._t("labor_rates_intro"),
-                        theme_text_color="Hint",
-                        font_style="Caption",
-                        adaptive_height=True,
-                    )
-                )
-                scroll = ScrollView()
-                form = MDBoxLayout(
-                    orientation="vertical",
-                    spacing=dp(8),
-                    padding=[0, dp(4), dp(8), dp(8)],
-                    size_hint_y=None,
-                )
-                form.bind(minimum_height=form.setter("height"))
-                self._labor_rate_fields = {}
-                values = self._labor_rate_text_values()
-                for key in RATE_CONFIG_FIELDS:
-                    field = MDTextField(
-                        hint_text=self._t(f"labor_rate_{key}"),
-                        text=values.get(key, ""),
-                        input_filter="int" if key == "workdays_per_week" else _numeric_input_filter,
-                        size_hint_y=None,
-                        height=dp(62),
-                    )
-                    field.bind(
-                        text=lambda widget, _value: self._clear_field_error(widget)
-                    )
-                    self._labor_rate_fields[key] = field
-                    form.add_widget(field)
-                scroll.add_widget(form)
-                outer.add_widget(scroll)
-
-                self._labor_rate_dialog = MDDialog(
-                    title=self._t("labor_rates_title"),
-                    type="custom",
-                    content_cls=outer,
-                    buttons=[
-                        MDFlatButton(
-                            text=self._t("labor_rates_factory"),
-                            on_release=lambda *_: self._reset_labor_rates(),
-                        ),
-                        MDFlatButton(
-                            text=self._t("cancel"),
-                            on_release=lambda *_: self._close_labor_rates_dialog(),
-                        ),
-                        MDRaisedButton(
-                            text=self._t("save"),
-                            on_release=lambda *_: self._save_labor_rates(),
-                        ),
-                    ],
-                )
-                self._labor_rate_dialog.open()
-                telemetry.log_event("settings_opened", {"section": "labor_rates"})
-            except Exception as exc:
-                telemetry.record_exception(exc, "open_labor_rates")
-                log.exception("Formularz stawek robocizny")
-                self._show_error(self._t("calc_error", error=exc))
+            self._labor_rates_dialog_controller.open()
 
         def _invalidate_labor_results(self):
             self._last_labor_breakdown = None
             self._render_labor_results(None)
-
-        def _mark_labor_rate_errors(self, message: str):
-            fields = getattr(self, "_labor_rate_fields", {})
-            marked = False
-            for key, field in fields.items():
-                if key in message:
-                    self._mark_field_error(field)
-                    marked = True
-            if not marked:
-                for field in fields.values():
-                    self._mark_field_error(field)
-
-        def _save_labor_rates(self):
-            fields = getattr(self, "_labor_rate_fields", {})
-            values = {key: field.text for key, field in fields.items()}
-            try:
-                self._preferences.set_labor_rate_values(values)
-            except ValueError as exc:
-                message = str(exc)
-                self._mark_labor_rate_errors(message)
-                self._show_error(self._t("labor_rates_invalid", message=message))
-                return
-            self._invalidate_labor_results()
-            self._close_labor_rates_dialog()
-            self._show_error(self._t("labor_rates_saved"))
-            telemetry.log_event("settings_saved", {"section": "labor_rates"})
-
-        def _reset_labor_rates(self):
-            self._preferences.reset_labor_rate_values()
-            values = self._labor_rate_text_values()
-            for key, field in getattr(self, "_labor_rate_fields", {}).items():
-                field.text = values.get(key, "")
-                self._clear_field_error(field)
-            self._invalidate_labor_results()
-            self._show_error(self._t("labor_rates_reset"))
-            telemetry.log_event("settings_reset", {"section": "labor_rates"})
 
         def _calculate_labor(self):
             from kivy.metrics import dp
@@ -3108,14 +2799,7 @@ def main() -> None:
                 telemetry.log_event("telemetry_enabled")
 
         def _close_settings_dialog(self):
-            dialog = getattr(self, "_settings_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._settings_dialog = None
-            self._settings_currency_buttons = {}
-            self._settings_currency_rate_labels = {}
-            self._settings_currency_auto_button = None
-            self._settings_currency_status = None
+            self._settings_dialog_controller.close()
 
         def _set_unit_system(self, unit_system: str):
             # TODO: Implement full Imperial/US input and output conversion before enabling.
@@ -3208,222 +2892,12 @@ def main() -> None:
             self._refresh_exchange_rates_async(notify=True)
 
         def _update_currency_settings_ui(self):
-            selected = getattr(self, "_display_currency", "PLN")
-            for code, button in (getattr(self, "_settings_currency_buttons", {}) or {}).items():
-                self._style_app_button(button, "ice" if code == selected else "muted")
-            rates = getattr(self, "_exchange_rates", default_exchange_rates())
-            rate_labels = getattr(self, "_settings_currency_rate_labels", {}) or {}
-            for code, label in rate_labels.items():
-                label.text = format_exchange_rate(code, rates, self._language) or self._t(
-                    "settings_currency_rate_missing", currency=code
-                )
-            auto_button = getattr(self, "_settings_currency_auto_button", None)
-            auto_update = bool(getattr(self, "_currency_auto_update", True))
-            if auto_button is not None:
-                auto_button.text = self._t(
-                    "settings_currency_auto_on" if auto_update else "settings_currency_auto_off"
-                )
-                self._style_app_button(auto_button, "ice" if auto_update else "muted")
-            status = getattr(self, "_settings_currency_status", None)
-            if status is not None:
-                status.text = self._currency_settings_status_text()
+            self._settings_dialog_controller.refresh()
 
         def _open_settings_dialog(self):
-            """Menu ustawień pod lewą śnieżynką; gotowe na kolejne sekcje."""
             self._close_product_dialog()
-            try:
-                from kivy.metrics import dp
-                from kivymd.uix.boxlayout import MDBoxLayout
-                from kivymd.uix.button import MDFlatButton, MDRaisedButton
-                from kivymd.uix.card import MDCard
-                from kivymd.uix.dialog import MDDialog
-                from kivymd.uix.label import MDLabel
-
-                content = MDBoxLayout(
-                    orientation="vertical",
-                    spacing=dp(10),
-                    size_hint_y=None,
-                )
-                content.bind(minimum_height=content.setter("height"))
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("settings_intro"),
-                        theme_text_color="Hint",
-                        font_style="Body2",
-                        adaptive_height=True,
-                    )
-                )
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("units_title"),
-                        theme_text_color="Custom",
-                        text_color=BRAND_ICE,
-                        font_style="Subtitle1",
-                        adaptive_height=True,
-                    )
-                )
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("units_metric_active"),
-                        theme_text_color="Custom",
-                        text_color=(0.85, 0.98, 1.0, 1),
-                        font_style="Body2",
-                        adaptive_height=True,
-                    )
-                )
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("units_imperial_disabled"),
-                        theme_text_color="Hint",
-                        font_style="Caption",
-                        adaptive_height=True,
-                    )
-                )
-                metric_row = MDBoxLayout(
-                    orientation="horizontal",
-                    size_hint_y=None,
-                    height=dp(42),
-                )
-                metric_button = MDRaisedButton(
-                    text=self._t("units_metric"),
-                    size_hint_x=1,
-                    on_release=lambda *_: self._set_unit_system("metric"),
-                )
-                self._style_app_button(metric_button, "ice")
-                metric_row.add_widget(metric_button)
-                content.add_widget(metric_row)
-                imperial_row = MDBoxLayout(
-                    orientation="horizontal",
-                    size_hint_y=None,
-                    height=dp(42),
-                )
-                imperial_button = MDFlatButton(
-                    text=self._t("units_imperial"),
-                    size_hint_x=1,
-                    disabled=True,
-                )
-                imperial_row.add_widget(imperial_button)
-                content.add_widget(imperial_row)
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("settings_currency_title"),
-                        theme_text_color="Custom",
-                        text_color=BRAND_ICE,
-                        font_style="Subtitle1",
-                        adaptive_height=True,
-                    )
-                )
-                content.add_widget(
-                    MDLabel(
-                        text=self._t("settings_currency_hint"),
-                        theme_text_color="Hint",
-                        font_style="Caption",
-                        adaptive_height=True,
-                    )
-                )
-                self._settings_currency_buttons = {}
-                currency_row = MDBoxLayout(
-                    orientation="horizontal",
-                    spacing=dp(8),
-                    size_hint_y=None,
-                    height=dp(42),
-                )
-                for code in SUPPORTED_DISPLAY_CURRENCIES:
-                    button = MDRaisedButton(
-                        text=code,
-                        size_hint_x=1,
-                        on_release=lambda _button, selected=code: self._set_display_currency(selected),
-                    )
-                    self._settings_currency_buttons[code] = button
-                    currency_row.add_widget(button)
-                content.add_widget(currency_row)
-
-                rates_card = MDCard(
-                    orientation="vertical",
-                    padding=[dp(12), dp(10), dp(12), dp(10)],
-                    spacing=dp(6),
-                    size_hint_y=None,
-                    height=dp(270),
-                    radius=[dp(14), dp(14), dp(14), dp(14)],
-                    elevation=2,
-                    md_bg_color=self._card_bg(),
-                )
-                rates_card.add_widget(
-                    MDLabel(
-                        text=self._t("settings_currency_rates_title"),
-                        theme_text_color="Custom",
-                        text_color=BRAND_ICE,
-                        font_style="Subtitle2",
-                        size_hint_y=None,
-                        height=dp(28),
-                    )
-                )
-                self._settings_currency_rate_labels = {}
-                for code in SUPPORTED_DISPLAY_CURRENCIES:
-                    rate_label = MDLabel(
-                        text="",
-                        theme_text_color="Primary",
-                        font_style="Body2",
-                        halign="center",
-                        valign="middle",
-                        size_hint_y=None,
-                        height=dp(32),
-                    )
-                    rate_label.bind(
-                        size=lambda widget, size: setattr(widget, "text_size", size)
-                    )
-                    self._settings_currency_rate_labels[code] = rate_label
-                    rates_card.add_widget(rate_label)
-
-                auto_row = MDBoxLayout(
-                    orientation="horizontal",
-                    size_hint_y=None,
-                    height=dp(42),
-                )
-                self._settings_currency_auto_button = MDRaisedButton(
-                    text="",
-                    size_hint_x=1,
-                    on_release=lambda *_: self._toggle_currency_auto_update(),
-                )
-                auto_row.add_widget(self._settings_currency_auto_button)
-                rates_card.add_widget(auto_row)
-                self._settings_currency_status = MDLabel(
-                    text="",
-                    theme_text_color="Hint",
-                    font_style="Caption",
-                    halign="center",
-                    valign="middle",
-                    size_hint_y=None,
-                    height=dp(54),
-                )
-                self._settings_currency_status.bind(
-                    size=lambda widget, size: setattr(widget, "text_size", size)
-                )
-                rates_card.add_widget(self._settings_currency_status)
-                content.add_widget(rates_card)
-
-                settings_scroll = MDScrollView(
-                    size_hint=(1, None),
-                    height=max(dp(300), min(dp(560), Window.height * 0.68)),
-                    do_scroll_x=False,
-                )
-                settings_scroll.add_widget(content)
-                self._update_currency_settings_ui()
-                self._settings_dialog = MDDialog(
-                    title=self._t("settings_title"),
-                    type="custom",
-                    content_cls=settings_scroll,
-                    buttons=[
-                        MDFlatButton(
-                            text=self._t("close"),
-                            on_release=lambda *_: self._close_settings_dialog(),
-                        ),
-                    ],
-                )
-                self._settings_dialog.open()
+            if self._settings_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "general"})
-            except Exception:
-                log.exception("Ustawienia aplikacji")
 
         def _close_privacy_dialog(self):
             dialog = getattr(self, "_privacy_dialog", None)

@@ -73,6 +73,9 @@ files = [
     "tpof/mobile/paths.py",
     "tpof/mobile/android_bridge.py",
     "tpof/mobile/pdf_export.py",
+    "tpof/mobile/dialogs/labor_rates.py",
+    "tpof/mobile/dialogs/settings.py",
+    "tpof/mobile/tabs/labor.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

@@ -164,6 +164,7 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/main.py")
+    settings_source = _source("tpof/mobile/dialogs/settings.py")
     i18n_source = _source("tpof/mobile/i18n.py")
     languages = ROOT / "resources" / "strings" / "languages.json"
 
@@ -174,25 +175,50 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert "def _refresh_exchange_rates_async" in source
     assert "SUPPORTED_DISPLAY_CURRENCIES" in source
     assert "self._preferences.set_display_currency(value)" in source
-    assert "settings_currency_rates_title" in source
-    assert "self._settings_currency_rate_labels" in source
-    assert "format_exchange_rate(code, rates, self._language)" in source
-    assert "content_cls=settings_scroll" in source
+    assert "SettingsDialogController" in source
+    assert "self._settings_dialog_controller.open()" in source
+    assert "class SettingsDialogController" in settings_source
+    assert "settings_currency_rates_title" in settings_source
+    assert "self._currency_rate_labels" in settings_source
+    assert "format_exchange_rate(code, rates, language)" in settings_source
+    assert "content_cls=settings_scroll" in settings_source
+    assert "self._settings_currency_rate_labels" not in source
     assert "for _fallback_lang in (\"es\", \"fr\", \"it\", \"pt\", \"ja\", \"zh\")" in i18n_source
     assert languages.exists()
 
 
 def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     source = _source("tpof/mobile/main.py")
+    dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
 
     assert "def _open_labor_rates_dialog" in source
     assert "labor_rates_pro_required" in source
-    assert "labor_rates_factory" in source
+    assert "LaborRatesDialogController" in source
+    assert "self._labor_rates_dialog_controller.open()" in source
     assert "self._preferences.set_labor_rate_values" in source
     assert "self._preferences.reset_labor_rate_values" in source
-    assert "def _reset_labor_rates" in source
-    assert "self._preferences.reset_labor_rate_values()" in source
     assert "self._labor_rate_config()" in source
+    assert "class LaborRatesDialogController" in dialog_source
+    assert "labor_rates_factory" in dialog_source
+    assert "def save(" in dialog_source
+    assert "def reset(" in dialog_source
+    assert "self._labor_rate_fields" not in source
+
+
+def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
+    source = _source("tpof/mobile/main.py")
+    presenter_source = _source("tpof/mobile/tabs/labor.py")
+
+    assert "LaborTabPresenter" in source
+    assert "LaborTabController" in source
+    assert "view = self._labor_tab_controller.build()" in source
+    assert "self._labor_tab_presenter.chart_rows(breakdown)" in source
+    assert "self._labor_tab_presenter.travel_mode_text(mode)" in source
+    assert "class LaborTabPresenter" in presenter_source
+    assert "class LaborTabController" in presenter_source
+    assert "class LaborTabView" in presenter_source
+    assert "class LaborChartRow" in presenter_source
+    assert "_CHART_LABEL_KEYS" in presenter_source
 
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
@@ -216,6 +242,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
 
 def test_robocizna_ma_wykres_kolowy_kosztow():
     source = _source("tpof/mobile/main.py")
+    labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     widgets_source = _source("tpof/mobile/widgets/__init__.py")
     chart_source = _source("tpof/mobile/widgets/charts.py")
 
@@ -223,8 +250,9 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "SEGMENT_COLORS" in chart_source
     assert "def on_touch_down" in chart_source
     assert "LaborPieChart" in widgets_source
-    assert "self.labor_chart = LaborPieChart" in source
-    assert "on_release=lambda *_: self._open_labor_chart_dialog()" in source
+    assert "chart_factory=LaborPieChart" in source
+    assert "chart = self._chart_factory(" in labor_tab_source
+    assert "on_release=lambda *_: self._on_open_chart()" in labor_tab_source
     assert "self._set_labor_chart_data(" in source
     assert "center_label=self._t(\"labor_chart_total\")" in source
     assert "Animation(progress=1.0, duration=0.75" in chart_source
