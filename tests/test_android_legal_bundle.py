@@ -7,12 +7,20 @@ import zipfile
 import pytest
 
 from tools.verify_android_legal_bundle import (
+    CONTACT_EMAIL,
+    CONTACT_FILES,
     REQUIRED_LEGAL_FILES,
     verify_legal_bundle,
 )
 
 
-def _write_aab(path, *, omitted=frozenset(), compressed=True):
+def _write_aab(
+    path,
+    *,
+    omitted=frozenset(),
+    compressed=True,
+    contact_email=CONTACT_EMAIL,
+):
     markers = {
         "LICENSE": "LicenseRef-RefrigerationCalc-Proprietary-1.0",
         "EULA": "End-User License Agreement",
@@ -27,6 +35,8 @@ def _write_aab(path, *, omitted=frozenset(), compressed=True):
         for name, marker in markers.items():
             if name in omitted:
                 continue
+            if name in CONTACT_FILES:
+                marker = f"{marker}\n{contact_email}"
             payload = marker.encode("utf-8")
             member = tarfile.TarInfo(name)
             member.size = len(payload)
@@ -54,4 +64,12 @@ def test_android_legal_bundle_reports_missing_notice(tmp_path):
     _write_aab(aab, omitted={"EULA"})
 
     with pytest.raises(ValueError, match="missing legal files: EULA"):
+        verify_legal_bundle(aab)
+
+
+def test_android_legal_bundle_rejects_outdated_contact(tmp_path):
+    aab = tmp_path / "app.aab"
+    _write_aab(aab, contact_email="outdated@example.invalid")
+
+    with pytest.raises(ValueError, match="does not contain contact"):
         verify_legal_bundle(aab)
