@@ -124,7 +124,10 @@ def test_launcher_uses_current_icon_as_static_presplash():
     assert "android.presplash_color = #FFFFFF" in spec
     assert "android.add_resources = %(source.dir)s/android/res" in spec
     assert "source.include_exts = py,png,jpg,jpeg,gif,webp" in spec
-    assert "source.include_patterns =\n" in spec
+    assert (
+        "source.include_patterns = "
+        "LICENSE,EULA,AI_USAGE_POLICY,THIRD_PARTY_NOTICES,legal/*"
+    ) in spec
     assert "assets/watermark.png" in spec
     assert "assets/fonts/**" in spec
     assert "assets/icon.png" in spec
@@ -187,6 +190,15 @@ def test_workflows_pin_reproducible_build_tools():
     )
     assert "firebase-tools@15.22.0" in debug_workflow
     assert "distribute_to_firebase" in debug_workflow
+
+
+def test_release_workflow_verifies_offline_legal_bundle():
+    workflow = (ROOT / ".github/workflows/android-release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Verify packaged legal notices" in workflow
+    assert "tools/verify_android_legal_bundle.py" in workflow
 
 
 def test_lint_workflow_runs_full_mypy_baseline():

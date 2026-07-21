@@ -33,6 +33,7 @@ class SettingsDialogController:
         on_set_unit_system: Callable[[str], None],
         on_set_display_currency: Callable[[str], None],
         on_toggle_auto_update: Callable[[], None],
+        on_open_legal: Callable[[], None],
     ) -> None:
         self._translate = translate
         self._style_button = style_button
@@ -45,6 +46,7 @@ class SettingsDialogController:
         self._on_set_unit_system = on_set_unit_system
         self._on_set_display_currency = on_set_display_currency
         self._on_toggle_auto_update = on_toggle_auto_update
+        self._on_open_legal = on_open_legal
 
         self._dialog: Any | None = None
         self._currency_buttons: dict[str, Any] = {}
@@ -271,6 +273,31 @@ class SettingsDialogController:
             )
             rates_card.add_widget(self._currency_status)
             content.add_widget(rates_card)
+            content.add_widget(
+                MDLabel(
+                    text=self._translate("settings_legal_title"),
+                    theme_text_color="Custom",
+                    text_color=BRAND_ICE,
+                    font_style="Subtitle1",
+                    adaptive_height=True,
+                )
+            )
+            content.add_widget(
+                MDLabel(
+                    text=self._translate("settings_legal_hint"),
+                    theme_text_color="Hint",
+                    font_style="Caption",
+                    adaptive_height=True,
+                )
+            )
+            legal_button = MDRaisedButton(
+                text=self._translate("settings_legal_button"),
+                size_hint=(1, None),
+                height=dp(46),
+                on_release=lambda *_: self._on_open_legal(),
+            )
+            self._style_button(legal_button, "muted")
+            content.add_widget(legal_button)
 
             settings_scroll = MDScrollView(
                 size_hint=(1, None),

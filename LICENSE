@@ -1,75 +1,215 @@
-Refrigeration Calc — Licencja własnościowa (Proprietary License)
-Copyright © 2026 Sebastian Milczarek. Wszelkie prawa zastrzeżone.
-All rights reserved.
+Refrigeration Calc — Source-Available Proprietary License 1.0
+SPDX-License-Identifier: LicenseRef-RefrigerationCalc-Proprietary-1.0
+Copyright © 2026 Sebastian Milczarek. All rights reserved.
+Effective date: 21 July 2026
 
 ================================================================================
-POLSKI
+POLSKI — WERSJA WIĄŻĄCA
 ================================================================================
 
-Niniejsze repozytorium oraz cała jego zawartość — w tym między innymi kod
-źródłowy, skrypty, zasoby graficzne, ikony, czcionki, dane (np. plik
-„Table3.json") oraz dokumentacja (dalej „Oprogramowanie") — stanowią
-własność Sebastiana Milczarka („Autor") i są chronione prawem autorskim.
+1. Zakres
 
-Oprogramowanie jest udostępnione publicznie WYŁĄCZNIE w celu wglądu
-(przeglądania kodu, np. jako portfolio). Udostępnienie publiczne NIE oznacza
-udzielenia jakiejkolwiek licencji open source ani przeniesienia praw.
+Niniejsza licencja dotyczy wyłącznie kodu źródłowego, dokumentacji, danych,
+grafik i innych materiałów w tym repozytorium, do których autorskie prawa
+majątkowe przysługują Sebastianowi Milczarkowi („Autor”; łącznie „Materiały
+Autora”). Repozytorium i aplikacja zawierają również komponenty osób trzecich.
+Nie są one własnością Autora i podlegają własnym licencjom wskazanym w pliku
+THIRD_PARTY_NOTICES oraz w katalogu legal.
 
-Bez uprzedniej, wyraźnej, pisemnej zgody Autora ZABRONIONE jest w
+Licencja użytkownika końcowego oficjalnej aplikacji binarnej Refrigeration Calc
+znajduje się w pliku EULA. Udostępnienie kodu źródłowego nie jest udzieleniem
+licencji open source.
+
+2. Ograniczona zgoda na wgląd
+
+Autor udziela odwołalnej, niewyłącznej i niezbywalnej zgody na przeglądanie
+Materiałów Autora wyłącznie w celu oceny projektu lub zapoznania się z
+portfolio, bez prawa do używania programu lub jego części. Publiczne
+udostępnienie repozytorium na platformie hostingowej obejmuje ponadto wyłącznie
+prawa, których Autor udzielił użytkownikom tej platformy w zaakceptowanych
+warunkach świadczenia jej usług, w szczególności techniczne wyświetlanie i
+forkowanie w ramach funkcjonalności platformy. Nie udziela to żadnych
+dodatkowych praw poza platformą.
+
+3. Czynności zabronione
+
+Bez uprzedniej, wyraźnej i pisemnej zgody Autora zabronione jest w
 szczególności:
 
-  1. kopiowanie, pobieranie w celu użycia, powielanie lub przechowywanie
-     Oprogramowania w całości lub w części poza przeglądaniem na platformie
-     hostingowej;
-  2. uruchamianie, kompilowanie i wdrażanie Oprogramowania;
-  3. modyfikowanie, tłumaczenie, adaptowanie lub tworzenie utworów zależnych;
-  4. rozpowszechnianie, publikowanie, udostępnianie, sublicencjonowanie,
-     wynajmowanie, sprzedaż lub jakiekolwiek inne udostępnianie osobom trzecim;
-  5. wykorzystanie Oprogramowania lub jego fragmentów (w tym kodu, algorytmów,
-     danych, grafik i ikon) w innych projektach — komercyjnych lub
-     niekomercyjnych;
-  6. usuwanie lub zmienianie informacji o prawach autorskich i niniejszej
-     licencji.
+  a) uruchamianie, kompilowanie, wdrażanie lub używanie Materiałów Autora;
+  b) kopiowanie lub przechowywanie ich poza zakresem koniecznym do zgodnego z
+     prawem przeglądania albo funkcji platformy hostingowej;
+  c) modyfikowanie, tłumaczenie, adaptowanie i tworzenie utworów zależnych;
+  d) rozpowszechnianie, publikowanie, sublicencjonowanie, wynajmowanie,
+     sprzedawanie lub udostępnianie osobom trzecim;
+  e) wykorzystywanie kodu, algorytmów, danych, interfejsu, grafik, ikon lub
+     dokumentacji w innym projekcie, produkcie albo usłudze;
+  f) usuwanie lub zmienianie informacji o prawach autorskich, pochodzeniu albo
+     warunkach licencji;
+  g) obchodzenie zabezpieczeń, mechanizmów płatności, reklam, uprawnień PRO lub
+     ograniczeń dostępu.
 
-Wszelkie prośby o zgodę lub licencję należy kierować do Autora.
+4. Sztuczna inteligencja i text-and-data mining
 
-OPROGRAMOWANIE JEST DOSTARCZANE „TAKIM, JAKIE JEST", BEZ JAKICHKOLWIEK
-GWARANCJI, WYRAŹNYCH LUB DOROZUMIANYCH. AUTOR NIE PONOSI ODPOWIEDZIALNOŚCI
-ZA JAKIEKOLWIEK ROSZCZENIA, SZKODY LUB INNE ZOBOWIĄZANIA WYNIKAJĄCE Z
-KORZYSTANIA Z OPROGRAMOWANIA LUB Z NIM ZWIĄZANE.
+Autor wyraźnie zastrzega wszystkie prawa do eksploracji tekstów i danych (TDM),
+w tym zgodnie z art. 4 ust. 3 dyrektywy (UE) 2019/790 oraz właściwymi przepisami
+krajowymi. Bez pisemnej zgody Autora zabronione jest używanie Materiałów Autora
+lub ich reprezentacji do:
+
+  a) tworzenia lub uzupełniania zbiorów danych;
+  b) trenowania, dotrenowywania, dostrajania, ewaluacji lub testowania modeli
+     uczenia maszynowego albo generatywnej sztucznej inteligencji;
+  c) tworzenia embeddingów, indeksów wektorowych, baz RAG lub innych indeksów
+     służących systemom AI;
+  d) przekazywania lub wklejania Materiałów Autora do zewnętrznej usługi AI,
+     asystenta kodowania lub systemu automatycznej analizy;
+  e) generowania, odtwarzania lub rozwijania konkurencyjnego programu albo
+     rozwiązania na podstawie Materiałów Autora.
+
+Zastrzeżenie ma charakter zarówno prawny, jak i maszynowo czytelny poprzez
+AI_USAGE_POLICY, REUSE.toml, identyfikator SPDX LicenseRef-RefrigerationCalc-
+Proprietary-1.0 oraz .well-known/tdmrep.json.
+
+Powyższe ograniczenia nie wiążą Autora. Nie dotyczą również osób i usług
+działających na wyraźne pisemne zlecenie Autora, w zakresie tego zlecenia, pod
+warunkiem poufności oraz zakazu zachowywania Materiałów Autora poza okresem
+koniecznym do realizacji zlecenia.
+
+5. Komponenty osób trzecich i wyjątki obowiązkowe
+
+Niniejsza licencja nie ogranicza praw udzielonych bezpośrednio przez licencje
+komponentów osób trzecich ani praw, których nie można wyłączyć na mocy prawa.
+W szczególności odbiorca oficjalnej aplikacji może wykonywać czynności
+konieczne do modyfikowania, zastępowania, ponownego łączenia lub debugowania
+komponentów objętych GNU LGPL wyłącznie w zakresie wymaganym przez LGPL.
+Odpowiadający kod i informacje są wskazane w THIRD_PARTY_NOTICES. Wyjątek ten
+nie udziela prawa do wykorzystania Materiałów Autora w żadnym innym celu.
+
+6. Brak przeniesienia praw i znaków towarowych
+
+Wszelkie prawa nieudzielone wyraźnie pozostają zastrzeżone. Nazwa Refrigeration
+Calc, identyfikacja wizualna i oznaczenia Autora nie mogą być używane w sposób
+sugerujący powiązanie, zgodę lub autorstwo bez osobnej pisemnej zgody.
+
+7. Wygaśnięcie zgody
+
+Naruszenie niniejszych warunków powoduje automatyczne wygaśnięcie udzielonej
+zgody. Na żądanie Autora naruszający ma zaprzestać korzystania z Materiałów
+Autora i usunąć ich kopie, z zastrzeżeniem obowiązków wynikających z prawa i
+licencji osób trzecich.
+
+8. Wyłączenie gwarancji i ograniczenie odpowiedzialności
+
+W maksymalnym zakresie dozwolonym przez prawo Materiały Autora są dostarczane
+„tak jak są”, bez gwarancji wyraźnych lub dorozumianych. Autor nie odpowiada za
+roszczenia, szkody ani zobowiązania wynikające z dostępu do Materiałów Autora
+lub ich wykorzystania. Postanowienie to nie ogranicza praw, których zgodnie z
+obowiązującym prawem nie można wyłączyć.
+
+9. Kontakt i zgody indywidualne
+
+Prośby o licencję, zgodę na użycie AI/TDM lub inne wykorzystanie należy kierować
+na adres: milczarek.sebastian@gmail.com. Zgoda jest skuteczna wyłącznie w
+zakresie wyraźnie potwierdzonym na piśmie przez Autora.
 
 ================================================================================
-ENGLISH (informational translation)
+ENGLISH — INFORMATIONAL TRANSLATION
 ================================================================================
 
-This repository and all of its contents — including but not limited to source
-code, scripts, graphic assets, icons, fonts, data (e.g. the "Table3.json"
-file) and documentation (the "Software") — are the property of Sebastian
-Milczarek (the "Author") and are protected by copyright law.
+1. Scope
 
-The Software is made publicly available SOLELY for viewing purposes (source
-code inspection, e.g. as a portfolio). Public availability does NOT grant any
-open-source license nor transfer any rights.
+This license applies only to source code, documentation, data, graphics and
+other repository materials whose economic copyrights are owned by Sebastian
+Milczarek (the “Author”; collectively, “Author Materials”). The repository and
+the application also contain third-party components. They are not owned by the
+Author and remain governed by their respective licenses identified in
+THIRD_PARTY_NOTICES and the legal directory.
 
-Without the Author's prior, explicit, written permission, the following are
-PROHIBITED, including but not limited to:
+The end-user license for the official Refrigeration Calc binary application is
+set out in EULA. Making source code visible does not grant an open-source
+license.
 
-  1. copying, downloading for use, reproducing, or storing the Software in
-     whole or in part beyond viewing it on the hosting platform;
-  2. running, compiling, and deploying the Software;
-  3. modifying, translating, adapting, or creating derivative works;
-  4. distributing, publishing, sharing, sublicensing, renting, selling, or
-     otherwise making the Software available to third parties;
-  5. using the Software or any portion of it (including code, algorithms,
-     data, graphics, and icons) in other projects — commercial or
-     non-commercial;
-  6. removing or altering copyright notices and this license.
+2. Limited permission to view
 
-All permission or licensing requests must be directed to the Author.
+The Author grants a revocable, non-exclusive and non-transferable permission to
+view Author Materials solely to evaluate the project or inspect the Author's
+portfolio, without any right to use the program or any part of it. Publicly
+hosting the repository also grants only those rights which the Author granted
+to users under the accepted terms of the hosting platform, including technical
+display and forking within that platform's functionality. No additional rights
+outside the platform are granted.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED. THE AUTHOR SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+3. Prohibited acts
 
-In case of any discrepancy between the language versions, the Polish version
-prevails.
+Without the Author's prior express written permission, you must not:
+
+  a) run, compile, deploy or use Author Materials;
+  b) copy or store them beyond lawful viewing or hosting-platform functions;
+  c) modify, translate, adapt or create derivative works;
+  d) distribute, publish, sublicense, rent, sell or share them;
+  e) use any code, algorithm, data, interface, graphic, icon or documentation
+     in another project, product or service;
+  f) remove or alter copyright, provenance or license notices; or
+  g) circumvent security, payment, advertising, PRO entitlement or access
+     controls.
+
+4. Artificial intelligence and text-and-data mining
+
+The Author expressly reserves all text-and-data-mining rights, including under
+Article 4(3) of Directive (EU) 2019/790 and applicable national law. Without the
+Author's written permission, Author Materials or their representations must not
+be used to:
+
+  a) create or augment datasets;
+  b) train, fine-tune, evaluate or test machine-learning or generative-AI
+     models;
+  c) create embeddings, vector indexes, RAG stores or other AI indexes;
+  d) submit or paste Author Materials into an external AI service, coding
+     assistant or automated-analysis system; or
+  e) generate, reconstruct or develop a competing program or solution from
+     Author Materials.
+
+This reservation is expressed in legal and machine-readable form through
+AI_USAGE_POLICY, REUSE.toml, SPDX identifier LicenseRef-RefrigerationCalc-
+Proprietary-1.0 and .well-known/tdmrep.json.
+
+These restrictions do not bind the Author. They also do not apply to persons
+or services acting under the Author's express written authorization, within
+that authorization, subject to confidentiality and no retention beyond what is
+needed to perform the authorized work.
+
+5. Third-party components and mandatory exceptions
+
+This license does not restrict rights granted directly by third-party licenses
+or rights that cannot lawfully be excluded. In particular, a recipient of the
+official application may perform acts necessary to modify, replace, relink or
+debug GNU LGPL-covered components solely to the extent required by the LGPL.
+Corresponding code and information are identified in THIRD_PARTY_NOTICES. This
+exception grants no right to use Author Materials for any other purpose.
+
+6. Reservation of rights and marks
+
+All rights not expressly granted are reserved. The Refrigeration Calc name,
+visual identity and Author designations must not be used in a way suggesting
+affiliation, approval or authorship without separate written permission.
+
+7. Termination
+
+Any breach automatically terminates the permission granted above. At the
+Author's request, an infringer must cease using and delete copies of Author
+Materials, subject to mandatory law and third-party license obligations.
+
+8. Disclaimer and limitation of liability
+
+To the maximum extent permitted by law, Author Materials are provided “as is”,
+without express or implied warranties. The Author is not liable for claims,
+damages or obligations arising from access to or use of Author Materials. This
+does not limit rights that cannot be excluded under applicable law.
+
+9. Contact and individual permissions
+
+Requests for a license, AI/TDM permission or other use must be sent to
+milczarek.sebastian@gmail.com. Permission is effective only to the extent
+expressly confirmed in writing by the Author.
+
+If the Polish and English texts differ, the Polish text prevails.

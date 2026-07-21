@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 authors = [
   { name = "Sebastian Milczarek", email = "" },
 ]
-license = { text = "Proprietary" }
+license = { text = "LicenseRef-RefrigerationCalc-Proprietary-1.0" }
 keywords = ["chłodnictwo", "zamrażanie", "kalkulator", "HVAC", "refrigeration"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -74,8 +74,10 @@ files = [
     "tpof/mobile/android_bridge.py",
     "tpof/mobile/pdf_export.py",
     "tpof/mobile/dialogs/labor_rates.py",
+    "tpof/mobile/dialogs/legal.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
+    "tools/verify_android_legal_bundle.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

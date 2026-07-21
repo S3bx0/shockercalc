@@ -145,6 +145,13 @@ jobs:
           echo "CXXFLAGS=$CXXFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
 
+      - name: Verify packaged legal notices
+        run: |
+          set -eo pipefail
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          python tools/verify_android_legal_bundle.py "$AAB_PATH"
+
       - name: Collect Play Console diagnostic files
         if: always()
         run: |
