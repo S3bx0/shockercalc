@@ -10,6 +10,9 @@ import p4a_hooks
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalcActivity.java"
+FIREBASE_SERVICE = (
+    ROOT / "android/src/pl/smilczarek/refrigerationcalc/FirebaseTelemetryService.java"
+)
 SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationSplashView.java"
 
 
@@ -45,13 +48,14 @@ def test_activity_uses_modern_edge_to_edge_api():
 
 
 def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
-    source = ACTIVITY.read_text(encoding="utf-8")
+    activity = ACTIVITY.read_text(encoding="utf-8")
+    service = FIREBASE_SERVICE.read_text(encoding="utf-8")
 
-    assert "setAnalyticsCollectionEnabled(enabled)" in source
-    assert "setCrashlyticsCollectionEnabled(enabled)" in source
-    assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in source
-    assert "recordPythonException" in source
-    assert "custom_products_limit" in source
+    assert "setAnalyticsCollectionEnabled(enabled)" in service
+    assert "setCrashlyticsCollectionEnabled(enabled)" in service
+    assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in service
+    assert "recordPythonException" in activity
+    assert "custom_products_limit" in service
 
 
 def test_labor_tab_uses_dedicated_admob_units():

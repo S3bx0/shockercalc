@@ -57,24 +57,14 @@ import com.google.android.ump.ConsentInformation;
 import com.google.android.ump.ConsentRequestParameters;
 import com.google.android.ump.FormError;
 import com.google.android.ump.UserMessagingPlatform;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
-import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
-
 import org.kivy.android.PythonActivity;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class RefrigerationCalcActivity extends PythonActivity implements PurchasesUpdatedListener {
     private static final String TAG = "RefrigerationCalc";
@@ -103,8 +93,6 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private static final String PREF_PRO_SUBSCRIPTION = "refrigeration_pro";
     private static final String PREF_MODULE_VALVES = "module_valves";
     private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
-    private static final String PREF_TELEMETRY_SET = "firebase_telemetry_preference_set";
-    private static final String PREF_TELEMETRY_ENABLED = "firebase_telemetry_enabled";
 
     private AdView bannerAdView;
     private FrameLayout bannerContainer;
@@ -120,10 +108,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private boolean billingConnecting;
     private boolean pendingProPurchaseLaunch;
     private boolean pendingModuleValvesLaunch;
-    private FirebaseAnalytics firebaseAnalytics;
-    private FirebaseCrashlytics firebaseCrashlytics;
-    private FirebaseRemoteConfig firebaseRemoteConfig;
-    private boolean firebaseTelemetryAvailable;
+    private FirebaseTelemetryService firebaseTelemetryService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -133,7 +118,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         super.onCreate(savedInstanceState);
         configureEdgeToEdge();
         showAnimatedIntro();
-        initializeFirebaseTelemetry();
+        telemetry().initialize();
         initializeBilling();
         initializeAds();
     }
@@ -200,171 +185,46 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    /**
-     * Firebase is optional in developer builds. Without google-services.json the
-     * SDK remains a no-op and the rest of the application continues normally.
-     * Collection is opt-in and disabled until the user makes a choice.
-     */
-    private void initializeFirebaseTelemetry() {
-        try {
-            FirebaseApp app;
-            if (FirebaseApp.getApps(this).isEmpty()) {
-                app = FirebaseApp.initializeApp(this);
-            } else {
-                app = FirebaseApp.getInstance();
-            }
-            if (app == null) {
-                Log.i(TAG, "Firebase configuration not present; telemetry disabled.");
-                return;
-            }
-            firebaseAnalytics = FirebaseAnalytics.getInstance(this);
-            firebaseCrashlytics = FirebaseCrashlytics.getInstance();
-            firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
-            firebaseTelemetryAvailable = true;
-            applyTelemetryPreference(isTelemetryEnabled());
-            if (isTelemetryEnabled()) {
-                firebaseCrashlytics.setCustomKey("app_runtime", "kivy_python");
-                firebaseCrashlytics.setCustomKey("android_api", Build.VERSION.SDK_INT);
-                configureAndFetchRemoteConfig();
-            }
-        } catch (Exception exc) {
-            firebaseTelemetryAvailable = false;
-            Log.w(TAG, "Firebase initialization unavailable", exc);
+    private FirebaseTelemetryService telemetry() {
+        if (firebaseTelemetryService == null) {
+            firebaseTelemetryService = new FirebaseTelemetryService(
+                    this,
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE));
         }
-    }
-
-    private SharedPreferences billingPreferences() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    }
-
-    private void applyTelemetryPreference(boolean enabled) {
-        if (!firebaseTelemetryAvailable) {
-            return;
-        }
-        try {
-            firebaseAnalytics.setAnalyticsCollectionEnabled(enabled);
-            firebaseCrashlytics.setCrashlyticsCollectionEnabled(enabled);
-        } catch (Exception exc) {
-            Log.w(TAG, "Unable to apply Firebase telemetry preference", exc);
-        }
+        return firebaseTelemetryService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
-        return firebaseTelemetryAvailable;
+        return telemetry().isAvailable();
     }
 
     public boolean hasTelemetryPreference() {
-        return billingPreferences().contains(PREF_TELEMETRY_SET);
+        return telemetry().hasPreference();
     }
 
     public boolean isTelemetryEnabled() {
-        return billingPreferences().getBoolean(PREF_TELEMETRY_ENABLED, false);
+        return telemetry().isEnabled();
     }
 
     public void setTelemetryEnabled(boolean enabled) {
-        billingPreferences().edit()
-                .putBoolean(PREF_TELEMETRY_SET, true)
-                .putBoolean(PREF_TELEMETRY_ENABLED, enabled)
-                .apply();
-        applyTelemetryPreference(enabled);
-        if (enabled && firebaseCrashlytics != null) {
-            firebaseCrashlytics.setCustomKey("app_runtime", "kivy_python");
-            firebaseCrashlytics.setCustomKey("android_api", Build.VERSION.SDK_INT);
-            configureAndFetchRemoteConfig();
-        }
-    }
-
-    private void configureAndFetchRemoteConfig() {
-        if (!firebaseTelemetryAvailable || !isTelemetryEnabled()
-                || firebaseRemoteConfig == null) {
-            return;
-        }
-        FirebaseRemoteConfigSettings settings =
-                new FirebaseRemoteConfigSettings.Builder()
-                        .setMinimumFetchIntervalInSeconds(isDebugBuild() ? 0 : 43200)
-                        .build();
-        firebaseRemoteConfig.setConfigSettingsAsync(settings);
-        Map<String, Object> defaults = new HashMap<>();
-        defaults.put("show_beta_features", false);
-        defaults.put("custom_products_limit", 250L);
-        firebaseRemoteConfig.setDefaultsAsync(defaults);
-        firebaseRemoteConfig.fetchAndActivate()
-                .addOnFailureListener(exception ->
-                        Log.w(TAG, "Remote Config fetch failed", exception));
+        telemetry().setEnabled(enabled);
     }
 
     public boolean getRemoteConfigBoolean(String key, boolean fallback) {
-        if (!firebaseTelemetryAvailable || !isTelemetryEnabled()
-                || firebaseRemoteConfig == null || key == null) {
-            return fallback;
-        }
-        try {
-            return firebaseRemoteConfig.getBoolean(key);
-        } catch (Exception exc) {
-            return fallback;
-        }
+        return telemetry().getRemoteConfigBoolean(key, fallback);
     }
 
     public long getRemoteConfigLong(String key, long fallback) {
-        if (!firebaseTelemetryAvailable || !isTelemetryEnabled()
-                || firebaseRemoteConfig == null || key == null) {
-            return fallback;
-        }
-        try {
-            return firebaseRemoteConfig.getLong(key);
-        } catch (Exception exc) {
-            return fallback;
-        }
+        return telemetry().getRemoteConfigLong(key, fallback);
     }
 
-    /** Logs only coarse, allow-listed values supplied by the Python UI. */
     public void logAnalyticsEvent(String eventName, String parametersJson) {
-        if (!firebaseTelemetryAvailable || !isTelemetryEnabled()
-                || firebaseAnalytics == null || eventName == null) {
-            return;
-        }
-        Bundle parameters = new Bundle();
-        try {
-            JSONObject source = new JSONObject(
-                    parametersJson == null ? "{}" : parametersJson);
-            Iterator<String> keys = source.keys();
-            while (keys.hasNext()) {
-                String key = keys.next();
-                Object value = source.opt(key);
-                if (value instanceof Boolean) {
-                    parameters.putLong(key, ((Boolean) value) ? 1L : 0L);
-                } else if (value instanceof Integer || value instanceof Long) {
-                    parameters.putLong(key, ((Number) value).longValue());
-                } else if (value instanceof Number) {
-                    parameters.putDouble(key, ((Number) value).doubleValue());
-                } else if (value != null && value != JSONObject.NULL) {
-                    parameters.putString(key, String.valueOf(value));
-                }
-            }
-        } catch (Exception exc) {
-            Log.w(TAG, "Invalid analytics parameters", exc);
-        }
-        firebaseAnalytics.logEvent(eventName, parameters);
+        telemetry().logAnalyticsEvent(eventName, parametersJson);
     }
 
-    /** Converts a Python traceback into a searchable non-fatal Crashlytics event. */
     public void recordPythonException(String context, String type,
                                       String message, String stackTrace) {
-        if (!firebaseTelemetryAvailable || !isTelemetryEnabled()
-                || firebaseCrashlytics == null) {
-            return;
-        }
-        String safeContext = context == null ? "python" : context;
-        String safeType = type == null ? "Exception" : type;
-        firebaseCrashlytics.setCustomKey("python_context", safeContext);
-        firebaseCrashlytics.setCustomKey("python_exception_type", safeType);
-        if (stackTrace != null && !stackTrace.isEmpty()) {
-            firebaseCrashlytics.log(stackTrace);
-        }
-        firebaseCrashlytics.recordException(
-                new RuntimeException(
-                        "Python " + safeType + " [" + safeContext + "]: "
-                                + (message == null ? "" : message)));
+        telemetry().recordPythonException(context, type, message, stackTrace);
     }
 
     /** Jawnie wlacza edge-to-edge na platformach, ktore maja natywne API okna. */
