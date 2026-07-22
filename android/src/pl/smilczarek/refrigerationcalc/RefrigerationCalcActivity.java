@@ -13,9 +13,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -39,18 +37,6 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.QueryPurchasesParams;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.FullScreenContentCallback;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.OnUserEarnedRewardListener;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
-import com.google.android.gms.ads.rewarded.RewardItem;
-import com.google.android.gms.ads.rewarded.RewardedAd;
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import org.kivy.android.PythonActivity;
 
 import java.io.File;
@@ -62,22 +48,6 @@ import java.util.List;
 
 public class RefrigerationCalcActivity extends PythonActivity implements PurchasesUpdatedListener {
     private static final String TAG = "RefrigerationCalc";
-    private static final String LIVE_BANNER_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/5599859341";
-    private static final String LIVE_BANNER_VALVES_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/6303778370";
-    private static final String LIVE_BANNER_LABOR_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/8198860699";
-    private static final String TEST_BANNER_AD_UNIT_ID =
-            "ca-app-pub-3940256099942544/9214589741";
-    private static final String LIVE_REWARDED_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/1548239161";
-    private static final String LIVE_REWARDED_VALVES_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/1060900411";
-    private static final String LIVE_REWARDED_LABOR_AD_UNIT_ID =
-            "ca-app-pub-7481054652344026/7623346864";
-    private static final String TEST_REWARDED_AD_UNIT_ID =
-            "ca-app-pub-3940256099942544/5224354917";
     private static final String LEGACY_PRO_PRODUCT_ID = "pro_no_ads";
     private static final String PRO_SUBSCRIPTION_ID = "refrigeration_pro";
     private static final String PRO_BASE_PLAN_ID = "monthly-499";
@@ -86,15 +56,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private static final String PREF_PRO_NO_ADS = "pro_no_ads";
     private static final String PREF_PRO_SUBSCRIPTION = "refrigeration_pro";
     private static final String PREF_MODULE_VALVES = "module_valves";
-    private static final String PREF_PENDING_REWARD_TOKENS = "pending_reward_tokens";
 
-    private AdView bannerAdView;
-    private FrameLayout bannerContainer;
-    private RewardedAd rewardedAd;
-    private boolean rewardedLoading;
-    private boolean adsInitialized;
-    // Aktywna zakładka UI ("freezing" / "valves") — wybiera jednostkę reklamową.
-    private volatile String activeAdTab = "freezing";
     private BillingClient billingClient;
     private ProductDetails proSubscriptionDetails;
     private ProductDetails moduleValvesProductDetails;
@@ -103,6 +65,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private boolean pendingModuleValvesLaunch;
     private FirebaseTelemetryService firebaseTelemetryService;
     private PrivacyConsentService privacyConsentService;
+    private AdvertisingService advertisingService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -193,9 +156,20 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             privacyConsentService = new PrivacyConsentService(
                     this,
                     isDebugBuild(),
-                    this::startMobileAdsSdk);
+                    () -> advertising().startMobileAdsSdk());
         }
         return privacyConsentService;
+    }
+
+    private AdvertisingService advertising() {
+        if (advertisingService == null) {
+            advertisingService = new AdvertisingService(
+                    this,
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+                    isDebugBuild(),
+                    this::isProNoAdsActive);
+        }
+        return advertisingService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
@@ -314,236 +288,20 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         privacyConsent().showPrivacyOptionsForm();
     }
 
-    private void startMobileAdsSdk() {
-        if (adsInitialized || isProNoAdsActive()) {
-            return;
-        }
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                MobileAds.initialize(
-                        RefrigerationCalcActivity.this,
-                        new OnInitializationCompleteListener() {
-                            @Override
-                            public void onInitializationComplete(
-                                    InitializationStatus initializationStatus) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        adsInitialized = true;
-                                        attachBanner();
-                                        loadRewardedAd();
-                                    }
-                                });
-                            }
-                        });
-            }
-        }).start();
-    }
-
-    private void attachBanner() {
-        if (isProNoAdsActive() || bannerAdView != null) {
-            return;
-        }
-
-        ViewGroup root = findViewById(android.R.id.content);
-        if (root == null) {
-            Log.w(TAG, "Cannot attach banner: root content view is null.");
-            return;
-        }
-
-        bannerContainer = new FrameLayout(this);
-        FrameLayout.LayoutParams containerParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        containerParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-
-        bannerAdView = new AdView(this);
-        bannerAdView.setAdUnitId(getBannerAdUnitId());
-        bannerAdView.setAdSize(getAdSize());
-
-        bannerContainer.addView(bannerAdView);
-        root.addView(bannerContainer, containerParams);
-
-        bannerAdView.loadAd(new AdRequest.Builder().build());
-        Log.i(TAG, "AdMob banner requested. Debug test ads: " + isDebugBuild());
-    }
-
-    private void hideBanner() {
-        if (bannerAdView != null) {
-            bannerAdView.destroy();
-            bannerAdView = null;
-        }
-        if (bannerContainer != null) {
-            ViewGroup parent = (ViewGroup) bannerContainer.getParent();
-            if (parent != null) {
-                parent.removeView(bannerContainer);
-            }
-            bannerContainer = null;
-        }
-    }
-
-    private String getBannerAdUnitId() {
-        if (isDebugBuild()) {
-            return TEST_BANNER_AD_UNIT_ID;
-        }
-        if ("valves".equals(activeAdTab)) {
-            return LIVE_BANNER_VALVES_AD_UNIT_ID;
-        }
-        if ("labor".equals(activeAdTab)) {
-            return LIVE_BANNER_LABOR_AD_UNIT_ID;
-        }
-        return LIVE_BANNER_AD_UNIT_ID;
-    }
-
-    private String getRewardedAdUnitId() {
-        if (isDebugBuild()) {
-            return TEST_REWARDED_AD_UNIT_ID;
-        }
-        if ("valves".equals(activeAdTab)) {
-            return LIVE_REWARDED_VALVES_AD_UNIT_ID;
-        }
-        if ("labor".equals(activeAdTab)) {
-            return LIVE_REWARDED_LABOR_AD_UNIT_ID;
-        }
-        return LIVE_REWARDED_AD_UNIT_ID;
-    }
-
-    private String normalizeAdTab(final String tab) {
-        if ("valves".equals(tab)) {
-            return "valves";
-        }
-        if ("labor".equals(tab)) {
-            return "labor";
-        }
-        return "freezing";
-    }
-
-    /**
-     * Ustawia aktywną zakładkę UI ("freezing" / "valves" / "labor") z warstwy Pythona.
-     * Gdy zakładka się zmienia, przeładowuje baner oraz reklamę rewarded na
-     * jednostkę przypisaną do danej zakładki. Wywoływane przy przełączaniu
-     * dolnej nawigacji — reklamy są inicjowane akcją użytkownika, więc nie
-     * narusza zasad AdMob (brak auto-odświeżania programowego).
-     */
     public void setActiveAdTab(final String tab) {
-        final String normalized = normalizeAdTab(tab);
-        if (normalized.equals(activeAdTab)) {
-            return;
-        }
-        activeAdTab = normalized;
-        if (isProNoAdsActive()) {
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // Przeładuj baner na jednostkę aktywnej zakładki.
-                if (bannerAdView != null || bannerContainer != null) {
-                    hideBanner();
-                    attachBanner();
-                }
-                // Przeładuj rewarded na jednostkę aktywnej zakładki.
-                if (rewardedAd != null) {
-                    rewardedAd = null;
-                }
-                loadRewardedAd();
-            }
-        });
+        advertising().setActiveAdTab(tab);
     }
 
-    /** Preloads a rewarded ad so it is ready to show on demand. */
-    private void loadRewardedAd() {
-        if (isProNoAdsActive() || rewardedAd != null || rewardedLoading) {
-            return;
-        }
-        rewardedLoading = true;
-        RewardedAd.load(
-                this,
-                getRewardedAdUnitId(),
-                new AdRequest.Builder().build(),
-                new RewardedAdLoadCallback() {
-                    @Override
-                    public void onAdLoaded(RewardedAd ad) {
-                        rewardedLoading = false;
-                        rewardedAd = ad;
-                        Log.i(TAG, "Rewarded ad loaded. Debug test ads: " + isDebugBuild());
-                    }
-
-                    @Override
-                    public void onAdFailedToLoad(LoadAdError error) {
-                        rewardedLoading = false;
-                        rewardedAd = null;
-                        Log.w(TAG, "Rewarded ad failed to load: " + error.getMessage());
-                    }
-                });
-    }
-
-    /** Returns true when a rewarded ad is loaded and ready to show. */
     public boolean isRewardedAdReady() {
-        return rewardedAd != null;
+        return advertising().isRewardedAdReady();
     }
 
-    /**
-     * Shows the preloaded rewarded ad. On a completed view the user earns one
-     * reward token, persisted to SharedPreferences for the Python layer to
-     * consume via {@link #consumePendingRewardTokens()}. Daily caps / cooldowns
-     * are enforced on the Python entitlements side before this is called.
-     */
     public void showRewardedAd() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (rewardedAd == null) {
-                    Log.w(TAG, "Rewarded ad requested but not ready.");
-                    loadRewardedAd();
-                    return;
-                }
-                final RewardedAd ad = rewardedAd;
-                rewardedAd = null;
-                ad.setFullScreenContentCallback(new FullScreenContentCallback() {
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-                        loadRewardedAd();
-                    }
-
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(
-                            com.google.android.gms.ads.AdError adError) {
-                        Log.w(TAG, "Rewarded ad failed to show: " + adError.getMessage());
-                        loadRewardedAd();
-                    }
-                });
-                ad.show(RefrigerationCalcActivity.this, new OnUserEarnedRewardListener() {
-                    @Override
-                    public void onUserEarnedReward(RewardItem rewardItem) {
-                        grantRewardToken();
-                    }
-                });
-            }
-        });
+        advertising().showRewardedAd();
     }
 
-    /** Atomically increments the pending reward-token counter in prefs. */
-    private void grantRewardToken() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        int pending = prefs.getInt(PREF_PENDING_REWARD_TOKENS, 0) + 1;
-        prefs.edit().putInt(PREF_PENDING_REWARD_TOKENS, pending).apply();
-        Log.i(TAG, "Reward token granted. Pending: " + pending);
-    }
-
-    /**
-     * Returns the number of reward tokens earned since the last call and resets
-     * the pending counter to zero. Called from Python to credit entitlements.
-     */
     public int consumePendingRewardTokens() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        int pending = prefs.getInt(PREF_PENDING_REWARD_TOKENS, 0);
-        if (pending > 0) {
-            prefs.edit().putInt(PREF_PENDING_REWARD_TOKENS, 0).apply();
-        }
-        return pending;
+        return advertising().consumePendingRewardTokens();
     }
 
     public void shareFile(final String path, final String mimeType,
@@ -635,20 +393,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 
-    private AdSize getAdSize() {
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int adWidth = (int) (metrics.widthPixels / metrics.density);
-        if (adWidth <= 0) {
-            adWidth = 360;
-        }
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
-    }
-
     public int getBannerHeightDp() {
-        if (bannerAdView == null || bannerAdView.getAdSize() == null) {
-            return 0;
-        }
-        return bannerAdView.getAdSize().getHeight();
+        return advertising().getBannerHeightDp();
     }
 
     public boolean isProNoAdsActive() {
@@ -662,7 +408,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
             @Override
             public void run() {
                 if (isProNoAdsActive()) {
-                    hideBanner();
+                    advertising().updateForProStatus();
                     return;
                 }
                 if (billingClient == null) {
@@ -1042,16 +788,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     }
 
     private void updateAdsForProStatus() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isProNoAdsActive()) {
-                    hideBanner();
-                } else {
-                    attachBanner();
-                }
-            }
-        });
+        advertising().updateForProStatus();
     }
 
     private void setModuleValvesOwned(boolean owned) {
@@ -1063,8 +800,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     @Override
     protected void onResume() {
         super.onResume();
-        if (bannerAdView != null && !isProNoAdsActive()) {
-            bannerAdView.resume();
+        if (advertisingService != null) {
+            advertisingService.onResume();
         }
         if (billingClient != null && billingClient.isReady()) {
             queryOwnedPurchases();
@@ -1075,8 +812,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
 
     @Override
     protected void onPause() {
-        if (bannerAdView != null) {
-            bannerAdView.pause();
+        if (advertisingService != null) {
+            advertisingService.onPause();
         }
         super.onPause();
     }
@@ -1084,7 +821,9 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     @Override
     protected void onDestroy() {
         removeAnimatedIntro();
-        hideBanner();
+        if (advertisingService != null) {
+            advertisingService.onDestroy();
+        }
         if (billingClient != null) {
             billingClient.endConnection();
             billingClient = null;

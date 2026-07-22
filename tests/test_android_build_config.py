@@ -13,6 +13,9 @@ ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalc
 FIREBASE_SERVICE = (
     ROOT / "android/src/pl/smilczarek/refrigerationcalc/FirebaseTelemetryService.java"
 )
+ADVERTISING_SERVICE = (
+    ROOT / "android/src/pl/smilczarek/refrigerationcalc/AdvertisingService.java"
+)
 SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationSplashView.java"
 
 
@@ -59,14 +62,14 @@ def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
 
 
 def test_labor_tab_uses_dedicated_admob_units():
-    activity = ACTIVITY.read_text(encoding="utf-8")
+    advertising = ADVERTISING_SERVICE.read_text(encoding="utf-8")
     mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
 
-    assert "ca-app-pub-7481054652344026/8198860699" in activity
-    assert "ca-app-pub-7481054652344026/7623346864" in activity
-    assert 'if ("labor".equals(activeAdTab))' in activity
-    assert "normalizeAdTab(final String tab)" in activity
-    assert 'if ("labor".equals(tab))' in activity
+    assert "ca-app-pub-7481054652344026/8198860699" in advertising
+    assert "ca-app-pub-7481054652344026/7623346864" in advertising
+    assert 'if ("labor".equals(activeAdTab))' in advertising
+    assert "normalizeAdTab(final String tab)" in advertising
+    assert 'if ("labor".equals(tab))' in advertising
     assert 'self._set_active_ad_tab(name)' in mobile_main
     assert '"labor": self.bottom_labor_tab' in mobile_main
 

@@ -17,7 +17,7 @@ def test_activity_keeps_thin_pyjnius_privacy_delegates():
     assert "privacyConsent().requestConsent();" in activity
     assert "return privacyConsent().isPrivacyOptionsRequired();" in activity
     assert "privacyConsent().showPrivacyOptionsForm();" in activity
-    assert "this::startMobileAdsSdk" in activity
+    assert "() -> advertising().startMobileAdsSdk()" in activity
 
 
 def test_activity_no_longer_owns_ump_implementation():
