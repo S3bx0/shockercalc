@@ -51,12 +51,6 @@ import com.google.android.gms.ads.initialization.OnInitializationCompleteListene
 import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
-import com.google.android.ump.ConsentDebugSettings;
-import com.google.android.ump.ConsentForm;
-import com.google.android.ump.ConsentInformation;
-import com.google.android.ump.ConsentRequestParameters;
-import com.google.android.ump.FormError;
-import com.google.android.ump.UserMessagingPlatform;
 import org.kivy.android.PythonActivity;
 
 import java.io.File;
@@ -101,7 +95,6 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private boolean adsInitialized;
     // Aktywna zakładka UI ("freezing" / "valves") — wybiera jednostkę reklamową.
     private volatile String activeAdTab = "freezing";
-    private ConsentInformation consentInformation;
     private BillingClient billingClient;
     private ProductDetails proSubscriptionDetails;
     private ProductDetails moduleValvesProductDetails;
@@ -109,6 +102,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     private boolean pendingProPurchaseLaunch;
     private boolean pendingModuleValvesLaunch;
     private FirebaseTelemetryService firebaseTelemetryService;
+    private PrivacyConsentService privacyConsentService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -192,6 +186,16 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                     getSharedPreferences(PREFS_NAME, MODE_PRIVATE));
         }
         return firebaseTelemetryService;
+    }
+
+    private PrivacyConsentService privacyConsent() {
+        if (privacyConsentService == null) {
+            privacyConsentService = new PrivacyConsentService(
+                    this,
+                    isDebugBuild(),
+                    this::startMobileAdsSdk);
+        }
+        return privacyConsentService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
@@ -297,91 +301,17 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         if (isProNoAdsActive()) {
             return;
         }
-        requestConsentThenInitAds();
-    }
-
-    /**
-     * Uruchamia przepływ zgody Google UMP (wymagany dla użytkowników z EOG/UK
-     * przy reklamach spersonalizowanych). Po zebraniu zgody — lub gdy nie jest
-     * wymagana — inicjalizuje SDK reklam tylko jeśli {@code canRequestAds()}.
-     */
-    private void requestConsentThenInitAds() {
-        ConsentRequestParameters.Builder paramsBuilder =
-                new ConsentRequestParameters.Builder();
-        if (isDebugBuild()) {
-            // W debug wymuszamy geografię EOG, aby przetestować formularz zgody.
-            ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(this)
-                    .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
-                    .build();
-            paramsBuilder.setConsentDebugSettings(debugSettings);
-        }
-        ConsentRequestParameters params = paramsBuilder.build();
-
-        consentInformation = UserMessagingPlatform.getConsentInformation(this);
-        consentInformation.requestConsentInfoUpdate(
-                this,
-                params,
-                new ConsentInformation.OnConsentInfoUpdateSuccessListener() {
-                    @Override
-                    public void onConsentInfoUpdateSuccess() {
-                        UserMessagingPlatform.loadAndShowConsentFormIfRequired(
-                                RefrigerationCalcActivity.this,
-                                new ConsentForm.OnConsentFormDismissedListener() {
-                                    @Override
-                                    public void onConsentFormDismissed(FormError formError) {
-                                        if (formError != null) {
-                                            Log.w(TAG, "Consent form error: "
-                                                    + formError.getMessage());
-                                        }
-                                        maybeInitializeAdsAfterConsent();
-                                    }
-                                });
-                    }
-                },
-                new ConsentInformation.OnConsentInfoUpdateFailureListener() {
-                    @Override
-                    public void onConsentInfoUpdateFailure(FormError formError) {
-                        Log.w(TAG, "Consent info update failed: "
-                                + (formError != null ? formError.getMessage() : "unknown"));
-                        // Mimo błędu próbujemy zainicjalizować (np. gdy poza EOG).
-                        maybeInitializeAdsAfterConsent();
-                    }
-                });
-    }
-
-    private void maybeInitializeAdsAfterConsent() {
-        if (consentInformation == null || !consentInformation.canRequestAds()) {
-            Log.i(TAG, "Ads not requested: consent not granted / not available.");
-            return;
-        }
-        startMobileAdsSdk();
+        privacyConsent().requestConsent();
     }
 
     /** True, gdy dostępny jest formularz opcji prywatności (zmiana zgody). */
     public boolean isPrivacyOptionsRequired() {
-        return consentInformation != null
-                && consentInformation.getPrivacyOptionsRequirementStatus()
-                == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED;
+        return privacyConsent().isPrivacyOptionsRequired();
     }
 
     /** Ponownie otwiera formularz zgody (wywoływane z menu Prywatność). */
     public void showPrivacyOptionsForm() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                UserMessagingPlatform.showPrivacyOptionsForm(
-                        RefrigerationCalcActivity.this,
-                        new ConsentForm.OnConsentFormDismissedListener() {
-                            @Override
-                            public void onConsentFormDismissed(FormError formError) {
-                                if (formError != null) {
-                                    Log.w(TAG, "Privacy options error: "
-                                            + formError.getMessage());
-                                }
-                            }
-                        });
-            }
-        });
+        privacyConsent().showPrivacyOptionsForm();
     }
 
     private void startMobileAdsSdk() {
