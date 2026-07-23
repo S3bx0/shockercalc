@@ -6,6 +6,12 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Naprawiono
+
+- Wysokość banera AdMob jest zapamiętywana podczas tworzenia widoku na wątku
+  interfejsu. Python może ją teraz bezpiecznie odczytać bez wywoływania metod
+  widoku reklamowego poza głównym wątkiem Androida.
+
 ### Zmieniono
 
 - Wydzielono integrację Google Play Billing z
