@@ -8,6 +8,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Naprawiono
 
+- Przycisk PRO nie pokazuje już nieaktualnej ceny `4,99 zł`. Po połączeniu
+  z Google Play wyświetla lokalną, sformatowaną cenę bieżącego planu
+  subskrypcji; do czasu odpowiedzi Billing używa fallbacku `9,99 zł/mies.`.
 - Wysokość banera AdMob jest zapamiętywana podczas tworzenia widoku na wątku
   interfejsu. Python może ją teraz bezpiecznie odczytać bez wywoływania metod
   widoku reklamowego poza głównym wątkiem Androida.
@@ -24,6 +27,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Wydzielono eksport plików przez MediaStore i uruchamianie Android Sharesheet
   z `RefrigerationCalcActivity` do osobnego `FileShareService`. Publiczna metoda
   `shareFile` pozostaje zgodnym, cienkim delegatem dla PyJNIus.
+- Wydzielono stan, etykietę ceny i orkiestrację zakupu PRO z `main.py` do
+  niezależnego od Kivy i PyJNIus kontrolera `ProMonetizationController`.
 
 ### Testy
 
@@ -33,6 +38,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano testy kontraktu udostępniania plików chroniące eksport do katalogu
   Pobrane na Androidzie 10+, starszy fallback URI, MIME, temat, treść i flagę
   odczytu dla aplikacji odbierającej.
+- Dodano testy dynamicznej ceny subskrypcji i kontrolera PRO, w tym fallback,
+  lokalną cenę Google Play, harmonogram odświeżania i komunikat po zakupie.
 
 ## [1.5.11] - 2026-07-20
 

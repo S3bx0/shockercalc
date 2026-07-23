@@ -40,6 +40,11 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 8. `tpof/mobile/tabs/labor.py`
    - Budowa i obsługa zakładki robocizny, bez zmiany `tpof.labor`.
 
+9. `tpof/mobile/services/monetization.py`
+   - Stan PRO, lokalna cena Google Play i asynchroniczne odświeżanie zakupu.
+   - Pierwszy etap wykonany; reklamy rewarded i blokady modułów pozostają do
+     kolejnych małych migracji.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.

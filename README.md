@@ -37,6 +37,7 @@ tpof/                  # pakiet źródłowy
 └── mobile/            # warstwa mobilna (KivyMD)
     ├── main.py        # składanie UI i tymczasowa orkiestracja ekranów
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
+    ├── services/      # kontrolery stanu UI, m.in. subskrypcji PRO
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
@@ -117,14 +118,18 @@ Miesięczna subskrypcja Google Play Billing:
 - base plan ID: `monthly-499`,
 - efekt aktywnej subskrypcji: usuwa reklamy, odblokowuje pełną listę produktów,
   eksport PDF oraz moduły PRO, w tym zawory dekompresyjne,
-- cena: ustawiana w Google Play Console, nie w kodzie aplikacji.
+- cena: ustawiana w Google Play Console; przycisk pobiera jej lokalny,
+  sformatowany zapis z `ProductDetails`, a przed odpowiedzią Billing pokazuje
+  awaryjnie `9,99 zł/mies.`.
 
 Legacy zakup jednorazowy `pro_no_ads` nadal jest rozpoznawany jako PRO, aby
 nie odbierać dostępu użytkownikom/testom ze starego modelu.
 
 Połączenie z Google Play, szczegóły produktów, uruchamianie zakupów,
 acknowledge i synchronizacja uprawnień znajdują się w natywnym
-`BillingService`. Activity udostępnia warstwie Python tylko cienkie delegaty.
+`BillingService`. Activity udostępnia warstwie Python tylko cienkie delegaty,
+a stan przycisku i odświeżanie zakupu obsługuje
+`tpof/mobile/services/monetization.py`.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 

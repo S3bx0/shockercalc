@@ -81,6 +81,7 @@ from tpof.mobile.layout import clamp, compute_metrics
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
+from tpof.mobile.services.monetization import ProMonetizationController
 from tpof.mobile.tabs.labor import LaborTabController, LaborTabPresenter
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.validation import _numeric_input_filter
@@ -193,7 +194,6 @@ def main() -> None:
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
-            self._pro_thanks_shown = False
             self._valve_type = "Maxi Elebar"
             self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
             self._last_valve_results = None
@@ -261,6 +261,17 @@ def main() -> None:
                 on_calculate=self._calculate_labor,
                 on_open_rates=self._open_labor_rates_dialog,
                 on_open_chart=self._open_labor_chart_dialog,
+            )
+            self._monetization = ProMonetizationController(
+                is_android=IS_ANDROID,
+                translate=self._t,
+                get_android_activity=self._android_activity,
+                schedule_once=Clock.schedule_once,
+                on_state_changed=self._apply_pro_ui_state,
+                refresh_ad_slot_height=self._refresh_ad_slot_height,
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
             )
 
             self.root_host = FloatLayout()
@@ -331,8 +342,7 @@ def main() -> None:
             self._sync_theme_surfaces()
             Window.bind(size=self._apply_responsive_layout)
             self._apply_responsive_layout()
-            Clock.schedule_once(lambda *_: self._refresh_pro_status(), 0.8)
-            Clock.schedule_once(lambda *_: self._refresh_pro_status(), 3.0)
+            self._monetization.start()
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 1.2)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 3.5)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
@@ -888,7 +898,7 @@ def main() -> None:
                     self.valve_lbl_totalflow.text = self._t("valve_total_flow", value="—")
                     self.valve_lbl_flow.text = self._t("valve_flow", value="—")
                     self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value="—")
-            self._set_pro_status(self._pro_no_ads)
+            self._monetization.refresh_label()
             self._apply_hints()
 
         def _display_category(self, category: str | None) -> str:
@@ -1507,14 +1517,14 @@ def main() -> None:
                 font_style="Caption",
             )
             self.btn_pro = MDRaisedButton(
-                text=self._t("pro_button"),
+                text=self._monetization.button_text(),
                 size_hint_x=None,
                 width=dp(128),
                 size_hint_y=None,
                 height=dp(30),
                 font_size="11sp",
                 pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._buy_pro(),
+                on_release=lambda *_: self._monetization.buy(),
             )
             footer.add_widget(self.btn_pro)
             footer.add_widget(self.footer_label)
@@ -2624,27 +2634,6 @@ def main() -> None:
             except Exception:  # pragma: no cover - Android only
                 return activity
 
-        def _refresh_pro_status(self, announce: bool = False):
-            if not IS_ANDROID:
-                self._set_pro_status(False)
-                return
-            try:
-                activity = self._android_activity()
-                was_active = self._pro_no_ads
-                active = bool(activity.isProNoAdsActive())
-                self._set_pro_status(active)
-                self._refresh_ad_slot_height()
-                if (
-                    announce
-                    and active
-                    and not was_active
-                    and not self._pro_thanks_shown
-                ):
-                    self._pro_thanks_shown = True
-                    self._show_error(self._t("pro_thanks"))
-            except Exception:  # pragma: no cover - Android only
-                log.debug("Nie udało się odczytać statusu PRO", exc_info=True)
-
         def _refresh_ad_slot_height(self):
             if not IS_ANDROID or self._pro_no_ads:
                 return
@@ -2658,14 +2647,14 @@ def main() -> None:
             self._native_ad_height_dp = height_dp
             self._apply_responsive_layout()
 
-        def _set_pro_status(self, active: bool):
+        def _apply_pro_ui_state(self, active: bool, button_text: str):
             from kivy.metrics import dp
 
             self._pro_no_ads = active
             ad_height = self._layout_metrics(dp)["ad_h"]
             if hasattr(self, "btn_pro"):
                 self.btn_pro.disabled = active
-                self.btn_pro.text = self._t("pro_active") if active else self._t("pro_button")
+                self.btn_pro.text = button_text
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
             if hasattr(self, "ad_slot"):
@@ -2676,23 +2665,6 @@ def main() -> None:
                 self.footer_label.text = self._status_footer_text()
             if hasattr(self, "btn_add_product"):
                 self.btn_add_product.opacity = 1.0 if active else 0.72
-
-        def _buy_pro(self):
-            if self._pro_no_ads:
-                return
-            if not IS_ANDROID:
-                self._show_error(self._t("pro_google_play_only"))
-                return
-            try:
-                telemetry.log_event("pro_purchase_started")
-                self._android_activity().launchProPurchase()
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 1.0)
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 4.0)
-                Clock.schedule_once(lambda *_: self._refresh_pro_status(announce=True), 10.0)
-            except Exception as exc:  # pragma: no cover - Android only
-                telemetry.record_exception(exc, "buy_pro")
-                log.exception("Zakup PRO")
-                self._show_error(self._t("pro_unavailable"))
 
         def _credit_pending_reward_tokens(self):
             """Dolicza tokeny zdobyte za reklamy rewarded (most z warstwy Android)."""

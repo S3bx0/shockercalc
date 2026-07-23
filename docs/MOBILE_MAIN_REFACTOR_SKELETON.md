@@ -344,7 +344,6 @@ Przenieść lub opakować:
 - `_android_activity`
 - `_set_active_ad_tab`
 - `_refresh_ad_slot_height`
-- `_buy_pro`
 - `_buy_valve_module`
 - `_offer_reward_ad`
 - `_open_ad_privacy_options`
@@ -354,10 +353,16 @@ Na pierwszym etapie można zostawić metody w `ShockerCalcApp` jako delegaty do
 
 ### `tpof/mobile/services/monetization.py`
 
-Przenieść orkiestrację stanu UI:
+Wykonany pierwszy etap:
 
-- `_refresh_pro_status`
-- `_set_pro_status`
+- `ProMonetizationController` przejął `_refresh_pro_status`, `_set_pro_status`
+  i `_buy_pro`,
+- kontroler pobiera z natywnego `BillingService` lokalną cenę subskrypcji,
+  stosuje bezpieczny fallback i nie importuje Kivy ani PyJNIus,
+- `main.py` zachowuje wyłącznie callback aktualizujący konkretne widżety.
+
+Pozostało przenieść:
+
 - `_credit_pending_reward_tokens`
 - `_after_reward_ad`
 - `_valve_module_available`

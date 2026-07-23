@@ -73,6 +73,7 @@ files = [
     "tpof/mobile/paths.py",
     "tpof/mobile/android_bridge.py",
     "tpof/mobile/pdf_export.py",
+    "tpof/mobile/services/monetization.py",
     "tpof/mobile/dialogs/labor_rates.py",
     "tpof/mobile/dialogs/legal.py",
     "tpof/mobile/dialogs/settings.py",

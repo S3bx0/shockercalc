@@ -27,6 +27,9 @@ Wdrożone cięcia:
 - natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
   `AdvertisingService`, `BillingService` i `FileShareService`, pozostawiające
   w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
+- niezależny od Kivy i PyJNIus `ProMonetizationController`, który przejął
+  lokalną cenę Google Play, stan przycisku PRO i harmonogram odświeżania zakupu
+  z `main.py`.
 
 Następny naturalny krok to usunięcie tymczasowych aliasów widgetów z `main.py`
 i przeniesienie stanu oraz orkiestracji obliczeń robocizny do kontrolera
