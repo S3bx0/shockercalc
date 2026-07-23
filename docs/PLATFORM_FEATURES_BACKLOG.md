@@ -21,9 +21,9 @@ Activity.
 
 ## Bramka architektoniczna
 
-`RefrigerationCalcActivity.java` ma obecnie około 1300 linii i łączy cykl życia,
-Firebase, Remote Config, zgodę UMP, AdMob, Billing oraz udostępnianie plików.
-Przed dodaniem Review, Updates, FCM lub Integrity należy wydzielić:
+`RefrigerationCalcActivity.java` została zmniejszona do około 340 linii.
+Firebase, Remote Config, zgoda UMP, AdMob, Billing oraz udostępnianie plików
+mają osobne serwisy. Bramka wymagała wydzielenia:
 
 1. `FirebaseTelemetryService` — inicjalizacja Firebase, Analytics, Crashlytics
    i Remote Config.
@@ -37,8 +37,8 @@ Activity ma zachować publiczne metody używane przez pyjnius jako cienkie
 delegaty oraz przekazywać serwisom zdarzenia `onCreate`, `onResume`, `onPause`
 i `onDestroy`.
 
-Stan realizacji: punkty 1–4 są wydzielone i chronione testami
-charakteryzującymi. Następnym natywnym cięciem pozostaje `FileShareService`.
+Stan realizacji: punkty 1–5 są wydzielone i chronione testami
+charakteryzującymi. Natywna bramka architektoniczna jest zamknięta.
 
 ## Rekomendowana kolejność funkcji platformowych
 

@@ -21,12 +21,18 @@ wersjonowanie wg [SemVer](https://semver.org/).
   zaworów.
 - `RefrigerationCalcActivity` zachowuje wyłącznie cienkie metody wywoływane
   przez PyJNIus oraz przekazuje do serwisu zdarzenia cyklu życia.
+- Wydzielono eksport plików przez MediaStore i uruchamianie Android Sharesheet
+  z `RefrigerationCalcActivity` do osobnego `FileShareService`. Publiczna metoda
+  `shareFile` pozostaje zgodnym, cienkim delegatem dla PyJNIus.
 
 ### Testy
 
 - Dodano testy kontraktu Billing chroniące identyfikatory produktów i planu,
   zakup subskrypcji i modułu jednorazowego, obsługę anulowania, acknowledge
   oraz cofanie lokalnych uprawnień po utracie zakupu.
+- Dodano testy kontraktu udostępniania plików chroniące eksport do katalogu
+  Pobrane na Androidzie 10+, starszy fallback URI, MIME, temat, treść i flagę
+  odczytu dla aplikacji odbierającej.
 
 ## [1.5.11] - 2026-07-20
 

@@ -25,13 +25,13 @@ Wdrożone cięcia:
 - niezależny od Kivy prezenter wykresu i trybu dojazdu oraz kontroler budujący
   kompletny widok robocizny w `tpof/mobile/tabs/labor.py`,
 - natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
-  `AdvertisingService` i `BillingService`, pozostawiające w Activity tylko
-  fasadę dla PyJNIus i przekazanie cyklu życia.
+  `AdvertisingService`, `BillingService` i `FileShareService`, pozostawiające
+  w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
 
 Następny naturalny krok to usunięcie tymczasowych aliasów widgetów z `main.py`
 i przeniesienie stanu oraz orkiestracji obliczeń robocizny do kontrolera
-zakładki. Po stronie natywnej kolejnym małym cięciem jest `FileShareService`
-odpowiedzialny za MediaStore i Android Sharesheet.
+zakładki. Natywna bramka serwisów została zamknięta; kolejne integracje
+platformowe nie powinny ponownie rozbudowywać Activity.
 
 ## Future: WebView chart engine
 

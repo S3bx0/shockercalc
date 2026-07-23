@@ -46,7 +46,8 @@ android/src/.../       # natywna powłoka Android
 ├── FirebaseTelemetryService.java
 ├── PrivacyConsentService.java
 ├── AdvertisingService.java
-└── BillingService.java
+├── BillingService.java
+└── FileShareService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
