@@ -41,6 +41,7 @@ final class BillingService implements PurchasesUpdatedListener {
     private BillingClient billingClient;
     private ProductDetails proSubscriptionDetails;
     private ProductDetails moduleValvesProductDetails;
+    private volatile String proFormattedPrice = "";
     private boolean billingConnecting;
     private boolean pendingProPurchaseLaunch;
     private boolean pendingModuleValvesLaunch;
@@ -77,6 +78,10 @@ final class BillingService implements PurchasesUpdatedListener {
 
     boolean isModuleValvesOwned() {
         return preferences.getBoolean(PREF_MODULE_VALVES, false);
+    }
+
+    String getProFormattedPrice() {
+        return proFormattedPrice;
     }
 
     void launchProPurchase() {
@@ -203,6 +208,13 @@ final class BillingService implements PurchasesUpdatedListener {
     }
 
     private String getSubscriptionOfferToken(ProductDetails productDetails) {
+        ProductDetails.SubscriptionOfferDetails offer =
+                getSubscriptionOfferDetails(productDetails);
+        return offer == null ? null : offer.getOfferToken();
+    }
+
+    private ProductDetails.SubscriptionOfferDetails getSubscriptionOfferDetails(
+            ProductDetails productDetails) {
         if (productDetails == null
                 || productDetails.getSubscriptionOfferDetails() == null
                 || productDetails.getSubscriptionOfferDetails().isEmpty()) {
@@ -211,10 +223,30 @@ final class BillingService implements PurchasesUpdatedListener {
         for (ProductDetails.SubscriptionOfferDetails offer :
                 productDetails.getSubscriptionOfferDetails()) {
             if (PRO_BASE_PLAN_ID.equals(offer.getBasePlanId())) {
-                return offer.getOfferToken();
+                return offer;
             }
         }
-        return productDetails.getSubscriptionOfferDetails().get(0).getOfferToken();
+        return productDetails.getSubscriptionOfferDetails().get(0);
+    }
+
+    private String getSubscriptionFormattedPrice(ProductDetails productDetails) {
+        ProductDetails.SubscriptionOfferDetails offer =
+                getSubscriptionOfferDetails(productDetails);
+        if (offer == null || offer.getPricingPhases() == null) {
+            return "";
+        }
+        List<ProductDetails.PricingPhase> phases =
+                offer.getPricingPhases().getPricingPhaseList();
+        if (phases == null || phases.isEmpty()) {
+            return "";
+        }
+        for (ProductDetails.PricingPhase phase : phases) {
+            if (phase.getRecurrenceMode()
+                    == ProductDetails.RecurrenceMode.INFINITE_RECURRING) {
+                return phase.getFormattedPrice();
+            }
+        }
+        return phases.get(phases.size() - 1).getFormattedPrice();
     }
 
     private void queryProProductDetails() {
@@ -245,6 +277,8 @@ final class BillingService implements PurchasesUpdatedListener {
                                 && !productDetailsResult.getProductDetailsList().isEmpty()) {
                             proSubscriptionDetails =
                                     productDetailsResult.getProductDetailsList().get(0);
+                            proFormattedPrice =
+                                    getSubscriptionFormattedPrice(proSubscriptionDetails);
                             if (pendingProPurchaseLaunch) {
                                 pendingProPurchaseLaunch = false;
                                 launchProPurchase();

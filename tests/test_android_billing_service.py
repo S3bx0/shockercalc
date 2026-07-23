@@ -16,6 +16,7 @@ def test_activity_keeps_thin_pyjnius_billing_delegates():
     assert "private BillingService billingService;" in activity
     assert "billing().initialize();" in activity
     assert "return billing().isProNoAdsActive();" in activity
+    assert "return billing().getProFormattedPrice();" in activity
     assert "billing().launchProPurchase();" in activity
     assert "return billing().isModuleValvesOwned();" in activity
     assert "billing().launchModulePurchase();" in activity
@@ -66,6 +67,20 @@ def test_billing_service_preserves_connection_and_purchase_launches():
     assert "billingClient.launchBillingFlow(activity, flowParams)" in service
     assert "pendingProPurchaseLaunch = true;" in service
     assert "pendingModuleValvesLaunch = true;" in service
+
+
+def test_billing_service_exposes_localized_recurring_price():
+    service = _compact(SERVICE)
+
+    assert 'private volatile String proFormattedPrice = "";' in service
+    assert "String getProFormattedPrice()" in service
+    assert "return proFormattedPrice;" in service
+    assert "getSubscriptionOfferDetails(productDetails)" in service
+    assert "PRO_BASE_PLAN_ID.equals(offer.getBasePlanId())" in service
+    assert "offer.getPricingPhases().getPricingPhaseList()" in service
+    assert "ProductDetails.RecurrenceMode.INFINITE_RECURRING" in service
+    assert "phase.getFormattedPrice()" in service
+    assert "proFormattedPrice = getSubscriptionFormattedPrice(proSubscriptionDetails);" in service
 
 
 def test_billing_service_preserves_ownership_sync_and_revocation():

@@ -297,6 +297,10 @@ public class RefrigerationCalcActivity extends PythonActivity {
         return billing().isProNoAdsActive();
     }
 
+    public String getProFormattedPrice() {
+        return billing().getProFormattedPrice();
+    }
+
     public void launchProPurchase() {
         billing().launchProPurchase();
     }
