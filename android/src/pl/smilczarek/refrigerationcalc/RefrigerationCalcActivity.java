@@ -3,7 +3,6 @@ package pl.smilczarek.refrigerationcalc;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -22,47 +21,18 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import com.android.billingclient.api.AcknowledgePurchaseParams;
-import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
-import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.BillingClientStateListener;
-import com.android.billingclient.api.BillingFlowParams;
-import com.android.billingclient.api.BillingResult;
-import com.android.billingclient.api.PendingPurchasesParams;
-import com.android.billingclient.api.ProductDetails;
-import com.android.billingclient.api.ProductDetailsResponseListener;
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesResponseListener;
-import com.android.billingclient.api.PurchasesUpdatedListener;
-import com.android.billingclient.api.QueryProductDetailsParams;
-import com.android.billingclient.api.QueryProductDetailsResult;
-import com.android.billingclient.api.QueryPurchasesParams;
 import org.kivy.android.PythonActivity;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.List;
 
-public class RefrigerationCalcActivity extends PythonActivity implements PurchasesUpdatedListener {
+public class RefrigerationCalcActivity extends PythonActivity {
     private static final String TAG = "RefrigerationCalc";
-    private static final String LEGACY_PRO_PRODUCT_ID = "pro_no_ads";
-    private static final String PRO_SUBSCRIPTION_ID = "refrigeration_pro";
-    private static final String PRO_BASE_PLAN_ID = "monthly-499";
-    private static final String MODULE_VALVES_PRODUCT_ID = "module_valves";
     private static final String PREFS_NAME = "shockercalc_billing";
-    private static final String PREF_PRO_NO_ADS = "pro_no_ads";
-    private static final String PREF_PRO_SUBSCRIPTION = "refrigeration_pro";
-    private static final String PREF_MODULE_VALVES = "module_valves";
 
-    private BillingClient billingClient;
-    private ProductDetails proSubscriptionDetails;
-    private ProductDetails moduleValvesProductDetails;
-    private boolean billingConnecting;
-    private boolean pendingProPurchaseLaunch;
-    private boolean pendingModuleValvesLaunch;
+    private BillingService billingService;
     private FirebaseTelemetryService firebaseTelemetryService;
     private PrivacyConsentService privacyConsentService;
     private AdvertisingService advertisingService;
@@ -76,7 +46,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         configureEdgeToEdge();
         showAnimatedIntro();
         telemetry().initialize();
-        initializeBilling();
+        billing().initialize();
         initializeAds();
     }
 
@@ -170,6 +140,18 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
                     this::isProNoAdsActive);
         }
         return advertisingService;
+    }
+
+    private BillingService billing() {
+        if (billingService == null) {
+            billingService = new BillingService(
+                    this,
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+                    () -> {
+                        advertising().updateForProStatus();
+                    });
+        }
+        return billingService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
@@ -398,403 +380,21 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
     }
 
     public boolean isProNoAdsActive() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        return prefs.getBoolean(PREF_PRO_NO_ADS, false)
-                || prefs.getBoolean(PREF_PRO_SUBSCRIPTION, false);
+        return billing().isProNoAdsActive();
     }
 
     public void launchProPurchase() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isProNoAdsActive()) {
-                    advertising().updateForProStatus();
-                    return;
-                }
-                if (billingClient == null) {
-                    initializeBilling();
-                }
-                if (billingClient == null || !billingClient.isReady()) {
-                    pendingProPurchaseLaunch = true;
-                    startBillingConnection();
-                    return;
-                }
-                if (proSubscriptionDetails == null) {
-                    pendingProPurchaseLaunch = true;
-                    queryProProductDetails();
-                    return;
-                }
-                String offerToken = getSubscriptionOfferToken(proSubscriptionDetails);
-                if (offerToken == null) {
-                    Log.w(TAG, "PRO subscription offer token is unavailable.");
-                    pendingProPurchaseLaunch = false;
-                    queryProProductDetails();
-                    return;
-                }
-                BillingFlowParams.ProductDetailsParams productParams =
-                        BillingFlowParams.ProductDetailsParams.newBuilder()
-                                .setProductDetails(proSubscriptionDetails)
-                                .setOfferToken(offerToken)
-                                .build();
-                BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                        .setProductDetailsParamsList(Collections.singletonList(productParams))
-                        .build();
-                BillingResult result = billingClient.launchBillingFlow(
-                        RefrigerationCalcActivity.this,
-                        flowParams
-                );
-                if (result.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
-                    queryOwnedPurchases();
-                } else if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.w(TAG, "PRO subscription launch failed: " + result.getDebugMessage());
-                }
-            }
-        });
+        billing().launchProPurchase();
     }
 
     /** Czy moduł doboru zaworów został kupiony (jednorazowy produkt INAPP). */
     public boolean isModuleValvesOwned() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .getBoolean(PREF_MODULE_VALVES, false);
+        return billing().isModuleValvesOwned();
     }
 
     /** Uruchamia zakup modułu zaworów (jednorazowy produkt ``module_valves``). */
     public void launchModulePurchase() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isModuleValvesOwned()) {
-                    return;
-                }
-                if (billingClient == null) {
-                    initializeBilling();
-                }
-                if (billingClient == null || !billingClient.isReady()) {
-                    pendingModuleValvesLaunch = true;
-                    startBillingConnection();
-                    return;
-                }
-                if (moduleValvesProductDetails == null) {
-                    pendingModuleValvesLaunch = true;
-                    queryModuleValvesProductDetails();
-                    return;
-                }
-                BillingFlowParams.ProductDetailsParams productParams =
-                        BillingFlowParams.ProductDetailsParams.newBuilder()
-                                .setProductDetails(moduleValvesProductDetails)
-                                .build();
-                BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                        .setProductDetailsParamsList(Collections.singletonList(productParams))
-                        .build();
-                BillingResult result = billingClient.launchBillingFlow(
-                        RefrigerationCalcActivity.this,
-                        flowParams
-                );
-                if (result.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
-                    queryOwnedPurchases();
-                } else if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.w(TAG, "Module valves purchase launch failed: " + result.getDebugMessage());
-                }
-            }
-        });
-    }
-
-    private void initializeBilling() {
-        if (billingClient != null) {
-            return;
-        }
-        billingClient = BillingClient.newBuilder(this)
-                .setListener(this)
-                .enableAutoServiceReconnection()
-                .enablePendingPurchases(
-                        PendingPurchasesParams.newBuilder()
-                                .enableOneTimeProducts()
-                                .build()
-                )
-                .build();
-        startBillingConnection();
-    }
-
-    private void startBillingConnection() {
-        if (billingClient == null || billingConnecting) {
-            return;
-        }
-        if (billingClient.isReady()) {
-            queryProProductDetails();
-            queryModuleValvesProductDetails();
-            queryOwnedPurchases();
-            return;
-        }
-
-        billingConnecting = true;
-        billingClient.startConnection(new BillingClientStateListener() {
-            @Override
-            public void onBillingSetupFinished(BillingResult billingResult) {
-                billingConnecting = false;
-                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                    queryProProductDetails();
-                    queryModuleValvesProductDetails();
-                    queryOwnedPurchases();
-                } else {
-                    Log.w(TAG, "Billing setup failed: " + billingResult.getDebugMessage());
-                }
-            }
-
-            @Override
-            public void onBillingServiceDisconnected() {
-                billingConnecting = false;
-            }
-        });
-    }
-
-    private String getSubscriptionOfferToken(ProductDetails productDetails) {
-        if (productDetails == null
-                || productDetails.getSubscriptionOfferDetails() == null
-                || productDetails.getSubscriptionOfferDetails().isEmpty()) {
-            return null;
-        }
-        for (ProductDetails.SubscriptionOfferDetails offer :
-                productDetails.getSubscriptionOfferDetails()) {
-            if (PRO_BASE_PLAN_ID.equals(offer.getBasePlanId())) {
-                return offer.getOfferToken();
-            }
-        }
-        return productDetails.getSubscriptionOfferDetails().get(0).getOfferToken();
-    }
-
-    private void queryProProductDetails() {
-        if (billingClient == null || !billingClient.isReady()) {
-            startBillingConnection();
-            return;
-        }
-
-        QueryProductDetailsParams.Product product =
-                QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRO_SUBSCRIPTION_ID)
-                        .setProductType(BillingClient.ProductType.SUBS)
-                        .build();
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(Collections.singletonList(product))
-                .build();
-
-        billingClient.queryProductDetailsAsync(params, new ProductDetailsResponseListener() {
-            @Override
-            public void onProductDetailsResponse(
-                    BillingResult billingResult,
-                    QueryProductDetailsResult productDetailsResult) {
-                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
-                        && productDetailsResult != null
-                        && !productDetailsResult.getProductDetailsList().isEmpty()) {
-                    proSubscriptionDetails = productDetailsResult.getProductDetailsList().get(0);
-                    if (pendingProPurchaseLaunch) {
-                        pendingProPurchaseLaunch = false;
-                        launchProPurchase();
-                    }
-                } else {
-                    Log.w(TAG, "Cannot fetch PRO product: " + billingResult.getDebugMessage());
-                }
-            }
-        });
-    }
-
-    private void queryModuleValvesProductDetails() {
-        if (billingClient == null || !billingClient.isReady()) {
-            startBillingConnection();
-            return;
-        }
-
-        QueryProductDetailsParams.Product product =
-                QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(MODULE_VALVES_PRODUCT_ID)
-                        .setProductType(BillingClient.ProductType.INAPP)
-                        .build();
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(Collections.singletonList(product))
-                .build();
-
-        billingClient.queryProductDetailsAsync(params, new ProductDetailsResponseListener() {
-            @Override
-            public void onProductDetailsResponse(
-                    BillingResult billingResult,
-                    QueryProductDetailsResult productDetailsResult) {
-                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
-                        && productDetailsResult != null
-                        && !productDetailsResult.getProductDetailsList().isEmpty()) {
-                    moduleValvesProductDetails = productDetailsResult.getProductDetailsList().get(0);
-                    if (pendingModuleValvesLaunch) {
-                        pendingModuleValvesLaunch = false;
-                        launchModulePurchase();
-                    }
-                } else {
-                    Log.w(TAG, "Cannot fetch valves module product: " + billingResult.getDebugMessage());
-                }
-            }
-        });
-    }
-
-    private void queryOwnedPurchases() {
-        if (billingClient == null || !billingClient.isReady()) {
-            startBillingConnection();
-            return;
-        }
-        queryOwnedInAppPurchases();
-        queryOwnedSubscriptionPurchases();
-    }
-
-    private void queryOwnedInAppPurchases() {
-        QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.INAPP)
-                .build();
-        billingClient.queryPurchasesAsync(params, new PurchasesResponseListener() {
-            @Override
-            public void onQueryPurchasesResponse(BillingResult billingResult, List<Purchase> purchases) {
-                if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.w(TAG, "Cannot query purchases: " + billingResult.getDebugMessage());
-                    return;
-                }
-                boolean ownsLegacyPro = false;
-                boolean ownsValves = false;
-                if (purchases != null) {
-                    for (Purchase purchase : purchases) {
-                        handlePurchase(purchase);
-                        if (purchase != null
-                                && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                            if (purchase.getProducts().contains(LEGACY_PRO_PRODUCT_ID)) {
-                                ownsLegacyPro = true;
-                            }
-                            if (purchase.getProducts().contains(MODULE_VALVES_PRODUCT_ID)) {
-                                ownsValves = true;
-                            }
-                        }
-                    }
-                }
-                if (!ownsLegacyPro && isLegacyProNoAdsActive()) {
-                    setProNoAdsActive(false);
-                }
-                if (!ownsValves && isModuleValvesOwned()) {
-                    setModuleValvesOwned(false);
-                }
-            }
-        });
-    }
-
-    private void queryOwnedSubscriptionPurchases() {
-        QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build();
-        billingClient.queryPurchasesAsync(params, new PurchasesResponseListener() {
-            @Override
-            public void onQueryPurchasesResponse(BillingResult billingResult, List<Purchase> purchases) {
-                if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.w(TAG, "Cannot query subscriptions: " + billingResult.getDebugMessage());
-                    return;
-                }
-                boolean ownsSubscription = false;
-                if (purchases != null) {
-                    for (Purchase purchase : purchases) {
-                        handlePurchase(purchase);
-                        if (purchase != null
-                                && purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED
-                                && purchase.getProducts().contains(PRO_SUBSCRIPTION_ID)) {
-                            ownsSubscription = true;
-                        }
-                    }
-                }
-                if (!ownsSubscription && isProSubscriptionActive()) {
-                    setProSubscriptionActive(false);
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onPurchasesUpdated(BillingResult billingResult, List<Purchase> purchases) {
-        int code = billingResult.getResponseCode();
-        if (code == BillingClient.BillingResponseCode.OK && purchases != null) {
-            for (Purchase purchase : purchases) {
-                handlePurchase(purchase);
-            }
-        } else if (code == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
-            queryOwnedPurchases();
-        } else if (code != BillingClient.BillingResponseCode.USER_CANCELED) {
-            Log.w(TAG, "Purchase update failed: " + billingResult.getDebugMessage());
-        }
-    }
-
-    private boolean handlePurchase(Purchase purchase) {
-        if (purchase == null) {
-            return false;
-        }
-        if (purchase.getPurchaseState() != Purchase.PurchaseState.PURCHASED) {
-            Log.i(TAG, "Purchase is pending.");
-            return false;
-        }
-
-        boolean handled = false;
-        if (purchase.getProducts().contains(LEGACY_PRO_PRODUCT_ID)) {
-            setProNoAdsActive(true);
-            handled = true;
-        }
-        if (purchase.getProducts().contains(PRO_SUBSCRIPTION_ID)) {
-            setProSubscriptionActive(true);
-            handled = true;
-        }
-        if (purchase.getProducts().contains(MODULE_VALVES_PRODUCT_ID)) {
-            setModuleValvesOwned(true);
-            handled = true;
-        }
-        if (!handled) {
-            return false;
-        }
-
-        if (!purchase.isAcknowledged() && billingClient != null && billingClient.isReady()) {
-            AcknowledgePurchaseParams params = AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.getPurchaseToken())
-                    .build();
-            billingClient.acknowledgePurchase(params, new AcknowledgePurchaseResponseListener() {
-                @Override
-                public void onAcknowledgePurchaseResponse(BillingResult billingResult) {
-                    if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                        Log.w(TAG, "Acknowledge failed: " + billingResult.getDebugMessage());
-                    }
-                }
-            });
-        }
-        return true;
-    }
-
-    private boolean isLegacyProNoAdsActive() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .getBoolean(PREF_PRO_NO_ADS, false);
-    }
-
-    private boolean isProSubscriptionActive() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .getBoolean(PREF_PRO_SUBSCRIPTION, false);
-    }
-
-    private void setProNoAdsActive(boolean active) {
-        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        editor.putBoolean(PREF_PRO_NO_ADS, active);
-        editor.apply();
-        updateAdsForProStatus();
-    }
-
-    private void setProSubscriptionActive(boolean active) {
-        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        editor.putBoolean(PREF_PRO_SUBSCRIPTION, active);
-        editor.apply();
-        updateAdsForProStatus();
-    }
-
-    private void updateAdsForProStatus() {
-        advertising().updateForProStatus();
-    }
-
-    private void setModuleValvesOwned(boolean owned) {
-        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        editor.putBoolean(PREF_MODULE_VALVES, owned);
-        editor.apply();
+        billing().launchModulePurchase();
     }
 
     @Override
@@ -803,11 +403,7 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         if (advertisingService != null) {
             advertisingService.onResume();
         }
-        if (billingClient != null && billingClient.isReady()) {
-            queryOwnedPurchases();
-        } else {
-            startBillingConnection();
-        }
+        billing().onResume();
     }
 
     @Override
@@ -824,9 +420,8 @@ public class RefrigerationCalcActivity extends PythonActivity implements Purchas
         if (advertisingService != null) {
             advertisingService.onDestroy();
         }
-        if (billingClient != null) {
-            billingClient.endConnection();
-            billingClient = null;
+        if (billingService != null) {
+            billingService.onDestroy();
         }
         super.onDestroy();
     }

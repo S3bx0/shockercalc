@@ -23,12 +23,15 @@ Wdrożone cięcia:
 - kontroler dialogu ustawień w `tpof/mobile/dialogs/settings.py`,
 - kontroler dialogu stawek w `tpof/mobile/dialogs/labor_rates.py`,
 - niezależny od Kivy prezenter wykresu i trybu dojazdu oraz kontroler budujący
-  kompletny widok robocizny w `tpof/mobile/tabs/labor.py`.
+  kompletny widok robocizny w `tpof/mobile/tabs/labor.py`,
+- natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
+  `AdvertisingService` i `BillingService`, pozostawiające w Activity tylko
+  fasadę dla PyJNIus i przekazanie cyklu życia.
 
 Następny naturalny krok to usunięcie tymczasowych aliasów widgetów z `main.py`
 i przeniesienie stanu oraz orkiestracji obliczeń robocizny do kontrolera
-zakładki. Po zamknięciu tej granicy można rozpocząć wydzielanie natywnych
-serwisów Firebase, AdMob i Billing z Activity.
+zakładki. Po stronie natywnej kolejnym małym cięciem jest `FileShareService`
+odpowiedzialny za MediaStore i Android Sharesheet.
 
 ## Future: WebView chart engine
 

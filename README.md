@@ -35,11 +35,18 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # UI + integracja AdMob/Billing/Firebase
+    ├── main.py        # składanie UI i tymczasowa orkiestracja ekranów
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
+
+android/src/.../       # natywna powłoka Android
+├── RefrigerationCalcActivity.java
+├── FirebaseTelemetryService.java
+├── PrivacyConsentService.java
+├── AdvertisingService.java
+└── BillingService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
@@ -47,7 +54,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # testy pytest dla `tpof.core`
+tests/                 # testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 
@@ -72,7 +79,8 @@ python -m pytest
 
 ## Android / AdMob / PRO
 
-Build mobilny używa natywnego banera AdMob przez `RefrigerationCalcActivity`.
+Build mobilny używa natywnego banera AdMob przez `AdvertisingService`,
+udostępniany aplikacji jako cienka fasada w `RefrigerationCalcActivity`.
 W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki
 — **osobne dla każdej zakładki** (rozdzielone raporty):
 
@@ -80,7 +88,7 @@ W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednost
 |----------|-------|-------------------|
 | Chłodnicze (zamrażanie) | `…/5599859341` | `…/1548239161` |
 | Zawory dekompresyjne    | `…/6303778370` | `…/1060900411` |
-| Robocizna               | domyślny baner chłodniczy | domyślna ścieżka główna |
+| Robocizna               | `…/8198860699` | `…/7623346864` |
 
 App ID: `ca-app-pub-7481054652344026~2716191071`. Jednostka reklamowa jest
 przełączana w warstwie natywnej (`setActiveAdTab`) przy zmianie zakładki.
@@ -112,6 +120,10 @@ Miesięczna subskrypcja Google Play Billing:
 
 Legacy zakup jednorazowy `pro_no_ads` nadal jest rozpoznawany jako PRO, aby
 nie odbierać dostępu użytkownikom/testom ze starego modelu.
+
+Połączenie z Google Play, szczegóły produktów, uruchamianie zakupów,
+acknowledge i synchronizacja uprawnień znajdują się w natywnym
+`BillingService`. Activity udostępnia warstwie Python tylko cienkie delegaty.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 

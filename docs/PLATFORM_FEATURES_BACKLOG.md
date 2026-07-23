@@ -37,6 +37,9 @@ Activity ma zachować publiczne metody używane przez pyjnius jako cienkie
 delegaty oraz przekazywać serwisom zdarzenia `onCreate`, `onResume`, `onPause`
 i `onDestroy`.
 
+Stan realizacji: punkty 1–4 są wydzielone i chronione testami
+charakteryzującymi. Następnym natywnym cięciem pozostaje `FileShareService`.
+
 ## Rekomendowana kolejność funkcji platformowych
 
 ### Po rozbiciu Activity

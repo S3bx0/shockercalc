@@ -4,6 +4,24 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Zmieniono
+
+- Wydzielono integrację Google Play Billing z
+  `RefrigerationCalcActivity` do osobnego `BillingService`. Serwis przejął
+  połączenie z Google Play, pobieranie produktów, uruchamianie zakupów,
+  acknowledge, synchronizację refund/revoke oraz zapis uprawnień PRO i modułu
+  zaworów.
+- `RefrigerationCalcActivity` zachowuje wyłącznie cienkie metody wywoływane
+  przez PyJNIus oraz przekazuje do serwisu zdarzenia cyklu życia.
+
+### Testy
+
+- Dodano testy kontraktu Billing chroniące identyfikatory produktów i planu,
+  zakup subskrypcji i modułu jednorazowego, obsługę anulowania, acknowledge
+  oraz cofanie lokalnych uprawnień po utracie zakupu.
+
 ## [1.5.11] - 2026-07-20
 
 ### Dodano
