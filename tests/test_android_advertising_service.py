@@ -61,6 +61,10 @@ def test_advertising_service_preserves_banner_and_reward_flow():
 
     assert "MobileAds.initialize(" in service
     assert "AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(" in service
+    assert "private volatile int bannerHeightDp;" in service
+    assert "bannerHeightDp = bannerAdSize.getHeight();" in service
+    assert "return bannerHeightDp;" in service
+    assert "bannerAdView.getAdSize()" not in service
     assert "bannerAdView.loadAd(new AdRequest.Builder().build())" in service
     assert "RewardedAd.load(" in service
     assert "ad.setFullScreenContentCallback(" in service

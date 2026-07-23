@@ -56,6 +56,7 @@ final class AdvertisingService {
     private RewardedAd rewardedAd;
     private boolean rewardedLoading;
     private boolean adsInitialized;
+    private volatile int bannerHeightDp;
     private volatile String activeAdTab = "freezing";
 
     AdvertisingService(
@@ -115,7 +116,9 @@ final class AdvertisingService {
 
         bannerAdView = new AdView(activity);
         bannerAdView.setAdUnitId(getBannerAdUnitId());
-        bannerAdView.setAdSize(getAdSize());
+        AdSize bannerAdSize = getAdSize();
+        bannerAdView.setAdSize(bannerAdSize);
+        bannerHeightDp = bannerAdSize.getHeight();
 
         bannerContainer.addView(bannerAdView);
         root.addView(bannerContainer, containerParams);
@@ -125,6 +128,7 @@ final class AdvertisingService {
     }
 
     private void hideBanner() {
+        bannerHeightDp = 0;
         if (bannerAdView != null) {
             bannerAdView.destroy();
             bannerAdView = null;
@@ -288,10 +292,7 @@ final class AdvertisingService {
     }
 
     int getBannerHeightDp() {
-        if (bannerAdView == null || bannerAdView.getAdSize() == null) {
-            return 0;
-        }
-        return bannerAdView.getAdSize().getHeight();
+        return bannerHeightDp;
     }
 
     void updateForProStatus() {
