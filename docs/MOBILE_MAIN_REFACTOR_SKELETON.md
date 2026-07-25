@@ -504,6 +504,10 @@ Przenieść metody:
 
 ### `tpof/mobile/tabs/labor.py`
 
+Etap wykonany 2026-07-25. Kontroler przejął poniższe metody, stan obliczeń,
+walutę pola kosztu dodatkowego oraz referencje do widgetów. `main.py` wywołuje
+wyłącznie jawne API kontrolera.
+
 Klasa:
 
 ```python

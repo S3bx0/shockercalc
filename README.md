@@ -35,7 +35,10 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # składanie UI i tymczasowa orkiestracja ekranów
+    ├── main.py        # composition root i pozostała orkiestracja ekranów
+    ├── dialogs/       # niezależne kontrolery dialogów
+    ├── tabs/
+    │   └── labor.py   # widok, stan i obliczenia zakładki robocizny
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
     ├── services/      # kontrolery stanu UI, m.in. subskrypcji PRO
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config

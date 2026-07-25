@@ -29,6 +29,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
   `shareFile` pozostaje zgodnym, cienkim delegatem dla PyJNIus.
 - Wydzielono stan, etykietę ceny i orkiestrację zakupu PRO z `main.py` do
   niezależnego od Kivy i PyJNIus kontrolera `ProMonetizationController`.
+- `LaborTabController` przejął stan przełączników, walidację pól, obsługę
+  waluty kosztu dodatkowego, obliczenia, wyniki i wykres zakładki robocizny.
+  Z `main.py` usunięto tymczasowe aliasy widżetów oraz ponad 600 linii logiki
+  tego ekranu.
 
 ### Testy
 
@@ -40,6 +44,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
   odczytu dla aplikacji odbierającej.
 - Dodano testy dynamicznej ceny subskrypcji i kontrolera PRO, w tym fallback,
   lokalną cenę Google Play, harmonogram odświeżania i komunikat po zakupie.
+- Dodano testy kontraktu `LaborTabController` dla stanu przełączników,
+  poprawnego obliczenia, przewinięcia do wyniku i błędu wymaganego pola.
 
 ## [1.5.11] - 2026-07-20
 

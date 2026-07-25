@@ -146,7 +146,7 @@ def test_nieaktywna_zakladka_nie_blokuje_dotyku():
 
     assert "def _set_tab_visibility" in source
     assert "widget.size = (0, 0)" in source
-    assert '"labor": getattr(self, "labor_scroll", None)' in source
+    assert '"labor": self._labor_tab_controller.scroll' in source
     assert "self._raise_tab_widget(tab_widgets.get(name))" in source
     assert "host.remove_widget(widget)" in source
     assert "host.add_widget(widget)" in source
@@ -190,14 +190,16 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
 def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     source = _source("tpof/mobile/main.py")
     dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
+    labor_tab_source = _source("tpof/mobile/tabs/labor.py")
 
-    assert "def _open_labor_rates_dialog" in source
-    assert "labor_rates_pro_required" in source
+    assert "open_rates_dialog=lambda: self._labor_rates_dialog_controller.open()" in source
+    assert "def open_rates" in labor_tab_source
+    assert "labor_rates_pro_required" in labor_tab_source
     assert "LaborRatesDialogController" in source
-    assert "self._labor_rates_dialog_controller.open()" in source
     assert "self._preferences.set_labor_rate_values" in source
     assert "self._preferences.reset_labor_rate_values" in source
-    assert "self._labor_rate_config()" in source
+    assert "def _rate_config" in labor_tab_source
+    assert "rate_config_from_values(self._get_rate_values())" in labor_tab_source
     assert "class LaborRatesDialogController" in dialog_source
     assert "labor_rates_factory" in dialog_source
     assert "def save(" in dialog_source
@@ -209,20 +211,26 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/main.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
 
-    assert "LaborTabPresenter" in source
     assert "LaborTabController" in source
-    assert "view = self._labor_tab_controller.build()" in source
-    assert "self._labor_tab_presenter.chart_rows(breakdown)" in source
-    assert "self._labor_tab_presenter.travel_mode_text(mode)" in source
+    assert "labor_scroll = self._labor_tab_controller.build().scroll" in source
+    assert "self._labor_tab_controller.refresh_texts()" in source
+    assert "self._labor_tab_controller.apply_theme()" in source
     assert "class LaborTabPresenter" in presenter_source
     assert "class LaborTabController" in presenter_source
     assert "class LaborTabView" in presenter_source
     assert "class LaborChartRow" in presenter_source
     assert "_CHART_LABEL_KEYS" in presenter_source
+    assert "def calculate(self) -> bool" in presenter_source
+    assert "self._presenter.chart_rows(breakdown)" in presenter_source
+    assert "self._presenter.travel_mode_text(breakdown.travel_mode)" in presenter_source
+    assert "self.labor_in_people" not in source
+    assert "self._last_labor_breakdown" not in source
+    assert "self._labor_use_highways" not in source
 
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/main.py")
+    labor_tab_source = _source("tpof/mobile/tabs/labor.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
     assert "def _configure_text_field" in source
@@ -236,8 +244,9 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     assert "(self.in_m, self.in_T1, self.in_T2, self.in_t)" in source
     assert "self.valve_in_V," in source
     assert "self.valve_in_q," in source
-    assert "self.labor_in_people," in source
-    assert "self.labor_in_additional," in source
+    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_tab_source
+    assert "self.view.people_input" in labor_tab_source
+    assert "self.view.additional_input" in labor_tab_source
 
 
 def test_robocizna_ma_wykres_kolowy_kosztow():
@@ -252,22 +261,22 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "LaborPieChart" in widgets_source
     assert "chart_factory=LaborPieChart" in source
     assert "chart = self._chart_factory(" in labor_tab_source
-    assert "on_release=lambda *_: self._on_open_chart()" in labor_tab_source
-    assert "self._set_labor_chart_data(" in source
-    assert "center_label=self._t(\"labor_chart_total\")" in source
+    assert "on_release=lambda *_: self.open_chart_dialog()" in labor_tab_source
+    assert "self._set_chart_data(" in labor_tab_source
+    assert 'center_label=self._translate("labor_chart_total")' in labor_tab_source
     assert "Animation(progress=1.0, duration=0.75" in chart_source
     assert "prepare_cost_segments" in chart_source
     assert "Mesh(vertices=vertices" in chart_source
     assert "gap = min(2.2, sweep * 0.18) if multiple_segments else 0.0" in chart_source
     assert "font_size * available_width / measurement.texture.size[0]" in chart_source
     assert "ring_width + dp(5)" not in chart_source
-    assert "self._labor_chart_dialog.size_hint_x = 0.94" in source
-    assert "self.labor_chart_legend" in source
-    assert "def _render_labor_chart_legend" in source
-    assert "def _open_labor_chart_dialog" in source
-    assert "labor_chart_tap" in source
-    assert "from kivymd.uix.dialog import MDDialog" in source
-    assert "from kivymd.uix.button import MDFlatButton" in source
+    assert "self._chart_dialog.size_hint_x = 0.94" in labor_tab_source
+    assert "self.view.chart_legend" in labor_tab_source
+    assert "def _render_chart_legend" in labor_tab_source
+    assert "def open_chart_dialog" in labor_tab_source
+    assert "labor_chart_tap" in labor_tab_source
+    assert "from kivymd.uix.dialog import MDDialog" in labor_tab_source
+    assert "from kivymd.uix.button import MDFlatButton" in labor_tab_source
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():

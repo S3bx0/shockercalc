@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import threading
 from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
 
 from tpof.core import (
@@ -33,19 +32,6 @@ from tpof.core import (
     list_categories,
     list_products,
     load_products,
-)
-from tpof.labor import (
-    CalculationInput as LaborCalculationInput,
-)
-from tpof.labor import (
-    calculate_cost_breakdown as calculate_labor_cost_breakdown,
-)
-from tpof.labor import (
-    default_rate_config,
-    rate_config_from_values,
-)
-from tpof.labor import (
-    validate_calculation_inputs as validate_labor_inputs,
 )
 from tpof.mobile import telemetry, theme
 from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
@@ -82,7 +68,7 @@ from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
-from tpof.mobile.tabs.labor import LaborTabController, LaborTabPresenter
+from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.validation import _numeric_input_filter
 
@@ -109,10 +95,7 @@ def main() -> None:
 
         from tpof.mobile.currency import (
             SUPPORTED_DISPLAY_CURRENCIES,
-            convert_display_amount,
-            convert_display_amount_to_pln,
             default_exchange_rates,
-            format_money,
             get_exchange_rates,
         )
         from tpof.mobile.widgets import (
@@ -184,7 +167,6 @@ def main() -> None:
             self._hints_enabled = self._preferences.hints_enabled
             self._unit_system = self._preferences.unit_system
             self._display_currency = self._preferences.display_currency
-            self._labor_additional_currency = self._display_currency
             self._currency_auto_update = self._preferences.currency_auto_update
             self._exchange_rates = default_exchange_rates()
             self._currency_refresh_running = False
@@ -198,9 +180,6 @@ def main() -> None:
             self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
             self._last_valve_results = None
             self._valve_menu: MDDropdownMenu | None = None
-            self._labor_use_highways = False
-            self._labor_has_additional = False
-            self._last_labor_breakdown = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
             self._legal_dialog_controller = LegalDialogController(
@@ -229,7 +208,7 @@ def main() -> None:
                 clear_field_error=self._clear_field_error,
                 mark_field_error=self._mark_field_error,
                 numeric_input_filter=_numeric_input_filter,
-                invalidate_results=self._invalidate_labor_results,
+                invalidate_results=lambda: self._labor_tab_controller.invalidate_results(),
                 show_message=self._show_error,
                 on_opened=lambda: telemetry.log_event(
                     "settings_opened", {"section": "labor_rates"}
@@ -242,25 +221,32 @@ def main() -> None:
                 ),
                 report_exception=telemetry.record_exception,
             )
-            self._labor_tab_presenter = LaborTabPresenter(
-                translate=self._t,
-                get_language=lambda: self._language,
-                chart_colors=LaborPieChart.SEGMENT_COLORS,
-            )
             self._labor_tab_controller = LaborTabController(
                 translate=self._t,
+                get_language=lambda: self._language,
+                get_display_currency=lambda: self._display_currency,
+                get_exchange_rates=lambda: self._exchange_rates,
+                get_rate_values=lambda: self._preferences.labor_rate_values,
+                reset_rate_values=self._preferences.reset_labor_rate_values,
+                is_pro=lambda: self._pro_no_ads,
+                open_rates_dialog=lambda: self._labor_rates_dialog_controller.open(),
                 card_bg=self._card_bg,
                 total_color=STAGE_COLORS["total"],
                 chart_factory=LaborPieChart,
                 numeric_input_filter=_numeric_input_filter,
-                additional_hint=self._labor_additional_hint,
                 register_themed_card=self._themed_cards.append,
                 bind_keyboard_scroll=self._bind_keyboard_scroll,
-                on_toggle_highways=self._toggle_labor_highways,
-                on_toggle_additional=self._toggle_labor_additional,
-                on_calculate=self._calculate_labor,
-                on_open_rates=self._open_labor_rates_dialog,
-                on_open_chart=self._open_labor_chart_dialog,
+                style_button=self._style_app_button,
+                clear_field_error=self._clear_field_error,
+                mark_field_error=self._mark_field_error,
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                get_active_tab=lambda: getattr(
+                    self,
+                    "_active_tab_name",
+                    "labor",
+                ),
+                is_dark=lambda: self.theme_cls.theme_style == "Dark",
             )
             self._monetization = ProMonetizationController(
                 is_android=IS_ANDROID,
@@ -323,11 +309,11 @@ def main() -> None:
                 dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
             )
             self.valve_scroll.size_hint = (1, 1)
-            self.labor_scroll = self._build_labor_tab()
-            self.labor_scroll.size_hint = (1, 1)
+            labor_scroll = self._labor_tab_controller.build().scroll
+            labor_scroll.size_hint = (1, 1)
             self.tab_content_host.add_widget(self.scroll)
             self.tab_content_host.add_widget(self.valve_scroll)
-            self.tab_content_host.add_widget(self.labor_scroll)
+            self.tab_content_host.add_widget(labor_scroll)
             root.add_widget(self.tab_content_host)
 
             self.bottom_nav = self._build_bottom_nav(dp, MDBoxLayout)
@@ -370,8 +356,6 @@ def main() -> None:
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
             self._update_currency_settings_ui()
-            if hasattr(self, "labor_lbl_total"):
-                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
 
         def _toggle_hints(self):
             self._hints_enabled = not self._hints_enabled
@@ -382,7 +366,7 @@ def main() -> None:
             telemetry.log_event("hints_toggled", {"enabled": self._hints_enabled})
 
         def _hint_field_items(self):
-            return [
+            items = [
                 (getattr(self, "in_m", None), "hint_mass"),
                 (getattr(self, "in_T1", None), "hint_temp_start"),
                 (getattr(self, "in_T2", None), "hint_temp_end"),
@@ -395,13 +379,9 @@ def main() -> None:
                 (getattr(self, "valve_in_tz", None), "hint_valve_temp_after"),
                 (getattr(self, "valve_in_n", None), "hint_valve_coolers"),
                 (getattr(self, "valve_in_q", None), "hint_valve_flow"),
-                (getattr(self, "labor_in_people", None), "hint_labor_people"),
-                (getattr(self, "labor_in_days", None), "hint_labor_days"),
-                (getattr(self, "labor_in_distance", None), "hint_labor_distance"),
-                (getattr(self, "labor_in_lifts", None), "hint_labor_lifts"),
-                (getattr(self, "labor_in_containers", None), "hint_labor_containers"),
-                (getattr(self, "labor_in_additional", None), "hint_labor_additional"),
             ]
+            items.extend(self._labor_tab_controller.hint_field_items())
+            return items
 
         def _apply_hints(self):
             if hasattr(self, "btn_hints"):
@@ -857,21 +837,7 @@ def main() -> None:
                 self.bottom_valves_tab.set_text(self._t("nav_valves"))
             if hasattr(self, "bottom_labor_tab"):
                 self.bottom_labor_tab.set_text(self._t("nav_labor"))
-            if hasattr(self, "labor_lbl_title"):
-                self.labor_lbl_title.text = self._t("labor_title")
-                self.labor_lbl_hint.text = self._t("labor_hint")
-                self.labor_in_people.hint_text = self._t("labor_people")
-                self.labor_in_days.hint_text = self._t("labor_days")
-                self.labor_in_distance.hint_text = self._t("labor_distance")
-                self.labor_in_lifts.hint_text = self._t("labor_lifts")
-                self.labor_in_containers.hint_text = self._t("labor_containers")
-                self._refresh_labor_additional_hint()
-                self.labor_btn_rates.text = self._t("labor_rates_button")
-                self.labor_btn_calc.text = self._t("labor_calculate")
-                self.labor_lbl_result.text = self._t("labor_result")
-                self._set_labor_highways(self._labor_use_highways)
-                self._set_labor_additional_enabled(self._labor_has_additional)
-                self._render_labor_results(self._last_labor_breakdown)
+            self._labor_tab_controller.refresh_texts()
             if hasattr(self, "valve_lbl_title"):
                 self.valve_lbl_title.text = self._t("valve_title")
                 self.valve_btn_mode_k.text = self._t("valve_mode_volume")
@@ -1126,8 +1092,7 @@ def main() -> None:
                 self.bottom_labor_tab.set_active(active_tab == "labor")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
-            if hasattr(self, "labor_chart"):
-                self.labor_chart.set_dark(self.theme_cls.theme_style == "Dark")
+            self._labor_tab_controller.apply_theme()
             ad_slot = getattr(self, "ad_slot", None)
             if ad_slot is not None:
                 ad_slot.md_bg_color = self._ad_slot_bg()
@@ -1147,10 +1112,6 @@ def main() -> None:
                 (getattr(self, "valve_btn_watch", None), "ice"),
                 (getattr(self, "valve_btn_type", None), "primary"),
                 (getattr(self, "valve_btn_calc", None), "ice"),
-                (getattr(self, "labor_btn_highways", None), "primary" if getattr(self, "_labor_use_highways", False) else "dark"),
-                (getattr(self, "labor_btn_additional", None), "primary" if getattr(self, "_labor_has_additional", False) else "dark"),
-                (getattr(self, "labor_btn_rates", None), "pro"),
-                (getattr(self, "labor_btn_calc", None), "ice"),
             ):
                 if button is not None:
                     self._style_app_button(button, variant)
@@ -1813,515 +1774,6 @@ def main() -> None:
             scroll.add_widget(content)
             return scroll
 
-        def _build_labor_tab(self):
-            view = self._labor_tab_controller.build()
-            # Tymczasowa warstwa zgodności. Kolejny etap przeniesie odczyt
-            # widgetów i stan obliczeń bezpośrednio do kontrolera zakładki.
-            self.labor_card = view.input_card
-            self.labor_lbl_title = view.title_label
-            self.labor_lbl_hint = view.hint_label
-            self.labor_in_people = view.people_input
-            self.labor_in_days = view.days_input
-            self.labor_in_distance = view.distance_input
-            self.labor_in_lifts = view.lifts_input
-            self.labor_in_containers = view.containers_input
-            self.labor_btn_highways = view.highways_button
-            self.labor_btn_additional = view.additional_button
-            self.labor_in_additional = view.additional_input
-            self.labor_additional_box = view.additional_box
-            self.labor_btn_calc = view.calculate_button
-            self.labor_btn_rates = view.rates_button
-            self.labor_result_card = view.result_card
-            self.labor_lbl_result = view.result_title_label
-            self.labor_lbl_total = view.total_label
-            self.labor_currency_note = view.currency_note
-            self.labor_chart = view.chart
-            self.labor_chart_hint = view.chart_hint
-            self.labor_chart_legend = view.chart_legend
-            self.labor_result_labels = view.result_labels
-            self.labor_lbl_mode = view.travel_mode_label
-            self.labor_lbl_details = view.travel_details_label
-            self._set_labor_highways(False)
-            self._set_labor_additional_enabled(False)
-            self._render_labor_results(None)
-            return view.scroll
-
-        def _set_labor_highways(self, enabled: bool):
-            self._labor_use_highways = bool(enabled)
-            if hasattr(self, "labor_btn_highways"):
-                self.labor_btn_highways.text = self._t(
-                    "labor_highways_on" if self._labor_use_highways else "labor_highways_off"
-                )
-                self._style_app_button(
-                    self.labor_btn_highways,
-                    "primary" if self._labor_use_highways else "dark",
-                )
-
-        def _toggle_labor_highways(self):
-            self._set_labor_highways(not self._labor_use_highways)
-
-        def _set_labor_additional_enabled(self, enabled: bool):
-            from kivy.metrics import dp
-
-            self._labor_has_additional = bool(enabled)
-            if hasattr(self, "labor_btn_additional"):
-                self.labor_btn_additional.text = self._t(
-                    "labor_additional_on"
-                    if self._labor_has_additional
-                    else "labor_additional_off"
-                )
-                self._style_app_button(
-                    self.labor_btn_additional,
-                    "primary" if self._labor_has_additional else "dark",
-                )
-            if hasattr(self, "labor_additional_box"):
-                self.labor_additional_box.height = dp(60) if self._labor_has_additional else 0
-                self.labor_additional_box.opacity = 1 if self._labor_has_additional else 0
-                self.labor_additional_box.disabled = not self._labor_has_additional
-            if hasattr(self, "labor_in_additional") and not self._labor_has_additional:
-                self.labor_in_additional.text = ""
-                self._clear_field_error(self.labor_in_additional)
-
-        def _toggle_labor_additional(self):
-            self._set_labor_additional_enabled(not self._labor_has_additional)
-
-        def _clear_labor_validation(self):
-            for field in (
-                getattr(self, "labor_in_people", None),
-                getattr(self, "labor_in_days", None),
-                getattr(self, "labor_in_distance", None),
-                getattr(self, "labor_in_lifts", None),
-                getattr(self, "labor_in_containers", None),
-                getattr(self, "labor_in_additional", None),
-            ):
-                if field is not None:
-                    self._clear_field_error(field)
-
-        def _parse_labor_int(
-            self,
-            field,
-            name_key: str,
-            *,
-            min_value: int,
-            allow_zero: bool,
-            default_empty: int | None = None,
-        ) -> int:
-            raw = (getattr(field, "text", "") or "").strip()
-            if not raw and default_empty is not None:
-                return default_empty
-            if not raw:
-                self._mark_field_error(field)
-                raise ValueError(self._t("invalid_field", name=self._t(name_key)))
-            try:
-                value = int(raw)
-            except (TypeError, ValueError) as exc:
-                self._mark_field_error(field, self._t("invalid_field", name=self._t(name_key)))
-                raise ValueError(self._t("invalid_field", name=self._t(name_key))) from exc
-            if value < min_value or (not allow_zero and value == 0):
-                message = self._t("invalid_field", name=self._t(name_key))
-                self._mark_field_error(field, message)
-                raise ValueError(message)
-            return value
-
-        def _parse_labor_decimal(self, field, name_key: str) -> Decimal:
-            raw = (getattr(field, "text", "") or "").strip()
-            if not raw:
-                self._mark_field_error(field)
-                raise ValueError(self._t("invalid_field", name=self._t(name_key)))
-            try:
-                value = Decimal(raw.replace(",", "."))
-            except Exception as exc:
-                self._mark_field_error(field, self._t("invalid_field", name=self._t(name_key)))
-                raise ValueError(self._t("invalid_field", name=self._t(name_key))) from exc
-            if value < 0:
-                message = self._t("invalid_field", name=self._t(name_key))
-                self._mark_field_error(field, message)
-                raise ValueError(message)
-            return value
-
-        def _format_labor_money(self, value) -> str:
-            if value is None:
-                return "—"
-            return format_money(
-                value,
-                self._display_currency,
-                self._exchange_rates,
-                self._language,
-            )
-
-        def _labor_additional_hint(self) -> str:
-            currency = getattr(
-                self,
-                "_labor_additional_currency",
-                getattr(self, "_display_currency", "PLN"),
-            )
-            return f"{self._t('labor_additional')} [{currency}]"
-
-        def _refresh_labor_additional_hint(self) -> None:
-            field = getattr(self, "labor_in_additional", None)
-            if field is not None:
-                field.hint_text = self._labor_additional_hint()
-
-        @staticmethod
-        def _editable_currency_text(value: Decimal) -> str:
-            text = format(value, "f")
-            if "." in text:
-                text = text.rstrip("0").rstrip(".")
-            return text or "0"
-
-        def _convert_labor_additional_field_currency(
-            self,
-            target_currency: str,
-        ) -> bool:
-            target = str(target_currency or "PLN").strip().upper()
-            source = getattr(self, "_labor_additional_currency", "PLN")
-            field = getattr(self, "labor_in_additional", None)
-            raw = (getattr(field, "text", "") or "").strip() if field is not None else ""
-            if not raw:
-                self._labor_additional_currency = target
-                self._refresh_labor_additional_hint()
-                return True
-            if source == target:
-                self._refresh_labor_additional_hint()
-                return True
-            try:
-                converted = convert_display_amount(
-                    Decimal(raw.replace(",", ".")),
-                    source,
-                    target,
-                    self._exchange_rates,
-                )
-            except (ValueError, ArithmeticError):
-                return False
-            assert field is not None
-            field.text = self._editable_currency_text(converted)
-            self._labor_additional_currency = target
-            self._refresh_labor_additional_hint()
-            return True
-
-        def _labor_travel_mode_text(self, mode: str) -> str:
-            return self._labor_tab_presenter.travel_mode_text(mode)
-
-        def _labor_chart_rows(self, breakdown):
-            return self._labor_tab_presenter.chart_rows(breakdown)
-
-        def _format_labor_chart_money(self, value) -> str:
-            return self._format_labor_money(value)
-
-        def _set_labor_chart_data(self, chart, breakdown, *, animate: bool = True):
-            rows = self._labor_chart_rows(breakdown)
-            items = [
-                {
-                    "key": row.key,
-                    "label": row.label,
-                    "value": row.value,
-                    "color": row.color,
-                }
-                for row in rows
-            ]
-            total = "—" if breakdown is None else self._format_labor_money(breakdown.total_cost)
-            chart.set_dark(self.theme_cls.theme_style == "Dark")
-            chart.set_data(
-                items,
-                center_label=self._t("labor_chart_total"),
-                center_value=total,
-                animate=animate,
-            )
-
-        def _render_labor_chart_legend(self, breakdown):
-            from kivy.metrics import dp
-
-            legend = getattr(self, "labor_chart_legend", None)
-            if legend is None:
-                return
-            legend.clear_widgets()
-            rows = self._labor_chart_rows(breakdown)
-            hint = getattr(self, "labor_chart_hint", None)
-            if hint is not None:
-                hint.text = self._t("labor_chart_tap") if rows else self._t("labor_chart_empty")
-            if not rows:
-                legend.height = 0
-                return
-            shown = rows[:4]
-            legend.height = len(shown) * dp(42)
-            for chart_row in shown:
-                row = MDBoxLayout(
-                    orientation="horizontal",
-                    spacing=dp(8),
-                    size_hint_y=None,
-                    height=dp(42),
-                )
-                swatch = MDCard(
-                    size_hint=(None, None),
-                    size=(dp(12), dp(12)),
-                    pos_hint={"center_y": 0.5},
-                    radius=[dp(3), dp(3), dp(3), dp(3)],
-                    elevation=0,
-                    md_bg_color=chart_row.color,
-                )
-                name = MDLabel(
-                    text=chart_row.label,
-                    theme_text_color="Primary",
-                    font_size="12sp",
-                    size_hint_x=0.47,
-                    valign="middle",
-                )
-                name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
-                amount = MDLabel(
-                    text=(
-                        f"{chart_row.percent:.1f}% · "
-                        f"{self._format_labor_chart_money(chart_row.value)}"
-                    ),
-                    halign="right",
-                    valign="middle",
-                    theme_text_color="Primary",
-                    font_size="11.5sp",
-                    size_hint_x=0.53,
-                )
-                amount.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
-                row.add_widget(swatch)
-                row.add_widget(name)
-                row.add_widget(amount)
-                legend.add_widget(row)
-            if len(rows) > len(shown) and hint is not None:
-                hint.text = self._t("labor_chart_tap")
-
-        def _close_labor_chart_dialog(self):
-            dialog = getattr(self, "_labor_chart_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._labor_chart_dialog = None
-
-        def _open_labor_chart_dialog(self):
-            self._close_labor_chart_dialog()
-            breakdown = getattr(self, "_last_labor_breakdown", None)
-            rows = self._labor_chart_rows(breakdown)
-            if not rows:
-                self._show_error(self._t("labor_chart_empty"))
-                return
-            from kivy.metrics import dp
-            from kivymd.uix.button import MDFlatButton
-            from kivymd.uix.dialog import MDDialog
-
-            content = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(8),
-                padding=[0, dp(4), 0, 0],
-                size_hint_y=None,
-                height=max(dp(320), min(dp(460), Window.height * 0.62)),
-            )
-            chart = LaborPieChart(size_hint_y=None, height=dp(210))
-            self._set_labor_chart_data(chart, breakdown, animate=True)
-            content.add_widget(chart)
-            detail_scroll = MDScrollView(size_hint=(1, 1))
-            detail_list = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(4),
-                size_hint_y=None,
-            )
-            detail_list.bind(minimum_height=detail_list.setter("height"))
-            for chart_row in rows:
-                row = MDBoxLayout(
-                    orientation="horizontal",
-                    spacing=dp(8),
-                    size_hint_y=None,
-                    height=dp(46),
-                )
-                swatch = MDCard(
-                    size_hint=(None, None),
-                    size=(dp(13), dp(13)),
-                    pos_hint={"center_y": 0.5},
-                    radius=[dp(3), dp(3), dp(3), dp(3)],
-                    elevation=0,
-                    md_bg_color=chart_row.color,
-                )
-                name = MDLabel(
-                    text=chart_row.label,
-                    theme_text_color="Primary",
-                    font_size="12sp",
-                    size_hint_x=0.48,
-                    valign="middle",
-                )
-                name.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
-                amount = MDLabel(
-                    text=(
-                        f"{self._format_labor_chart_money(chart_row.value)} · "
-                        f"{chart_row.percent:.1f}%"
-                    ),
-                    halign="right",
-                    valign="middle",
-                    theme_text_color="Primary",
-                    font_size="11.5sp",
-                    size_hint_x=0.52,
-                )
-                amount.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
-                row.add_widget(swatch)
-                row.add_widget(name)
-                row.add_widget(amount)
-                detail_list.add_widget(row)
-            detail_scroll.add_widget(detail_list)
-            content.add_widget(detail_scroll)
-            self._labor_chart_dialog = MDDialog(
-                title=self._t("labor_chart_details"),
-                type="custom",
-                content_cls=content,
-                buttons=[
-                    MDFlatButton(
-                        text=self._t("close"),
-                        on_release=lambda *_: self._close_labor_chart_dialog(),
-                    )
-                ],
-            )
-            self._labor_chart_dialog.size_hint_x = 0.94
-            self._labor_chart_dialog.open()
-
-        def _render_labor_results(self, breakdown):
-            dash = "—"
-            if not hasattr(self, "labor_lbl_total"):
-                return
-            self._last_labor_breakdown = breakdown
-            self.labor_lbl_total.text = self._t(
-                "labor_total_cost",
-                value=dash if breakdown is None else self._format_labor_money(breakdown.total_cost),
-            )
-            if hasattr(self, "labor_currency_note"):
-                self.labor_currency_note.text = self._currency_rate_note()
-            if hasattr(self, "labor_chart"):
-                self._set_labor_chart_data(
-                    self.labor_chart,
-                    breakdown,
-                    animate=breakdown is not None,
-                )
-            self._render_labor_chart_legend(breakdown)
-            for attr, (label, key) in getattr(self, "labor_result_labels", {}).items():
-                value = dash if breakdown is None else self._format_labor_money(getattr(breakdown, attr))
-                label.text = self._t(key, value=value)
-            if hasattr(self, "labor_lbl_mode"):
-                self.labor_lbl_mode.text = self._t(
-                    "labor_travel_mode",
-                    value=dash if breakdown is None else self._labor_travel_mode_text(breakdown.travel_mode),
-                )
-            if hasattr(self, "labor_lbl_details"):
-                self.labor_lbl_details.text = self._t(
-                    "labor_travel_details",
-                    trips=dash if breakdown is None else breakdown.travel_round_trips,
-                    toll_days=dash if breakdown is None else breakdown.highway_toll_days,
-                    nights=dash if breakdown is None else breakdown.hotel_nights,
-                )
-
-        def _labor_rate_config(self):
-            try:
-                return rate_config_from_values(self._preferences.labor_rate_values)
-            except ValueError:
-                self._preferences.reset_labor_rate_values()
-                return default_rate_config()
-
-        def _open_labor_rates_dialog(self):
-            if not self._pro_no_ads:
-                self._show_error(self._t("labor_rates_pro_required"))
-                return
-            self._labor_rates_dialog_controller.open()
-
-        def _invalidate_labor_results(self):
-            self._last_labor_breakdown = None
-            self._render_labor_results(None)
-
-        def _calculate_labor(self):
-            from kivy.metrics import dp
-
-            self._clear_labor_validation()
-            try:
-                people = self._parse_labor_int(
-                    self.labor_in_people, "labor_people", min_value=1, allow_zero=False
-                )
-                days = self._parse_labor_int(
-                    self.labor_in_days, "labor_days", min_value=1, allow_zero=False
-                )
-                distance = self._parse_labor_int(
-                    self.labor_in_distance, "labor_distance", min_value=0, allow_zero=True
-                )
-                lifts = self._parse_labor_int(
-                    self.labor_in_lifts,
-                    "labor_lifts",
-                    min_value=0,
-                    allow_zero=True,
-                    default_empty=0,
-                )
-                containers = self._parse_labor_int(
-                    self.labor_in_containers,
-                    "labor_containers",
-                    min_value=0,
-                    allow_zero=True,
-                    default_empty=0,
-                )
-                additional = (
-                    self._parse_labor_decimal(self.labor_in_additional, "labor_additional")
-                    if self._labor_has_additional
-                    else Decimal("0")
-                )
-                if self._labor_has_additional:
-                    try:
-                        additional = convert_display_amount_to_pln(
-                            additional,
-                            getattr(self, "_labor_additional_currency", "PLN"),
-                            self._exchange_rates,
-                        )
-                    except ValueError as exc:
-                        message = self._t(
-                            "labor_currency_input_missing",
-                            currency=getattr(self, "_labor_additional_currency", "PLN"),
-                        )
-                        self._mark_field_error(self.labor_in_additional, message)
-                        raise ValueError(message) from exc
-                errors = validate_labor_inputs(
-                    people,
-                    days,
-                    distance,
-                    lifts,
-                    containers,
-                    self._labor_has_additional,
-                    additional,
-                )
-                if errors:
-                    raise ValueError(errors[0])
-                telemetry.log_event(
-                    "calculation_started",
-                    {"calculator": "labor", "screen": self._active_tab_name},
-                )
-                breakdown = calculate_labor_cost_breakdown(
-                    LaborCalculationInput(
-                        number_of_people=people,
-                        number_of_days=days,
-                        distance_km_one_way=distance,
-                        use_highways=self._labor_use_highways,
-                        number_of_lifts=lifts,
-                        number_of_containers=containers,
-                        additional_costs_value=additional,
-                    ),
-                    self._labor_rate_config(),
-                )
-                self._last_labor_breakdown = breakdown
-                self._render_labor_results(breakdown)
-                telemetry.log_event(
-                    "calculation_finished",
-                    {
-                        "calculator": "labor",
-                        "travel_mode": breakdown.travel_mode,
-                        "has_additional": self._labor_has_additional,
-                    },
-                )
-                if hasattr(self, "labor_scroll") and hasattr(self, "labor_result_card"):
-                    self.labor_scroll.scroll_to(self.labor_result_card, padding=dp(12), animate=True)
-            except ValueError as exc:
-                self._show_error(self._t("labor_validation_error", message=str(exc)))
-                telemetry.log_event(
-                    "calculation_error",
-                    {"calculator": "labor", "error": str(exc)[:120]},
-                )
-            except Exception as exc:  # pragma: no cover - UI safeguard
-                log.exception("Błąd obliczeń robocizny")
-                self._show_error(self._t("calc_error", error=exc))
-
         def _set_valve_mode(self, mode: str):
             """Przełącza tryb wprowadzania objętości: Kubatura ("K") / Wymiary ("W")."""
             from kivy.metrics import dp
@@ -2541,7 +1993,7 @@ def main() -> None:
             tab_widgets = {
                 "freezing": getattr(self, "scroll", None),
                 "valves": getattr(self, "valve_scroll", None),
-                "labor": getattr(self, "labor_scroll", None),
+                "labor": self._labor_tab_controller.scroll,
             }
             for tab_name, widget in tab_widgets.items():
                 self._set_tab_visibility(widget, tab_name == name)
@@ -2818,8 +2270,7 @@ def main() -> None:
                     auto_update=False,
                 )
                 self._update_currency_settings_ui()
-                if hasattr(self, "labor_lbl_total"):
-                    self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+                self._labor_tab_controller.refresh_results()
                 return
             if getattr(self, "_currency_refresh_running", False):
                 return
@@ -2839,12 +2290,11 @@ def main() -> None:
         def _apply_exchange_rates(self, rates, notify: bool = False):
             self._currency_refresh_running = False
             self._exchange_rates = rates
-            self._convert_labor_additional_field_currency(
+            self._labor_tab_controller.convert_additional_field_currency(
                 getattr(self, "_display_currency", "PLN")
             )
             self._update_currency_settings_ui()
-            if hasattr(self, "labor_lbl_total"):
-                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+            self._labor_tab_controller.refresh_results()
             if notify and getattr(self, "_display_currency", "PLN") != "PLN":
                 self._show_error(self._currency_rate_note())
 
@@ -2852,12 +2302,11 @@ def main() -> None:
             value = str(currency or "").strip().upper()
             if value not in SUPPORTED_DISPLAY_CURRENCIES:
                 value = "PLN"
-            self._convert_labor_additional_field_currency(value)
+            self._labor_tab_controller.convert_additional_field_currency(value)
             self._display_currency = value
             self._preferences.set_display_currency(value)
             self._update_currency_settings_ui()
-            if hasattr(self, "labor_lbl_total"):
-                self._render_labor_results(getattr(self, "_last_labor_breakdown", None))
+            self._labor_tab_controller.refresh_results()
             if value != "PLN":
                 self._refresh_exchange_rates_async(notify=True)
 
