@@ -25,6 +25,9 @@ Wdrożone cięcia:
 - `LaborTabController` w `tpof/mobile/tabs/labor.py`, który buduje widok i
   posiada stan przełączników, walutę kosztu dodatkowego, walidację, obliczenia,
   wyniki oraz wykres; `main.py` nie przechowuje już aliasów jego widgetów,
+- `ValvesTabController` w `tpof/mobile/tabs/valves.py`, który przejął budowę
+  karty, tryb kubatura/wymiary, wybór typu, walidację, obliczenia i prezentację
+  wyników; polityka PRO, zakup i reklama nagradzana pozostają w orkiestratorze,
 - natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
   `AdvertisingService`, `BillingService` i `FileShareService`, pozostawiające
   w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
@@ -32,9 +35,9 @@ Wdrożone cięcia:
   lokalną cenę Google Play, stan przycisku PRO i harmonogram odświeżania zakupu
   z `main.py`.
 
-Następny naturalny krok to wydzielenie mniejszej zakładki zaworów do
-`ValvesTabController`, a po jej ustabilizowaniu — większej zakładki chłodniczej
-do `FreezingTabController`. Natywna bramka serwisów została zamknięta; kolejne
+Następny naturalny krok to ustabilizowanie checkpointu zaworów na emulatorze
+i w AAB, a potem wydzielenie większej zakładki chłodniczej do
+`FreezingTabController`. Natywna bramka serwisów została zamknięta; kolejne
 integracje platformowe nie powinny ponownie rozbudowywać Activity.
 
 ## Future: WebView chart engine

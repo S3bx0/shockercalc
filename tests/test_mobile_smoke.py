@@ -127,17 +127,17 @@ def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
 
 
 def test_przyciski_zaworow_uzywaja_brandowej_palety():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/tabs/valves.py")
     theme_source = _source("tpof/mobile/theme.py")
 
     assert '"muted"' in theme_source
-    assert "def _style_valve_mode_buttons" in source
-    assert '(getattr(self, "valve_btn_buy", None), "pro")' in source
-    assert '(getattr(self, "valve_btn_watch", None), "ice")' in source
-    assert '(getattr(self, "valve_btn_type", None), "primary")' in source
-    assert '(getattr(self, "valve_btn_calc", None), "ice")' in source
-    assert 'self._style_app_button(self.valve_btn_mode_k, "ice" if k else "muted")' in source
-    assert 'self._style_app_button(self.valve_btn_mode_w, "muted" if k else "ice")' in source
+    assert "def style_mode_buttons" in source
+    assert '(self.view.buy_button, "pro")' in source
+    assert '(self.view.watch_button, "ice")' in source
+    assert '(self.view.type_button, "primary")' in source
+    assert '(self.view.calculate_button, "ice")' in source
+    assert '"ice" if volume_mode else "muted"' in source
+    assert '"muted" if volume_mode else "ice"' in source
     assert "active = self.theme_cls.primary_color" not in source
 
 
@@ -146,6 +146,7 @@ def test_nieaktywna_zakladka_nie_blokuje_dotyku():
 
     assert "def _set_tab_visibility" in source
     assert "widget.size = (0, 0)" in source
+    assert '"valves": self._valves_tab_controller.scroll' in source
     assert '"labor": self._labor_tab_controller.scroll' in source
     assert "self._raise_tab_widget(tab_widgets.get(name))" in source
     assert "host.remove_widget(widget)" in source
@@ -231,6 +232,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/main.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
     assert "def _configure_text_field" in source
@@ -242,11 +244,31 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     assert "def _scroll_input_into_view" in source
     assert "padding=dp(150)" in source
     assert "(self.in_m, self.in_T1, self.in_T2, self.in_t)" in source
-    assert "self.valve_in_V," in source
-    assert "self.valve_in_q," in source
+    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
+    assert "self.view.volume_input" in valves_tab_source
+    assert "self.view.flow_input" in valves_tab_source
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_tab_source
     assert "self.view.people_input" in labor_tab_source
     assert "self.view.additional_input" in labor_tab_source
+
+
+def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
+    source = _source("tpof/mobile/main.py")
+    valves_tab_source = _source("tpof/mobile/tabs/valves.py")
+
+    assert "ValvesTabController" in source
+    assert "valve_scroll = self._valves_tab_controller.build().scroll" in source
+    assert "self._valves_tab_controller.refresh_texts()" in source
+    assert "self._valves_tab_controller.apply_theme()" in source
+    assert "class ValvesTabController" in valves_tab_source
+    assert "class ValvesTabView" in valves_tab_source
+    assert "def calculate(self) -> bool" in valves_tab_source
+    assert "calculate_decompression_valves(" in valves_tab_source
+    assert "self.valve_in_V" not in source
+    assert "self._last_valve_results" not in source
+    assert "self._valve_input_mode" not in source
+    assert "def _build_valve_tab" not in source
+    assert "def _calculate_valves" not in source
 
 
 def test_robocizna_ma_wykres_kolowy_kosztow():

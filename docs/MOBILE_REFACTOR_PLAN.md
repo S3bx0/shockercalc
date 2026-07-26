@@ -1,10 +1,10 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-25: `tpof/mobile/main.py` ma mniej niż 3000 linii. Motyw,
+Stan na 2026-07-26: `tpof/mobile/main.py` ma około 2500 linii. Motyw,
 lokalizacja, widżety, dialog ustawień, dialog stawek oraz kompletna obsługa
-zakładki robocizny są już wydzielone. W pliku nadal pozostaje orkiestracja
-zakładek zaworów i chłodniczej. Dalsze zmiany robimy etapami, bez zmiany wzorów
-obliczeniowych.
+zakładek robocizny i zaworów są już wydzielone. W pliku nadal pozostaje budowa
+i obsługa zakładki chłodniczej oraz orkiestracja usług aplikacji. Dalsze zmiany
+robimy etapami, bez zmiany wzorów obliczeniowych.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -34,8 +34,10 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 6. `tpof/mobile/tabs/freezing.py`
    - Budowa i obsługa zakładki chłodniczej.
 
-7. `tpof/mobile/tabs/valves.py`
-   - Budowa i obsługa zakładki zaworów.
+7. `tpof/mobile/tabs/valves.py` — wykonane
+   - Budowa widoku, stan trybu danych i typu zaworu, walidacja, obliczenia,
+     wynik oraz prezentacja blokady dostępu.
+   - Polityka uprawnień, zakup i reklama nagradzana pozostają w orkiestratorze.
 
 8. `tpof/mobile/tabs/labor.py` — wykonane
    - Budowa i obsługa zakładki robocizny, bez zmiany `tpof.labor`.

@@ -23,10 +23,8 @@ from datetime import datetime
 from pathlib import Path
 
 from tpof.core import (
-    ZAWORY,
     FreezingInputs,
     Product,
-    calculate_decompression_valves,
     calculate_freezing,
     find_product,
     list_categories,
@@ -69,6 +67,7 @@ from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
 from tpof.mobile.tabs.labor import LaborTabController
+from tpof.mobile.tabs.valves import ValvesTabController
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
 from tpof.mobile.validation import _numeric_input_filter
 
@@ -176,10 +175,6 @@ def main() -> None:
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
-            self._valve_type = "Maxi Elebar"
-            self._valve_input_mode = "K"  # "K" = kubatura, "W" = wymiary
-            self._last_valve_results = None
-            self._valve_menu: MDDropdownMenu | None = None
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
             self._legal_dialog_controller = LegalDialogController(
@@ -248,6 +243,27 @@ def main() -> None:
                 ),
                 is_dark=lambda: self.theme_cls.theme_style == "Dark",
             )
+            self._valves_tab_controller = ValvesTabController(
+                translate=self._t,
+                card_bg=self._card_bg,
+                total_color=STAGE_COLORS["total"],
+                numeric_input_filter=_numeric_input_filter,
+                register_themed_card=self._themed_cards.append,
+                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                style_button=self._style_app_button,
+                clear_field_error=self._clear_field_error,
+                mark_field_error=self._mark_field_error,
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
+                can_calculate=self._valve_module_available,
+                on_access_denied=self._refresh_valve_lock_ui,
+                on_buy=self._buy_valve_module,
+                on_watch=self._offer_reward_ad,
+                menu_factory=self._menu,
+                is_compact=lambda: bool(self._layout_metrics(dp)["compact"]),
+                menu_text_color=self._menu_text_color,
+            )
             self._monetization = ProMonetizationController(
                 is_android=IS_ANDROID,
                 translate=self._t,
@@ -305,14 +321,12 @@ def main() -> None:
             self.tab_content_host = FloatLayout(size_hint=(1, 1))
             self.tab_frost_background = FrostBackground(size_hint=(1, 1))
             self.tab_content_host.add_widget(self.tab_frost_background)
-            self.valve_scroll = self._build_valve_tab(
-                dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton
-            )
-            self.valve_scroll.size_hint = (1, 1)
+            valve_scroll = self._valves_tab_controller.build().scroll
+            valve_scroll.size_hint = (1, 1)
             labor_scroll = self._labor_tab_controller.build().scroll
             labor_scroll.size_hint = (1, 1)
             self.tab_content_host.add_widget(self.scroll)
-            self.tab_content_host.add_widget(self.valve_scroll)
+            self.tab_content_host.add_widget(valve_scroll)
             self.tab_content_host.add_widget(labor_scroll)
             root.add_widget(self.tab_content_host)
 
@@ -371,15 +385,8 @@ def main() -> None:
                 (getattr(self, "in_T1", None), "hint_temp_start"),
                 (getattr(self, "in_T2", None), "hint_temp_end"),
                 (getattr(self, "in_t", None), "hint_time"),
-                (getattr(self, "valve_in_V", None), "hint_valve_volume"),
-                (getattr(self, "valve_in_L", None), "hint_valve_length"),
-                (getattr(self, "valve_in_W", None), "hint_valve_width"),
-                (getattr(self, "valve_in_H", None), "hint_valve_height"),
-                (getattr(self, "valve_in_tp", None), "hint_valve_temp_before"),
-                (getattr(self, "valve_in_tz", None), "hint_valve_temp_after"),
-                (getattr(self, "valve_in_n", None), "hint_valve_coolers"),
-                (getattr(self, "valve_in_q", None), "hint_valve_flow"),
             ]
+            items.extend(self._valves_tab_controller.hint_field_items())
             items.extend(self._labor_tab_controller.hint_field_items())
             return items
 
@@ -499,20 +506,6 @@ def main() -> None:
                 getattr(self, "in_T1", None),
                 getattr(self, "in_T2", None),
                 getattr(self, "in_t", None),
-            ):
-                if field is not None:
-                    self._clear_field_error(field)
-
-        def _clear_valve_validation(self):
-            for field in (
-                getattr(self, "valve_in_V", None),
-                getattr(self, "valve_in_L", None),
-                getattr(self, "valve_in_W", None),
-                getattr(self, "valve_in_H", None),
-                getattr(self, "valve_in_tp", None),
-                getattr(self, "valve_in_tz", None),
-                getattr(self, "valve_in_n", None),
-                getattr(self, "valve_in_q", None),
             ):
                 if field is not None:
                     self._clear_field_error(field)
@@ -838,32 +831,7 @@ def main() -> None:
             if hasattr(self, "bottom_labor_tab"):
                 self.bottom_labor_tab.set_text(self._t("nav_labor"))
             self._labor_tab_controller.refresh_texts()
-            if hasattr(self, "valve_lbl_title"):
-                self.valve_lbl_title.text = self._t("valve_title")
-                self.valve_btn_mode_k.text = self._t("valve_mode_volume")
-                self.valve_btn_mode_w.text = self._t("valve_mode_dims")
-                self.valve_in_V.hint_text = self._t("valve_volume")
-                self.valve_in_L.hint_text = self._t("valve_length")
-                self.valve_in_W.hint_text = self._t("valve_width")
-                self.valve_in_H.hint_text = self._t("valve_height")
-                self.valve_in_tp.hint_text = self._t("valve_temp_before")
-                self.valve_in_tz.hint_text = self._t("valve_temp_after")
-                self.valve_in_n.hint_text = self._t("valve_coolers")
-                self.valve_in_q.hint_text = self._t("valve_flow_per")
-                self.valve_btn_calc.text = self._t("valve_calculate")
-                self.valve_lbl_result.text = self._t("valve_result")
-                if hasattr(self, "valve_lbl_locked"):
-                    self.valve_lbl_locked.text = self._t("valve_locked")
-                    self.valve_btn_buy.text = self._t("valve_buy")
-                    self.valve_btn_watch.text = self._t("valve_watch_ad")
-                if self._last_valve_results is not None:
-                    self._render_valve_results(self._last_valve_results)
-                else:
-                    self.valve_lbl_count.text = self._t("valve_count", value="—")
-                    self.valve_lbl_delta.text = self._t("valve_delta_t", value="—")
-                    self.valve_lbl_totalflow.text = self._t("valve_total_flow", value="—")
-                    self.valve_lbl_flow.text = self._t("valve_flow", value="—")
-                    self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value="—")
+            self._valves_tab_controller.refresh_texts()
             self._monetization.refresh_label()
             self._apply_hints()
 
@@ -1093,6 +1061,7 @@ def main() -> None:
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
             self._labor_tab_controller.apply_theme()
+            self._valves_tab_controller.apply_theme()
             ad_slot = getattr(self, "ad_slot", None)
             if ad_slot is not None:
                 ad_slot.md_bg_color = self._ad_slot_bg()
@@ -1108,14 +1077,9 @@ def main() -> None:
                 (getattr(self, "btn_pdf", None), "ice"),
                 (getattr(self, "btn_clear", None), "dark"),
                 (getattr(self, "btn_pro", None), "pro"),
-                (getattr(self, "valve_btn_buy", None), "pro"),
-                (getattr(self, "valve_btn_watch", None), "ice"),
-                (getattr(self, "valve_btn_type", None), "primary"),
-                (getattr(self, "valve_btn_calc", None), "ice"),
             ):
                 if button is not None:
                     self._style_app_button(button, variant)
-            self._style_valve_mode_buttons()
 
         def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
             from kivymd.uix.button import MDIconButton
@@ -1519,378 +1483,6 @@ def main() -> None:
             slot.add_widget(self.ad_label)
             return slot
 
-        # --- karta zaworów dekompresyjnych -------------------------------
-        def _build_valve_tab(self, dp, MDScrollView, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
-            scroll = MDScrollView()
-            content = MDBoxLayout(
-                orientation="vertical",
-                padding=[dp(16), dp(16), dp(16), dp(20)],
-                spacing=dp(14),
-                size_hint_y=None,
-            )
-            content.bind(minimum_height=content.setter("height"))
-
-            # Karta blokady modułu (płatny) — widoczna tylko gdy moduł zablokowany.
-            lock_card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(10),
-                size_hint_y=None,
-                height=dp(196),
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            self._themed_cards.append(lock_card)
-            self.valve_lock_card = lock_card
-
-            self.valve_lbl_locked = MDLabel(
-                text=self._t("valve_locked"),
-                font_style="Subtitle1",
-                size_hint_y=None,
-                height=dp(64),
-                theme_text_color="Secondary",
-            )
-            lock_card.add_widget(self.valve_lbl_locked)
-
-            self.valve_btn_buy = MDRaisedButton(
-                text=self._t("valve_buy"),
-                icon="cart",
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(50),
-                font_size="15sp",
-                on_release=lambda *_: self._buy_valve_module(),
-            )
-            lock_card.add_widget(self.valve_btn_buy)
-
-            self.valve_btn_watch = MDRaisedButton(
-                text=self._t("valve_watch_ad"),
-                icon="play-circle-outline",
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(50),
-                font_size="15sp",
-                on_release=lambda *_: self._offer_reward_ad(),
-            )
-            lock_card.add_widget(self.valve_btn_watch)
-            content.add_widget(lock_card)
-
-            # Karta danych wejściowych.
-            card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(10),
-                size_hint_y=None,
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            card.bind(minimum_height=card.setter("height"))
-            self._themed_cards.append(card)
-            self.valve_card = card
-
-            self.valve_lbl_title = MDLabel(
-                text=self._t("valve_title"),
-                font_style="H6",
-                size_hint_y=None,
-                height=dp(36),
-            )
-            card.add_widget(self.valve_lbl_title)
-
-            self.valve_btn_type = MDRaisedButton(
-                text=self._valve_type,
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(52),
-                font_size="15sp",
-                on_release=lambda btn: self._open_valve_type_menu(btn),
-            )
-            card.add_widget(self.valve_btn_type)
-
-            # Przełącznik trybu objętości: Kubatura / Wymiary.
-            mode_box = MDBoxLayout(
-                orientation="horizontal",
-                spacing=dp(8),
-                size_hint_y=None,
-                height=dp(44),
-            )
-            self.valve_btn_mode_k = MDRaisedButton(
-                text=self._t("valve_mode_volume"),
-                size_hint_x=0.5,
-                size_hint_y=None,
-                height=dp(44),
-                font_size="13sp",
-                on_release=lambda *_: self._set_valve_mode("K"),
-            )
-            self.valve_btn_mode_w = MDRaisedButton(
-                text=self._t("valve_mode_dims"),
-                size_hint_x=0.5,
-                size_hint_y=None,
-                height=dp(44),
-                font_size="13sp",
-                on_release=lambda *_: self._set_valve_mode("W"),
-            )
-            mode_box.add_widget(self.valve_btn_mode_k)
-            mode_box.add_widget(self.valve_btn_mode_w)
-            card.add_widget(mode_box)
-
-            # Pole objętości (tryb Kubatura).
-            self.valve_in_V = MDTextField(
-                hint_text=self._t("valve_volume"), input_filter=_numeric_input_filter
-            )
-            self.valve_in_V.size_hint_y = None
-            self.valve_in_V.height = dp(60)
-            self.valve_vol_box = MDBoxLayout(
-                orientation="vertical", size_hint_y=None, height=dp(60)
-            )
-            self.valve_vol_box.add_widget(self.valve_in_V)
-            card.add_widget(self.valve_vol_box)
-
-            # Pola wymiarów (tryb Wymiary): objętość = L × Sz × W.
-            self.valve_in_L = MDTextField(
-                hint_text=self._t("valve_length"), input_filter=_numeric_input_filter
-            )
-            self.valve_in_W = MDTextField(
-                hint_text=self._t("valve_width"), input_filter=_numeric_input_filter
-            )
-            self.valve_in_H = MDTextField(
-                hint_text=self._t("valve_height"), input_filter=_numeric_input_filter
-            )
-            self.valve_dim_box = MDBoxLayout(
-                orientation="vertical", size_hint_y=None, height=dp(180)
-            )
-            for w in (self.valve_in_L, self.valve_in_W, self.valve_in_H):
-                w.size_hint_y = None
-                w.height = dp(60)
-                self.valve_dim_box.add_widget(w)
-            card.add_widget(self.valve_dim_box)
-
-            # Temperatury, ilość chłodnic, przepływ na 1 chłodnicę.
-            self.valve_in_tp = MDTextField(
-                hint_text=self._t("valve_temp_before"), input_filter=_numeric_input_filter
-            )
-            self.valve_in_tz = MDTextField(
-                hint_text=self._t("valve_temp_after"), input_filter=_numeric_input_filter
-            )
-            self.valve_in_n = MDTextField(hint_text=self._t("valve_coolers"), input_filter="int")
-            self.valve_in_q = MDTextField(
-                hint_text=self._t("valve_flow_per"), input_filter=_numeric_input_filter
-            )
-            for w in (self.valve_in_tp, self.valve_in_tz, self.valve_in_n, self.valve_in_q):
-                w.size_hint_y = None
-                w.height = dp(60)
-                card.add_widget(w)
-
-            self.valve_btn_calc = MDRaisedButton(
-                text=self._t("valve_calculate"),
-                icon="calculator-variant",
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(50),
-                font_size="15sp",
-                on_release=lambda *_: self._calculate_valves(),
-            )
-            card.add_widget(self.valve_btn_calc)
-            content.add_widget(card)
-            self._set_valve_mode(self._valve_input_mode)
-
-            # Karta wyniku.
-            res_card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(8),
-                size_hint_y=None,
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            res_card.bind(minimum_height=res_card.setter("height"))
-            self._themed_cards.append(res_card)
-            self.valve_result_card = res_card
-
-            self.valve_lbl_result = MDLabel(
-                text=self._t("valve_result"),
-                font_style="H6",
-                size_hint_y=None,
-                height=dp(36),
-            )
-            res_card.add_widget(self.valve_lbl_result)
-
-            self.valve_lbl_count = MDLabel(
-                text=self._t("valve_count", value="—"),
-                font_style="H6",
-                halign="center",
-                size_hint_y=None,
-                height=dp(42),
-                theme_text_color="Custom",
-                text_color=STAGE_COLORS["total"],
-            )
-            res_card.add_widget(self.valve_lbl_count)
-
-            self.valve_lbl_delta = MDLabel(
-                text=self._t("valve_delta_t", value="—"),
-                size_hint_y=None,
-                height=dp(30),
-                theme_text_color="Secondary",
-            )
-            self.valve_lbl_totalflow = MDLabel(
-                text=self._t("valve_total_flow", value="—"),
-                size_hint_y=None,
-                height=dp(30),
-                theme_text_color="Secondary",
-            )
-            self.valve_lbl_flow = MDLabel(
-                text=self._t("valve_flow", value="—"),
-                size_hint_y=None,
-                height=dp(30),
-                theme_text_color="Secondary",
-            )
-            self.valve_lbl_unitflow = MDLabel(
-                text=self._t("valve_unit_flow", value="—"),
-                size_hint_y=None,
-                height=dp(30),
-                theme_text_color="Secondary",
-            )
-            res_card.add_widget(self.valve_lbl_delta)
-            res_card.add_widget(self.valve_lbl_totalflow)
-            res_card.add_widget(self.valve_lbl_flow)
-            res_card.add_widget(self.valve_lbl_unitflow)
-            content.add_widget(res_card)
-
-            self._bind_keyboard_scroll(
-                (
-                    self.valve_in_V,
-                    self.valve_in_L,
-                    self.valve_in_W,
-                    self.valve_in_H,
-                    self.valve_in_tp,
-                    self.valve_in_tz,
-                    self.valve_in_n,
-                    self.valve_in_q,
-                ),
-                scroll,
-            )
-            scroll.add_widget(content)
-            return scroll
-
-        def _set_valve_mode(self, mode: str):
-            """Przełącza tryb wprowadzania objętości: Kubatura ("K") / Wymiary ("W")."""
-            from kivy.metrics import dp
-
-            self._valve_input_mode = "W" if mode == "W" else "K"
-            k = self._valve_input_mode == "K"
-            if hasattr(self, "valve_vol_box"):
-                self.valve_vol_box.height = dp(60) if k else 0
-                self.valve_vol_box.opacity = 1 if k else 0
-                self.valve_vol_box.disabled = not k
-                self.valve_dim_box.height = 0 if k else dp(180)
-                self.valve_dim_box.opacity = 0 if k else 1
-                self.valve_dim_box.disabled = k
-            self._style_valve_mode_buttons()
-
-        def _style_valve_mode_buttons(self):
-            k = getattr(self, "_valve_input_mode", "K") == "K"
-            if hasattr(self, "valve_btn_mode_k"):
-                self._style_app_button(self.valve_btn_mode_k, "ice" if k else "muted")
-                self._style_app_button(self.valve_btn_mode_w, "muted" if k else "ice")
-
-        def _open_valve_type_menu(self, caller):
-            from kivy.metrics import dp
-            from kivymd.uix.menu import MDDropdownMenu
-
-            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
-            items = [
-                {
-                    "text": name,
-                    "viewclass": "OneLineListItem",
-                    "height": item_height,
-                    "theme_text_color": "Custom",
-                    "text_color": self._menu_text_color(),
-                    "on_release": lambda n=name: self._pick_valve_type(n),
-                }
-                for name in ZAWORY
-            ]
-            self._valve_menu = self._menu(caller, items, 4.4, dp(300), dp, MDDropdownMenu)
-            self._valve_menu.open()
-
-        def _pick_valve_type(self, name: str):
-            self._valve_type = name
-            self.valve_btn_type.text = name
-            if self._valve_menu:
-                self._valve_menu.dismiss()
-            if self._last_valve_results is not None:
-                self._calculate_valves()
-
-        def _calculate_valves(self):
-            if not self._valve_module_available():
-                self._refresh_valve_lock_ui()
-                return
-            self._clear_valve_validation()
-            telemetry.log_event("calculation_started", {"calculator": "valves"})
-            try:
-                if self._valve_input_mode == "W":
-                    L = self._parse_required_field(
-                        self.valve_in_L, self._t("valve_length")
-                    )
-                    Wd = self._parse_required_field(
-                        self.valve_in_W, self._t("valve_width")
-                    )
-                    H = self._parse_required_field(
-                        self.valve_in_H, self._t("valve_height")
-                    )
-                    V = L * Wd * H
-                else:
-                    V = self._parse_required_field(
-                        self.valve_in_V, self._t("valve_volume")
-                    )
-                tp = self._parse_required_field(
-                    self.valve_in_tp, self._t("valve_temp_before")
-                )
-                tz = self._parse_required_field(
-                    self.valve_in_tz, self._t("valve_temp_after")
-                )
-                n_value = self._parse_required_field(
-                    self.valve_in_n, self._t("valve_coolers")
-                )
-                if not float(n_value).is_integer():
-                    self._mark_field_error(
-                        self.valve_in_n,
-                        self._t("invalid_field", name=self._t("valve_coolers")),
-                    )
-                    raise ValueError(
-                        self._t("invalid_field", name=self._t("valve_coolers"))
-                    )
-                n = int(n_value)
-                if n < 1:
-                    self._mark_field_error(
-                        self.valve_in_n, self._t("valve_coolers_min")
-                    )
-                    raise ValueError(self._t("valve_coolers_min"))
-                q = self._parse_required_field(
-                    self.valve_in_q, self._t("valve_flow_per")
-                )
-                if q <= 0:
-                    self._mark_field_error(
-                        self.valve_in_q, self._t("valve_flow_positive")
-                    )
-                    raise ValueError(self._t("valve_flow_positive"))
-                # Całkowity przepływ = przepływ na 1 chłodnicę × liczba chłodnic.
-                F_total = q * n
-                results = calculate_decompression_valves(V, tp, tz, F_total, self._valve_type)
-                self._last_valve_results = results
-                self._last_valve_total_flow = F_total
-                self._render_valve_results(results)
-                telemetry.log_event(
-                    "calculation_finished", {"calculator": "valves"}
-                )
-            except ValueError as exc:
-                self._show_error(str(exc))
-            except Exception as exc:  # pragma: no cover - UI feedback
-                telemetry.record_exception(exc, "calculate_valves")
-                log.exception("Obliczenia zaworów")
-                self._show_error(self._t("calc_error", error=exc))
-
         def _valve_module_available(self) -> bool:
             """Zwraca True gdy wolno wykonać przeliczenie zaworów.
 
@@ -1922,16 +1514,9 @@ def main() -> None:
 
         def _refresh_valve_lock_ui(self):
             """Pokazuje/ukrywa kartę blokady modułu zaworów."""
-            card = getattr(self, "valve_lock_card", None)
-            if card is None:
-                return
             self._refresh_module_valves_status()
             locked = not self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads)
-            from kivy.metrics import dp
-
-            card.height = dp(196) if locked else 0
-            card.opacity = 1 if locked else 0
-            card.disabled = not locked
+            self._valves_tab_controller.refresh_lock_ui(locked)
 
         def _buy_valve_module(self):
             if self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads):
@@ -1960,16 +1545,6 @@ def main() -> None:
             ):
                 self._show_error(self._t("valve_unlocked_thanks"))
 
-        def _render_valve_results(self, results):
-            self.valve_lbl_count.text = self._t("valve_count", value=results.ilosc_zaworow)
-            self.valve_lbl_delta.text = self._t("valve_delta_t", value=f"{results.delta_T:.2f}")
-            total = getattr(self, "_last_valve_total_flow", None)
-            self.valve_lbl_totalflow.text = self._t(
-                "valve_total_flow", value=("—" if total is None else f"{total:.1f}")
-            )
-            self.valve_lbl_flow.text = self._t("valve_flow", value=f"{results.Q:.1f}")
-            self.valve_lbl_unitflow.text = self._t("valve_unit_flow", value=results.przeplyw_zaworu)
-
         def _on_tab_switch(self, *args):
             """Zgodność z dawnym callbackiem dolnej nawigacji."""
             name = None
@@ -1992,7 +1567,7 @@ def main() -> None:
             self._active_tab_name = name
             tab_widgets = {
                 "freezing": getattr(self, "scroll", None),
-                "valves": getattr(self, "valve_scroll", None),
+                "valves": self._valves_tab_controller.scroll,
                 "labor": self._labor_tab_controller.scroll,
             }
             for tab_name, widget in tab_widgets.items():
@@ -2117,6 +1692,7 @@ def main() -> None:
                 self.footer_label.text = self._status_footer_text()
             if hasattr(self, "btn_add_product"):
                 self.btn_add_product.opacity = 1.0 if active else 0.72
+            self._refresh_valve_lock_ui()
 
         def _credit_pending_reward_tokens(self):
             """Dolicza tokeny zdobyte za reklamy rewarded (most z warstwy Android)."""

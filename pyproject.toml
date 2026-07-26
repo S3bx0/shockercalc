@@ -78,6 +78,7 @@ files = [
     "tpof/mobile/dialogs/legal.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
+    "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
 ]
 ignore_missing_imports = true

@@ -33,6 +33,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
   waluty kosztu dodatkowego, obliczenia, wyniki i wykres zakładki robocizny.
   Z `main.py` usunięto tymczasowe aliasy widżetów oraz ponad 600 linii logiki
   tego ekranu.
+- `ValvesTabController` przejął budowę widoku, tryb kubatura/wymiary, wybór
+  zaworu, walidację, obliczenia i wyniki zakładki zaworów. Zakupy i reklamy
+  nagradzane nadal są obsługiwane przez orkiestrator aplikacji.
 
 ### Testy
 
@@ -46,6 +49,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
   lokalną cenę Google Play, harmonogram odświeżania i komunikat po zakupie.
 - Dodano testy kontraktu `LaborTabController` dla stanu przełączników,
   poprawnego obliczenia, przewinięcia do wyniku i błędu wymaganego pola.
+- Dodano testy kontraktu `ValvesTabController` dla obu trybów objętości,
+  walidacji liczby chłodnic, przecinka dziesiętnego, blokady dostępu,
+  lokalizacji, motywu i renderowania wyników.
 
 ## [1.5.11] - 2026-07-20
 
