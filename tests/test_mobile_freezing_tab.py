@@ -287,7 +287,19 @@ def test_freezing_controller_resets_inputs_and_results():
     assert controller.last_results is None
     assert view.total_label.text == "total_power(value=—)"
     assert all(stage.bar.value == 0 for stage in view.stages.values())
+    assert all(stage.bar.color[-1] == 0 for stage in view.stages.values())
     assert all(stage.value_label.text == "—" for stage in view.stages.values())
+
+    for field, value in zip(
+        view.input_fields,
+        ("100", "5", "-18", "24"),
+        strict=True,
+    ):
+        field.text = value
+    assert controller.calculate() is True
+    assert all(
+        stage.bar.color[-1] == 1 for stage in view.stages.values()
+    )
 
 
 def test_freezing_controller_refreshes_localized_text_and_theme():
