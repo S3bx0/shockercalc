@@ -1072,6 +1072,7 @@ class FreezingTabController:
         for key, value in values.items():
             percent = (value / total * 100.0) if total > 0 else 0.0
             stage = self.view.stages[key]
+            stage.bar.color = STAGE_COLORS[key]
             stage.bar.value = percent
             stage.value_label.text = f"{value:.2f} kW ({percent:.0f}%)"
         if scroll:
@@ -1092,8 +1093,12 @@ class FreezingTabController:
         for field in self.view.input_fields:
             field.text = ""
         self.view.total_label.text = self.total_text()
-        for stage in self.view.stages.values():
+        for key, stage in self.view.stages.items():
             stage.bar.value = 0
+            # KivyMD 1.2 can leave the last progress-fill texture visible on
+            # Android after assigning an exact zero. Hiding the fill color
+            # guarantees an empty bar; render_results restores its stage color.
+            stage.bar.color = (*STAGE_COLORS[key][:3], 0)
             stage.value_label.text = "—"
         self.last_results = None
         self.clear_validation()
