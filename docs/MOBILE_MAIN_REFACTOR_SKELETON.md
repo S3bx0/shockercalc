@@ -1,20 +1,11 @@
 # Mobile `main.py` Refactor Skeleton
 
-Stan na podstawie roadmapy v1.5.1 i aktualnego kodu z tej gałęzi:
-`tpof/mobile/main.py` ma 4959 linii. To jest snapshot roboczy - przed każdym
-etapem refaktoru liczby trzeba odświeżyć skryptem/AST, bo plik nadal szybko się
-zmienia. Na poziomie modułu istnieje tylko kilka helperów oraz funkcja `main()`,
-a wewnątrz `main()` są zdefiniowane klasy UI:
-
-- `FrostBackground`
-- `BrandToolbar`
-- `FrostChip`
-- `StageIconBadge`
-- `StageMotionIcon`
-- `BottomNavMotionIcon`
-- `BottomNavTab`
-- `CenterNotice`
-- `ShockerCalcApp` z 122 metodami
+Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
+i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-26 plik
+ma około 1475 linii, a `ShockerCalcApp` 79 metod. Widgety, kontrolery zakładek
+robocizny, zaworów i chłodnictwa oraz część dialogów i usług są już osobnymi
+modułami. Liczby trzeba nadal odświeżać przed kolejnym etapem, bo ten dokument
+jest żywym planem refaktoru.
 
 Cel refaktoru: podzielić mobilny UI na moduły bez zmiany zachowania, bez zmiany
 wzorów obliczeniowych i bez zmiany kluczy zapisanych danych.
@@ -435,19 +426,24 @@ Zakładki wydzielać dopiero po widgetach i dialogach.
 
 ### `tpof/mobile/tabs/freezing.py`
 
-Klasa:
+Etap wykonany 2026-07-26. Kontroler przejął kompletny widok zakładki, wybór
+kategorii i produktu, wyszukiwarkę katalogu, jednostkę masy, walidację,
+obliczenia, prezentację wyników, teksty, motyw i responsywny layout.
+`ShockerCalcApp` przekazuje tylko politykę dostępu freemium oraz callbacki
+otwarcia formularza własnego produktu i eksportu PDF.
+
+Aktualny kontrakt:
 
 ```python
 class FreezingTabController:
-    def __init__(self, app: "ShockerCalcApp") -> None: ...
-    def build(self): ...
+    def build(self) -> FreezingTabView: ...
     def refresh_texts(self) -> None: ...
     def apply_layout(self, metrics) -> None: ...
-    def calculate(self) -> None: ...
+    def calculate(self) -> bool: ...
     def reset_inputs(self) -> None: ...
 ```
 
-Przenieść metody:
+Przeniesione odpowiedzialności:
 
 - `_hint_field_items` albo podpiąć wynik z `tpof.mobile.hints`
 - `_build_product_card`
@@ -482,6 +478,10 @@ Właścicielstwo widgetów:
   bezpośrednich referencji do widgetów zakładki.
 
 ### `tpof/mobile/tabs/valves.py`
+
+Etap wykonany 2026-07-26. `ValvesTabController` buduje kompletną zakładkę,
+przechowuje jej stan, waliduje dane, wykonuje obliczenia i prezentuje wynik.
+Polityka zakupu/tokenów pozostaje callbackiem composition root.
 
 Klasa:
 

@@ -23,34 +23,20 @@ from datetime import datetime
 from pathlib import Path
 
 from tpof.core import (
-    FreezingInputs,
     Product,
-    calculate_freezing,
-    find_product,
     list_categories,
     list_products,
     load_products,
 )
 from tpof.mobile import telemetry, theme
 from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
-from tpof.mobile.catalog import (
-    _mobile_product_names,
-    _ordered_mobile_categories,
-    _safe_image_path,
-    _search_product_names,
-)
+from tpof.mobile.catalog import _safe_image_path
 from tpof.mobile.constants import (
-    ABSOLUTE_ZERO_C,
     APP_NAME,
     BRAND_ICE,
     IS_ANDROID,
     STAGE_COLORS,
     SURFACE_DARK,
-    TEMP_HIGH_ERROR_C,
-    TEMP_HIGH_STRONG_WARNING_C,
-    TEMP_HIGH_WARNING_C,
-    TEMP_LOW_STRONG_WARNING_C,
-    TEMP_LOW_WARNING_C,
 )
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
 from tpof.mobile.dialogs.legal import LegalDialogController
@@ -66,6 +52,7 @@ from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
+from tpof.mobile.tabs.freezing import FreezingTabController
 from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.tabs.valves import ValvesTabController
 from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
@@ -81,16 +68,10 @@ def main() -> None:
         from kivy.graphics import Color, Rectangle
         from kivy.metrics import dp
         from kivy.uix.floatlayout import FloatLayout
-        from kivy.uix.image import AsyncImage
         from kivymd.app import MDApp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDIconButton, MDRaisedButton
-        from kivymd.uix.card import MDCard
         from kivymd.uix.label import MDIcon, MDLabel
-        from kivymd.uix.menu import MDDropdownMenu
-        from kivymd.uix.progressbar import MDProgressBar
-        from kivymd.uix.scrollview import MDScrollView
-        from kivymd.uix.textfield import MDTextField
 
         from tpof.mobile.currency import (
             SUPPORTED_DISPLAY_CURRENCIES,
@@ -104,8 +85,6 @@ def main() -> None:
             FrostBackground,
             FrostChip,
             LaborPieChart,
-            StageIconBadge,
-            StageMotionIcon,
         )
     except ImportError as exc:  # pragma: no cover
         raise SystemExit(
@@ -149,17 +128,6 @@ def main() -> None:
             except Exception:  # pragma: no cover
                 log.debug("Could not set soft keyboard mode.", exc_info=True)
 
-            self._selected_category: str | None = None
-            self._selected_product: str | None = None
-            self._mass_unit: str = "kg"
-            self._cat_menu: MDDropdownMenu | None = None
-            self._prod_menu: MDDropdownMenu | None = None
-            self._product_dialog = None
-            self._product_search_field = None
-            self._product_results_list = None
-            self._product_dialog_names: list[str] = []
-            self._product_dialog_indexes: dict[str, int] = {}
-            self._last_results = None
             self._themed_cards = []
             self._language = "pl"
             self._preferences = UiPreferences()
@@ -264,6 +232,43 @@ def main() -> None:
                 is_compact=lambda: bool(self._layout_metrics(dp)["compact"]),
                 menu_text_color=self._menu_text_color,
             )
+            self._freezing_tab_controller = FreezingTabController(
+                catalog=catalog,
+                categories=categories,
+                translate=self._t,
+                display_category=self._display_category,
+                card_bg=self._card_bg,
+                total_color=STAGE_COLORS["total"],
+                numeric_input_filter=_numeric_input_filter,
+                register_themed_card=self._themed_cards.append,
+                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                style_button=self._style_app_button,
+                clear_field_error=self._clear_field_error,
+                mark_field_error=self._mark_field_error,
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
+                ensure_product_access=self._ensure_freezing_product_access,
+                is_product_selectable=lambda index: (
+                    self._entitlements.is_unlocked(self._pro_no_ads)
+                    or index < FREE_PRODUCTS_PER_CATEGORY
+                ),
+                recent_products=(
+                    self._preferences.recent_products_for_category
+                ),
+                add_recent_product=self._preferences.add_recent_product,
+                is_custom_product=custom_products.contains,
+                resolve_product_image=_safe_image_path,
+                on_add_custom_product=self._open_custom_product_dialog,
+                on_export_pdf=self._export_pdf,
+                menu_factory=self._menu,
+                is_compact=lambda: bool(
+                    self._layout_metrics(dp)["compact"]
+                ),
+                menu_text_color=self._menu_text_color,
+                divider_color=lambda: self.theme_cls.divider_color,
+                hints_enabled=lambda: self._hints_enabled,
+            )
             self._monetization = ProMonetizationController(
                 is_android=IS_ANDROID,
                 translate=self._t,
@@ -294,38 +299,18 @@ def main() -> None:
             self.toolbar = self._build_toolbar(dp, MDBoxLayout, MDIcon, MDIconButton, MDLabel)
             root.add_widget(self.toolbar)
 
-            self.scroll = MDScrollView()
-            self.content = MDBoxLayout(
-                orientation="vertical",
-                padding=[dp(16), dp(14), dp(16), dp(18)],
-                spacing=dp(14),
-                size_hint_y=None,
-            )
-            content = self.content
-            content.bind(minimum_height=content.setter("height"))
-
-            content.add_widget(
-                self._build_product_card(dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage)
-            )
-            content.add_widget(self._build_params_card(dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton))
-            self.results_card = self._build_results_card(
-                dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDRaisedButton
-            )
-            content.add_widget(self.results_card)
-
-            self.scroll.add_widget(content)
-            self.scroll.size_hint = (1, 1)
-
             # Własny host zakładek: tło pozostaje widoczne, a dolny pasek nie
             # może już zapadać obszaru treści jak MDBottomNavigation.
             self.tab_content_host = FloatLayout(size_hint=(1, 1))
             self.tab_frost_background = FrostBackground(size_hint=(1, 1))
             self.tab_content_host.add_widget(self.tab_frost_background)
+            freezing_scroll = self._freezing_tab_controller.build().scroll
+            freezing_scroll.size_hint = (1, 1)
             valve_scroll = self._valves_tab_controller.build().scroll
             valve_scroll.size_hint = (1, 1)
             labor_scroll = self._labor_tab_controller.build().scroll
             labor_scroll.size_hint = (1, 1)
-            self.tab_content_host.add_widget(self.scroll)
+            self.tab_content_host.add_widget(freezing_scroll)
             self.tab_content_host.add_widget(valve_scroll)
             self.tab_content_host.add_widget(labor_scroll)
             root.add_widget(self.tab_content_host)
@@ -366,7 +351,7 @@ def main() -> None:
             return translate(self._language, key, **kwargs)
 
         def _toggle_language(self):
-            self._close_product_dialog()
+            self._freezing_tab_controller.close_product_dialog()
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
             self._update_currency_settings_ui()
@@ -380,12 +365,7 @@ def main() -> None:
             telemetry.log_event("hints_toggled", {"enabled": self._hints_enabled})
 
         def _hint_field_items(self):
-            items = [
-                (getattr(self, "in_m", None), "hint_mass"),
-                (getattr(self, "in_T1", None), "hint_temp_start"),
-                (getattr(self, "in_T2", None), "hint_temp_end"),
-                (getattr(self, "in_t", None), "hint_time"),
-            ]
+            items = list(self._freezing_tab_controller.hint_field_items())
             items.extend(self._valves_tab_controller.hint_field_items())
             items.extend(self._labor_tab_controller.hint_field_items())
             return items
@@ -404,8 +384,7 @@ def main() -> None:
                 )
             if hasattr(self, "btn_hints_chip"):
                 self.btn_hints_chip.set_active(self._hints_enabled)
-            if hasattr(self, "lbl_product_hint"):
-                self.lbl_product_hint.text = self._t("product_hint")
+            self._freezing_tab_controller.refresh_texts()
             for field, hint_key in self._hint_field_items():
                 if field is None:
                     continue
@@ -437,79 +416,6 @@ def main() -> None:
             field.helper_text = message or self._t("field_required")
             field.helper_text_mode = "on_error"
 
-        def _parse_required_field(self, field, name: str) -> float:
-            raw = (getattr(field, "text", "") or "").strip()
-            if not raw:
-                self._mark_field_error(field)
-                raise ValueError(self._t("invalid_field", name=name))
-            try:
-                return float(raw.replace(",", "."))
-            except (TypeError, ValueError, AttributeError) as exc:
-                self._mark_field_error(field, self._t("invalid_field", name=name))
-                raise ValueError(self._t("invalid_field", name=name)) from exc
-
-        def _temperature_warning(self, field_name: str, value: float) -> str | None:
-            if value >= TEMP_HIGH_STRONG_WARNING_C:
-                return self._t(
-                    "temperature_warning_high_strong",
-                    field=field_name,
-                    value=value,
-                )
-            if value >= TEMP_HIGH_WARNING_C:
-                return self._t(
-                    "temperature_warning_high",
-                    field=field_name,
-                    value=value,
-                )
-            if value <= TEMP_LOW_STRONG_WARNING_C:
-                return (
-                    self._t(
-                        "temperature_warning_low_strong",
-                        field=field_name,
-                        value=value,
-                    )
-                    + " "
-                    + self._t("temperature_warning_co2")
-                )
-            if value <= TEMP_LOW_WARNING_C:
-                return self._t(
-                    "temperature_warning_low",
-                    field=field_name,
-                    value=value,
-                )
-            return None
-
-        def _validate_temperature_input(self, field, field_name: str, value: float) -> str | None:
-            if value < ABSOLUTE_ZERO_C:
-                message = self._t("temperature_error_absolute", field=field_name)
-                self._mark_field_error(field, message)
-                raise ValueError(message)
-            if value > TEMP_HIGH_ERROR_C:
-                message = self._t(
-                    "temperature_error_high",
-                    field=field_name,
-                    limit=TEMP_HIGH_ERROR_C,
-                )
-                self._mark_field_error(field, message)
-                raise ValueError(message)
-            return self._temperature_warning(field_name, value)
-
-        def _clear_main_validation(self):
-            for line in (
-                getattr(self, "category_error_line", None),
-                getattr(self, "product_error_line", None),
-            ):
-                if line is not None:
-                    line.opacity = 0
-            for field in (
-                getattr(self, "in_m", None),
-                getattr(self, "in_T1", None),
-                getattr(self, "in_T2", None),
-                getattr(self, "in_t", None),
-            ):
-                if field is not None:
-                    self._clear_field_error(field)
-
         def _bind_keyboard_scroll(self, fields, scroll):
             if scroll is None:
                 return
@@ -538,10 +444,6 @@ def main() -> None:
                     log.debug("Could not scroll focused field above keyboard.", exc_info=True)
             except Exception:
                 log.debug("Could not scroll focused field above keyboard.", exc_info=True)
-
-        def _total_text(self, total: float | None = None) -> str:
-            value = "—" if total is None else f"{total:.2f}"
-            return self._t("total_power", value=value)
 
         def _ad_label_text(self) -> str:
             if self._pro_no_ads:
@@ -582,20 +484,6 @@ def main() -> None:
             from kivy.metrics import dp
 
             m = self._layout_metrics(dp)
-            card_padding = [
-                m["card_pad_x"],
-                m["card_pad_top"],
-                m["card_pad_x"],
-                m["card_pad_bottom"],
-            ]
-            if hasattr(self, "content"):
-                self.content.padding = [
-                    m["content_pad"],
-                    m["content_top"],
-                    m["content_pad"],
-                    m["content_bottom"],
-                ]
-                self.content.spacing = m["content_spacing"]
 
             if hasattr(self, "toolbar"):
                 self.toolbar.height = m["toolbar_h"]
@@ -653,116 +541,7 @@ def main() -> None:
                         icon_size=m["bottom_tab_icon"],
                         label_sp=m["bottom_tab_sp"],
                     )
-
-            if hasattr(self, "product_card"):
-                self.product_card.padding = card_padding
-                self.product_card.spacing = dp(10 if m["compact"] else 12)
-                self.product_card.height = m["product_card_h"]
-            if hasattr(self, "lbl_product_title"):
-                self.lbl_product_title.height = m["title_h"]
-                self.lbl_product_title.font_size = f'{m["title_sp"]}sp'
-            if hasattr(self, "product_title_row"):
-                self.product_title_row.height = m["title_h"]
-            if hasattr(self, "btn_add_product"):
-                self.btn_add_product.width = m["toolbar_btn_w"]
-                self.btn_add_product.icon_size = f'{m["toolbar_btn_sp"]}sp'
-            if hasattr(self, "lbl_product_hint"):
-                self.lbl_product_hint.height = m["product_hint_h"]
-                self.lbl_product_hint.opacity = 1 if self._hints_enabled else 0
-                self.lbl_product_hint.font_size = f'{m["caption_sp"]}sp'
-            if hasattr(self, "product_body"):
-                self.product_body.orientation = "horizontal" if m["product_horizontal"] else "vertical"
-                self.product_body.height = m["product_body_h"]
-                self.product_body.spacing = m["product_body_spacing"]
-            if hasattr(self, "product_controls"):
-                self.product_controls.spacing = dp(10 if m["compact"] else 12)
-                self.product_controls.size_hint_x = 0.46 if m["product_horizontal"] else 1
-                self.product_controls.size_hint_y = 1 if m["product_horizontal"] else None
-                self.product_controls.height = m["product_controls_h"]
-                self.product_controls.padding = [0, dp(6 if m["compact"] else 8), 0, dp(6 if m["compact"] else 8)]
-            if hasattr(self, "image_box"):
-                self.image_box.size_hint_x = 0.54 if m["product_horizontal"] else 1
-                self.image_box.size_hint_y = 1 if m["product_horizontal"] else None
-                self.image_box.height = m["product_image_h"]
-            if hasattr(self, "image_placeholder"):
-                self.image_placeholder.padding = [
-                    0,
-                    m["placeholder_top"],
-                    0,
-                    m["placeholder_bottom"],
-                ]
-            if hasattr(self, "image_placeholder_icon"):
-                self.image_placeholder_icon.font_size = f'{m["placeholder_icon_sp"]}sp'
-            if hasattr(self, "image_placeholder_label"):
-                self.image_placeholder_label.font_size = f'{m["caption_sp"]}sp'
-
-            for btn in (getattr(self, "btn_category", None), getattr(self, "btn_product", None)):
-                if btn is not None:
-                    btn.height = m["button_h"]
-                    btn.font_size = f'{m["button_sp"]}sp'
-            for box in (
-                getattr(self, "category_field_box", None),
-                getattr(self, "product_field_box", None),
-            ):
-                if box is not None:
-                    box.height = m["button_h"] + dp(2)
-
-            if hasattr(self, "params_card"):
-                self.params_card.padding = card_padding
-                self.params_card.spacing = m["card_spacing"]
-                self.params_card.height = m["params_h"]
-            if hasattr(self, "lbl_params_title"):
-                self.lbl_params_title.height = m["title_h"]
-                self.lbl_params_title.font_size = f'{m["title_sp"]}sp'
-            if hasattr(self, "row_mass"):
-                self.row_mass.height = m["field_h"] + dp(8)
-                self.row_mass.spacing = dp(8 if m["compact"] else 10)
-            if hasattr(self, "btn_unit"):
-                self.btn_unit.width = m["unit_w"]
-                self.btn_unit.height = m["unit_h"]
-                self.btn_unit.font_size = f'{m["body_sp"]}sp'
-            for field_ in [
-                getattr(self, "in_m", None),
-                getattr(self, "in_T1", None),
-                getattr(self, "in_T2", None),
-                getattr(self, "in_t", None),
-            ]:
-                if field_ is not None:
-                    field_.height = m["field_h"]
-                    field_.font_size = f'{m["body_sp"]}sp'
-
-            if hasattr(self, "results_card"):
-                self.results_card.padding = card_padding
-                self.results_card.spacing = m["results_spacing"]
-                self.results_card.height = m["results_h"]
-            if hasattr(self, "results_title_row"):
-                self.results_title_row.height = m["title_h"]
-            if hasattr(self, "lbl_results_title"):
-                self.lbl_results_title.font_size = f'{m["title_sp"]}sp'
-            if hasattr(self, "action_row"):
-                self.action_row.height = m["action_h"]
-                self.action_row.spacing = dp(6 if m["compact"] else 8)
-                self.action_row.padding = [0, dp(8 if m["compact"] else 9), 0, dp(7 if m["compact"] else 8)]
-            for btn in [
-                getattr(self, "btn_calc", None),
-                getattr(self, "btn_pdf", None),
-                getattr(self, "btn_clear", None),
-            ]:
-                if btn is not None:
-                    btn.height = m["action_button_h"]
-                    btn.font_size = f'{m["action_sp"]}sp'
-            if hasattr(self, "lbl_total"):
-                self.lbl_total.height = m["total_h"]
-                self.lbl_total.font_size = f'{m["total_sp"]}sp'
-            for entry in getattr(self, "bars", {}).values():
-                entry["row"].height = m["stage_row_h"]
-                entry["head"].height = m["stage_head_h"]
-                entry["icon_chip"].width = m["stage_icon_w"]
-                entry["icon_chip"].height = m["stage_icon_w"]
-                if hasattr(entry["icon"], "font_size"):
-                    entry["icon"].font_size = f'{m["stage_icon_sp"]}sp'
-                entry["name_label"].font_size = f'{m["body_sp"]}sp'
-                entry["value_label"].font_size = f'{m["body_sp"]}sp'
+            self._freezing_tab_controller.apply_layout(m)
             if hasattr(self, "footer_bar"):
                 self.footer_bar.height = m["footer_h"]
                 self.footer_bar.padding = [m["content_pad"], dp(3), m["content_pad"], dp(3)]
@@ -785,43 +564,7 @@ def main() -> None:
                 self.lbl_toolbar_title.text = "Refrigeration\nCalc"
             if hasattr(self, "btn_theme"):
                 self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
-            if hasattr(self, "lbl_product_title"):
-                self.lbl_product_title.text = self._t("product")
-            if hasattr(self, "btn_category"):
-                self.btn_category.text = (
-                    self._display_category(self._selected_category)
-                    if self._selected_category
-                    else self._t("choose_category")
-                )
-            if hasattr(self, "btn_product"):
-                self.btn_product.text = self._selected_product or self._t("choose_product")
-            if hasattr(self, "image_placeholder_label"):
-                self.image_placeholder_label.text = self._t("image_placeholder")
-            if hasattr(self, "lbl_product_hint"):
-                self.lbl_product_hint.text = self._t("product_hint")
-            if hasattr(self, "lbl_params_title"):
-                self.lbl_params_title.text = self._t("params")
-            if hasattr(self, "in_m"):
-                self.in_m.hint_text = self._t("mass")
-                self.in_T1.hint_text = self._t("temperature_start")
-                self.in_T2.hint_text = self._t("temperature_end")
-                self.in_t.hint_text = self._t("work_time")
-            if hasattr(self, "btn_calc"):
-                self.btn_calc.text = self._t("calculate")
-                self.btn_clear.text = self._t("clear")
-            if hasattr(self, "lbl_results_title"):
-                self.lbl_results_title.text = self._t("result")
-                for key, label_key in [
-                    ("schladzanie", "cooling"),
-                    ("zamrozenie", "freezing"),
-                    ("domrozenie", "deep_freezing"),
-                ]:
-                    if key in self.bars:
-                        self.bars[key]["name_label"].text = self._t(label_key)
-            if self._last_results is not None:
-                self._render_results(self._last_results, scroll=False)
-            elif hasattr(self, "lbl_total"):
-                self.lbl_total.text = self._total_text()
+            self._freezing_tab_controller.refresh_texts()
             if hasattr(self, "ad_label"):
                 self.ad_label.text = self._ad_label_text()
             if hasattr(self, "bottom_freezing_tab"):
@@ -1060,6 +803,7 @@ def main() -> None:
                 self.bottom_labor_tab.set_active(active_tab == "labor")
             for card in self._themed_cards:
                 card.md_bg_color = self._card_bg()
+            self._freezing_tab_controller.apply_theme()
             self._labor_tab_controller.apply_theme()
             self._valves_tab_controller.apply_theme()
             ad_slot = getattr(self, "ad_slot", None)
@@ -1068,361 +812,11 @@ def main() -> None:
             footer_bar = getattr(self, "footer_bar", None)
             if footer_bar is not None:
                 footer_bar.md_bg_color = self._footer_bg()
-            if hasattr(self, "btn_unit"):
-                self._set_mass_unit(self._mass_unit)
             for button, variant in (
-                (getattr(self, "btn_category", None), "primary"),
-                (getattr(self, "btn_product", None), "primary"),
-                (getattr(self, "btn_calc", None), "primary"),
-                (getattr(self, "btn_pdf", None), "ice"),
-                (getattr(self, "btn_clear", None), "dark"),
                 (getattr(self, "btn_pro", None), "pro"),
             ):
                 if button is not None:
                     self._style_app_button(button, variant)
-
-        def _build_product_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDRaisedButton, AsyncImage):
-            from kivymd.uix.button import MDIconButton
-
-            card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(12),
-                size_hint_y=None,
-                height=dp(322 if self._hints_enabled else 292),
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            self.product_card = card
-            self._themed_cards.append(card)
-            title_row = MDBoxLayout(
-                orientation="horizontal", size_hint_y=None, height=dp(30)
-            )
-            self.product_title_row = title_row
-            self.lbl_product_title = MDLabel(
-                text=self._t("product"),
-                font_style="H6",
-            )
-            title_row.add_widget(self.lbl_product_title)
-            self.btn_add_product = MDIconButton(
-                icon="plus-circle-outline",
-                size_hint_x=None,
-                width=dp(44),
-                icon_size="26sp",
-                theme_text_color="Custom",
-                text_color=(0.18, 0.68, 0.95, 1),
-                on_release=lambda *_: self._open_custom_product_dialog(),
-            )
-            title_row.add_widget(self.btn_add_product)
-            card.add_widget(title_row)
-
-            self.lbl_product_hint = MDLabel(
-                text=self._t("product_hint"),
-                size_hint_y=None,
-                height=dp(30 if self._hints_enabled else 0),
-                opacity=1 if self._hints_enabled else 0,
-                font_style="Caption",
-                theme_text_color="Hint",
-            )
-            card.add_widget(self.lbl_product_hint)
-
-            body = MDBoxLayout(
-                orientation="horizontal",
-                spacing=dp(14),
-                size_hint_y=None,
-                height=dp(202),
-            )
-            self.product_body = body
-            controls = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(12),
-                size_hint_x=0.46,
-                padding=[0, dp(8), 0, dp(8)],
-            )
-            self.product_controls = controls
-            self.btn_category = MDRaisedButton(
-                text=self._t("choose_category"),
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(52),
-                font_size="15sp",
-                on_release=lambda btn: self._open_category_menu(btn),
-            )
-            self.category_field_box = MDBoxLayout(
-                orientation="vertical", size_hint_y=None, height=dp(54), spacing=0
-            )
-            self.category_field_box.add_widget(self.btn_category)
-            self.category_error_line = MDBoxLayout(
-                size_hint_y=None,
-                height=dp(2),
-                opacity=0,
-                md_bg_color=(0.94, 0.20, 0.26, 1),
-            )
-            self.category_field_box.add_widget(self.category_error_line)
-            controls.add_widget(self.category_field_box)
-
-            self.btn_product = MDRaisedButton(
-                text=self._t("choose_product"),
-                size_hint_x=1,
-                size_hint_y=None,
-                height=dp(52),
-                font_size="15sp",
-                disabled=True,
-                on_release=lambda btn: self._open_product_menu(btn),
-            )
-            self.product_field_box = MDBoxLayout(
-                orientation="vertical", size_hint_y=None, height=dp(54), spacing=0
-            )
-            self.product_field_box.add_widget(self.btn_product)
-            self.product_error_line = MDBoxLayout(
-                size_hint_y=None,
-                height=dp(2),
-                opacity=0,
-                md_bg_color=(0.94, 0.20, 0.26, 1),
-            )
-            self.product_field_box.add_widget(self.product_error_line)
-            controls.add_widget(self.product_field_box)
-
-            body.add_widget(controls)
-            self.image_box = MDBoxLayout(
-                orientation="vertical",
-                size_hint_x=0.54,
-                padding=[0, dp(4), 0, dp(4)],
-            )
-            self.image_placeholder = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(2),
-                padding=[0, dp(44), 0, dp(28)],
-            )
-            self.image_placeholder_icon = MDIcon(
-                icon="image",
-                halign="center",
-                font_size="42sp",
-                theme_text_color="Hint",
-            )
-            self.image_placeholder.add_widget(self.image_placeholder_icon)
-            self.image_placeholder_label = MDLabel(
-                text=self._t("image_placeholder"),
-                halign="center",
-                font_style="Caption",
-                theme_text_color="Hint",
-            )
-            self.image_placeholder.add_widget(self.image_placeholder_label)
-            self.product_image = AsyncImage(
-                source="",
-                allow_stretch=True,
-                keep_ratio=True,
-                opacity=0,
-            )
-            self.image_box.add_widget(self.image_placeholder)
-            body.add_widget(self.image_box)
-            card.add_widget(body)
-            return card
-
-        def _configure_text_field(self, field, *, height=None):
-            from kivy.metrics import dp, sp
-
-            field.size_hint_y = None
-            field.height = height or dp(70)
-            field.font_size = sp(18)
-            field.padding = [0, dp(12), 0, dp(8)]
-            field.multiline = False
-            field.write_tab = False
-            return field
-
-        def _build_params_card(self, dp, MDCard, MDBoxLayout, MDLabel, MDTextField, MDRaisedButton):
-            card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(10),
-                size_hint_y=None,
-                height=dp(392),
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            self.params_card = card
-            self._themed_cards.append(card)
-            self.lbl_params_title = MDLabel(
-                text=self._t("params"),
-                font_style="H6",
-                size_hint_y=None,
-                height=dp(30),
-            )
-            card.add_widget(self.lbl_params_title)
-
-            row_mass = MDBoxLayout(orientation="horizontal", spacing=dp(10), size_hint_y=None, height=dp(78))
-            self.row_mass = row_mass
-            self.in_m = MDTextField(
-                hint_text=self._t("mass"),
-                input_filter=_numeric_input_filter,
-                size_hint_x=1,
-            )
-            self._configure_text_field(self.in_m)
-            self.btn_unit = MDRaisedButton(
-                text=self._mass_unit,
-                size_hint_x=None,
-                width=dp(72),
-                size_hint_y=None,
-                height=dp(42),
-                font_size="15sp",
-                pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._toggle_mass_unit(),
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
-            )
-            row_mass.add_widget(self.in_m)
-            row_mass.add_widget(self.btn_unit)
-            card.add_widget(row_mass)
-            self._set_mass_unit(self._mass_unit)
-
-            self.in_T1 = MDTextField(
-                hint_text=self._t("temperature_start"), input_filter=_numeric_input_filter
-            )
-            self.in_T2 = MDTextField(
-                hint_text=self._t("temperature_end"), input_filter=_numeric_input_filter
-            )
-            self.in_t = MDTextField(
-                hint_text=self._t("work_time"), input_filter=_numeric_input_filter
-            )
-            for w in (self.in_T1, self.in_T2, self.in_t):
-                self._configure_text_field(w)
-                card.add_widget(w)
-            self._bind_keyboard_scroll(
-                (self.in_m, self.in_T1, self.in_T2, self.in_t),
-                getattr(self, "scroll", None),
-            )
-            return card
-
-        def _build_action_button(self, dp, MDBoxLayout, MDRaisedButton):
-            wrapper = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(64),
-                spacing=dp(8),
-                padding=[0, dp(6), 0, dp(6)],
-            )
-            self.action_row = wrapper
-            self.btn_calc = MDRaisedButton(
-                text=self._t("calculate"),
-                icon="calculator-variant",
-                size_hint_x=0.40,
-                size_hint_y=None,
-                height=dp(48),
-                font_size="14sp",
-                pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._calculate(),
-            )
-            wrapper.add_widget(self.btn_calc)
-            self.btn_pdf = MDRaisedButton(
-                text="PDF",
-                icon="file-pdf-box",
-                size_hint_x=0.27,
-                size_hint_y=None,
-                height=dp(48),
-                font_size="14sp",
-                pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._export_pdf(),
-            )
-            wrapper.add_widget(self.btn_pdf)
-            self.btn_clear = MDRaisedButton(
-                text=self._t("clear"),
-                icon="broom",
-                size_hint_x=0.33,
-                size_hint_y=None,
-                height=dp(48),
-                font_size="14sp",
-                md_bg_color=(0.16, 0.19, 0.23, 1),
-                pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._reset_inputs(),
-                theme_text_color="Custom",
-                text_color=(1.0, 0.55, 0.55, 1),
-            )
-            wrapper.add_widget(self.btn_clear)
-            return wrapper
-
-        def _build_results_card(self, dp, MDCard, MDBoxLayout, MDIcon, MDLabel, MDProgressBar, MDRaisedButton):
-            card = MDCard(
-                orientation="vertical",
-                padding=dp(14),
-                spacing=dp(8),
-                size_hint_y=None,
-                height=dp(390),
-                radius=[16, 16, 16, 16],
-                elevation=3,
-                md_bg_color=self._card_bg(),
-            )
-            self.results_card = card
-            self._themed_cards.append(card)
-            title_row = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(44), spacing=0)
-            self.results_title_row = title_row
-            self.lbl_results_title = MDLabel(
-                text=self._t("result"),
-                font_style="H6",
-                valign="middle",
-            )
-            title_row.add_widget(self.lbl_results_title)
-            card.add_widget(title_row)
-            card.add_widget(self._build_action_button(dp, MDBoxLayout, MDRaisedButton))
-
-            self.lbl_total = MDLabel(
-                text=self._total_text(),
-                font_style="H6",
-                halign="center",
-                size_hint_y=None,
-                height=dp(46),
-                theme_text_color="Custom",
-                text_color=STAGE_COLORS["total"],
-            )
-            card.add_widget(self.lbl_total)
-
-            self.bars: dict[str, dict] = {}
-            for key, label_key, icon in [
-                ("schladzanie", "cooling", "thermometer"),
-                ("zamrozenie", "freezing", "snowflake"),
-                ("domrozenie", "deep_freezing", "thermometer"),
-            ]:
-                self.bars[key] = self._add_stage_row(
-                    card, key, self._t(label_key), icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar
-                )
-
-            return card
-
-        def _add_stage_row(self, parent, key, label, icon, dp, MDBoxLayout, MDIcon, MDLabel, MDProgressBar):
-            row = MDBoxLayout(orientation="vertical", size_hint_y=None, height=dp(74), spacing=dp(6))
-            head = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(38), spacing=dp(10))
-            icon_chip = StageIconBadge(
-                accent=STAGE_COLORS[key],
-                size_hint_x=None,
-                size_hint_y=None,
-                width=dp(38),
-                height=dp(38),
-            )
-            icon_widget = StageMotionIcon(
-                mode=key,
-                accent=STAGE_COLORS[key],
-                size_hint=(1, 1),
-            )
-            icon_chip.add_widget(icon_widget)
-            head.add_widget(icon_chip)
-            lbl_name = MDLabel(text=label, size_hint_x=0.52)
-            lbl_val = MDLabel(text="—", halign="right", size_hint_x=0.4)
-            head.add_widget(lbl_name)
-            head.add_widget(lbl_val)
-            bar = MDProgressBar(value=0, max=100, color=STAGE_COLORS[key])
-            row.add_widget(head)
-            row.add_widget(bar)
-            parent.add_widget(row)
-            return {
-                "bar": bar,
-                "head": head,
-                "icon": icon_widget,
-                "icon_chip": icon_chip,
-                "name_label": lbl_name,
-                "row": row,
-                "value_label": lbl_val,
-            }
 
         def _build_footer(self, dp, MDBoxLayout, MDLabel, MDRaisedButton):
             footer = MDBoxLayout(
@@ -1501,6 +895,34 @@ def main() -> None:
             self._show_error(self._t("valve_locked_hint"))
             return False
 
+        def _ensure_freezing_product_access(
+            self,
+            category: str,
+            product_name: str,
+        ) -> bool:
+            """Consume a reward token when the selected product is locked."""
+
+            if self._entitlements.is_unlocked(self._pro_no_ads):
+                return True
+            products = list_products(catalog, category)
+            try:
+                index = products.index(product_name)
+            except ValueError:
+                index = FREE_PRODUCTS_PER_CATEGORY
+            if self._entitlements.is_product_allowed(
+                index,
+                self._pro_no_ads,
+            ):
+                return True
+            self._credit_pending_reward_tokens()
+            if self._entitlements.try_unlock_product_with_token(
+                index,
+                self._pro_no_ads,
+            ):
+                return True
+            self._offer_reward_ad()
+            return False
+
         def _refresh_module_valves_status(self):
             """Synchronizuje własność modułu zaworów z warstwą Android (Billing)."""
             if not IS_ANDROID:
@@ -1566,7 +988,7 @@ def main() -> None:
                 return
             self._active_tab_name = name
             tab_widgets = {
-                "freezing": getattr(self, "scroll", None),
+                "freezing": self._freezing_tab_controller.scroll,
                 "valves": self._valves_tab_controller.scroll,
                 "labor": self._labor_tab_controller.scroll,
             }
@@ -1636,17 +1058,6 @@ def main() -> None:
             except Exception:  # pragma: no cover - Android only
                 log.debug("setActiveAdTab nie powiodło się", exc_info=True)
 
-        def _show_product_image(self, img_path: str | None) -> None:
-            self.image_box.clear_widgets()
-            if img_path:
-                self.product_image.source = img_path
-                self.product_image.opacity = 1
-                self.image_box.add_widget(self.product_image)
-                return
-            self.product_image.source = ""
-            self.product_image.opacity = 0
-            self.image_box.add_widget(self.image_placeholder)
-
         def _android_activity(self):
             from jnius import autoclass, cast
 
@@ -1690,8 +1101,7 @@ def main() -> None:
                 self.ad_slot.disabled = active
             if hasattr(self, "footer_label"):
                 self.footer_label.text = self._status_footer_text()
-            if hasattr(self, "btn_add_product"):
-                self.btn_add_product.opacity = 1.0 if active else 0.72
+            self._freezing_tab_controller.set_custom_product_available(active)
             self._refresh_valve_lock_ui()
 
         def _credit_pending_reward_tokens(self):
@@ -1898,7 +1308,7 @@ def main() -> None:
             self._settings_dialog_controller.refresh()
 
         def _open_settings_dialog(self):
-            self._close_product_dialog()
+            self._freezing_tab_controller.close_product_dialog()
             if self._settings_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "general"})
 
@@ -2007,7 +1417,7 @@ def main() -> None:
                         "kategoria",
                         "custom_category",
                         None,
-                        self._selected_category or "",
+                        self._freezing_tab_controller.selected_category or "",
                     ),
                     ("wilgotnosc", "custom_moisture", _numeric_input_filter, ""),
                     ("t_zam", "custom_tzam", _numeric_input_filter, ""),
@@ -2084,220 +1494,13 @@ def main() -> None:
 
             custom_products.merge_into(catalog)
             categories[:] = list_categories(catalog)
-            self._selected_category = product.kategoria
-            self._selected_product = product.nazwa
-            self._preferences.add_recent_product(product.kategoria, product.nazwa)
-            self.btn_category.text = self._display_category(product.kategoria)
-            self.btn_product.text = product.nazwa
-            self.btn_product.disabled = False
-            self.category_error_line.opacity = 0
-            self.product_error_line.opacity = 0
-            self._show_product_image(None)
+            self._freezing_tab_controller.select_saved_product(product)
             self._close_custom_product_dialog()
             self._show_error(self._t("custom_product_saved"))
             telemetry.log_event("custom_product_saved")
 
-        def _open_category_menu(self, caller):
-            from kivy.metrics import dp
-            from kivymd.uix.menu import MDDropdownMenu
-
-            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
-            featured, remaining = _ordered_mobile_categories(
-                categories, self._display_category
-            )
-            ordered = featured + remaining
-            items = [
-                {
-                    "text": self._display_category(cat),
-                    "viewclass": "OneLineListItem",
-                    "height": item_height,
-                    "theme_text_color": "Custom",
-                    "text_color": self._menu_text_color(),
-                    "on_release": lambda c=cat: self._pick_category(c),
-                }
-                for cat in ordered
-            ]
-            if featured and remaining:
-                items.insert(
-                    len(featured),
-                    {
-                        "viewclass": "MDSeparator",
-                        "height": dp(1),
-                        "color": self.theme_cls.divider_color,
-                    },
-                )
-            self._cat_menu = self._menu(caller, items, 3.7, dp(390), dp, MDDropdownMenu)
-            self._cat_menu.open()
-
-        def _pick_category(self, category: str):
-            self._selected_category = category
-            self._selected_product = None
-            self.btn_category.text = self._display_category(category)
-            self.btn_product.text = self._t("choose_product")
-            self.btn_product.disabled = False
-            self.category_error_line.opacity = 0
-            self.product_error_line.opacity = 0
-            self._show_product_image(None)
-            if self._cat_menu:
-                self._cat_menu.dismiss()
-
-        def _open_product_menu(self, caller):
-            from kivy.metrics import dp
-            from kivy.uix.scrollview import ScrollView
-            from kivymd.uix.boxlayout import MDBoxLayout
-            from kivymd.uix.button import MDFlatButton
-            from kivymd.uix.dialog import MDDialog
-            from kivymd.uix.list import MDList
-            from kivymd.uix.textfield import MDTextField
-
-            if not self._selected_category:
-                return
-            self._close_product_dialog()
-            self._product_dialog_names = _mobile_product_names(
-                catalog, self._selected_category
-            )
-            self._product_dialog_indexes = {
-                name: index for index, name in enumerate(self._product_dialog_names)
-            }
-
-            outer = MDBoxLayout(
-                orientation="vertical",
-                spacing=dp(8),
-                size_hint_y=None,
-                height=min(dp(520), max(dp(340), Window.height * 0.66)),
-            )
-            self._product_search_field = MDTextField(
-                hint_text=self._t("search_products"),
-                icon_right="magnify",
-                mode="rectangle",
-                size_hint_y=None,
-                height=dp(58),
-            )
-            outer.add_widget(self._product_search_field)
-            results_scroll = ScrollView(do_scroll_x=False)
-            self._product_results_list = MDList()
-            results_scroll.add_widget(self._product_results_list)
-            outer.add_widget(results_scroll)
-
-            self._product_dialog = MDDialog(
-                title=self._t("product_picker_title"),
-                type="custom",
-                content_cls=outer,
-                buttons=[
-                    MDFlatButton(
-                        text=self._t("close"),
-                        on_release=lambda *_: self._close_product_dialog(),
-                    )
-                ],
-            )
-            self._product_search_field.bind(
-                text=lambda _field, value: self._refresh_product_search_results(value)
-            )
-            self._refresh_product_search_results("")
-            self._product_dialog.open()
-
-        def _add_product_search_item(self, name: str, item_height) -> None:
-            from kivymd.uix.list import OneLineListItem
-
-            index = self._product_dialog_indexes.get(name, 10**9)
-            unlocked = self._entitlements.is_unlocked(self._pro_no_ads)
-            allowed = unlocked or index < FREE_PRODUCTS_PER_CATEGORY
-            item = OneLineListItem(
-                text=name if allowed else f"{name}{self._t('locked_suffix')}",
-                height=item_height,
-                theme_text_color="Custom",
-                text_color=(
-                    self._menu_text_color()
-                    if allowed
-                    else (0.55, 0.58, 0.62, 1)
-                ),
-                on_release=(
-                    (lambda *_args, n=name: self._pick_product(n))
-                    if allowed
-                    else (lambda *_args: self._on_locked_product())
-                ),
-            )
-            self._product_results_list.add_widget(item)
-
-        def _add_product_search_heading(self, text: str, dp) -> None:
-            from kivymd.uix.label import MDLabel
-
-            self._product_results_list.add_widget(
-                MDLabel(
-                    text=text,
-                    size_hint_y=None,
-                    height=dp(34),
-                    font_style="Caption",
-                    theme_text_color="Secondary",
-                    padding=(dp(12), 0),
-                )
-            )
-
-        def _refresh_product_search_results(self, query: str) -> None:
-            from kivy.metrics import dp
-
-            if self._product_results_list is None:
-                return
-            self._product_results_list.clear_widgets()
-            names = _search_product_names(self._product_dialog_names, query)
-            item_height = dp(46 if self._layout_metrics(dp)["compact"] else 52)
-            if not names:
-                self._add_product_search_heading(self._t("no_products_found"), dp)
-                return
-
-            if not str(query or "").strip():
-                recent = self._preferences.recent_products_for_category(
-                    self._selected_category or "",
-                    self._product_dialog_names,
-                )[:4]
-                if recent:
-                    self._add_product_search_heading(self._t("recent_products"), dp)
-                    for name in recent:
-                        self._add_product_search_item(name, item_height)
-                    self._add_product_search_heading(self._t("all_products"), dp)
-
-            for name in names:
-                self._add_product_search_item(name, item_height)
-
-        def _close_product_dialog(self) -> None:
-            dialog = getattr(self, "_product_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-            self._product_dialog = None
-            self._product_search_field = None
-            self._product_results_list = None
-
-        def _on_locked_product(self):
-            if self._prod_menu:
-                self._prod_menu.dismiss()
-            self._close_product_dialog()
-            self._show_error(self._t("product_locked"))
-
-        def _pick_product(self, name: str):
-            self._selected_product = name
-            self._preferences.add_recent_product(
-                self._selected_category or "", name
-            )
-            self.btn_product.text = name
-            self.product_error_line.opacity = 0
-            img = _safe_image_path(name)
-            self._show_product_image(img)
-            if self._prod_menu:
-                self._prod_menu.dismiss()
-            self._close_product_dialog()
-
-        # --- akcje -------------------------------------------------------
-        def _toggle_mass_unit(self):
-            self._set_mass_unit("t" if self._mass_unit == "kg" else "kg")
-
-        def _set_mass_unit(self, unit: str):
-            self._mass_unit = "t" if unit == "t" else "kg"
-            if hasattr(self, "btn_unit"):
-                self.btn_unit.text = self._mass_unit
-                self._style_app_button(self.btn_unit, "ice")
-
         def _toggle_theme(self):
-            self._close_product_dialog()
+            self._freezing_tab_controller.close_product_dialog()
             is_dark = self.theme_cls.theme_style == "Dark"
             self.theme_cls.theme_style = "Light" if is_dark else "Dark"
             self._sync_theme_surfaces()
@@ -2305,26 +1508,19 @@ def main() -> None:
             if hasattr(self, "btn_theme"):
                 self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
 
-        def _reset_inputs(self):
-            for field_ in (self.in_m, self.in_T1, self.in_T2, self.in_t):
-                field_.text = ""
-            self.lbl_total.text = self._total_text()
-            for entry in self.bars.values():
-                entry["bar"].value = 0
-                entry["value_label"].text = "—"
-            self._last_results = None
-            self._clear_main_validation()
-
         def _build_pdf_bytes(self) -> bytes | None:
             """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
+            results = self._freezing_tab_controller.last_results
+            if results is None:
+                return None
             runtime_font = _runtime_font_path()
             if runtime_font is not None:
                 try:
                     from tpof.core.pdf_report import build_pdf
 
-                    img_path = _safe_image_path(self._last_results.produkt.nazwa)
+                    img_path = _safe_image_path(results.produkt.nazwa)
                     return build_pdf(
-                        self._last_results,
+                        results,
                         font_path=runtime_font,
                         product_image_path=Path(img_path) if img_path else None,
                         watermark_image_path=None,
@@ -2336,10 +1532,11 @@ def main() -> None:
                 from tpof.core.pdf_report_mobile import build_pdf_simple
             except ImportError:
                 return None
-            return build_pdf_simple(self._last_results, font_path=runtime_font)
+            return build_pdf_simple(results, font_path=runtime_font)
 
         def _export_pdf(self):
-            if self._last_results is None:
+            results = self._freezing_tab_controller.last_results
+            if results is None:
                 self._show_error(self._t("pdf_first"))
                 return
             try:
@@ -2350,7 +1547,7 @@ def main() -> None:
                 out_dir = _pdf_output_dir()
                 out_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                nazwa = self._last_results.produkt.nazwa.replace(" ", "_")
+                nazwa = results.produkt.nazwa.replace(" ", "_")
                 out_path = out_dir / f"RefrigerationCalc_{nazwa}_{ts}.pdf"
                 out_path.write_bytes(pdf_bytes)
                 telemetry.log_event("pdf_generated", {"calculator": "freezing"})
@@ -2389,139 +1586,6 @@ def main() -> None:
                 Snackbar(text=message, duration=3).open()
             except Exception:  # pragma: no cover
                 log.warning("Snackbar fail: %s", message)
-
-        def _parse_float(self, raw: str, name: str) -> float:
-            try:
-                return float((raw or "").replace(",", "."))
-            except (TypeError, ValueError, AttributeError) as exc:
-                raise ValueError(self._t("invalid_field", name=name)) from exc
-
-        def _parse_int(self, raw: str, name: str) -> int:
-            value = self._parse_float(raw, name)
-            if not float(value).is_integer():
-                raise ValueError(self._t("invalid_field", name=name))
-            return int(value)
-
-        def _calculate(self):
-            self._clear_main_validation()
-            telemetry.log_event("calculation_started", {"calculator": "freezing"})
-            try:
-                if not self._selected_category:
-                    self.category_error_line.opacity = 1
-                    self.product_error_line.opacity = 1
-                    self.scroll.scroll_y = 1
-                    self._show_error(self._t("pick_product_error"))
-                    return
-                if not self._selected_product:
-                    self.product_error_line.opacity = 1
-                    self.scroll.scroll_y = 1
-                    self._show_error(self._t("pick_product_error"))
-                    return
-                product = find_product(catalog, self._selected_category, self._selected_product)
-                if product is None:
-                    self.product_error_line.opacity = 1
-                    self._show_error(self._t("missing_product_error"))
-                    return
-
-                # Freemium: po wygaśnięciu triala (bez PRO) liczymy tylko dozwolone produkty.
-                if not self._entitlements.is_unlocked(self._pro_no_ads):
-                    products = list_products(catalog, self._selected_category)
-                    try:
-                        idx = products.index(self._selected_product)
-                    except ValueError:
-                        idx = FREE_PRODUCTS_PER_CATEGORY
-                    if not self._entitlements.is_product_allowed(idx, self._pro_no_ads):
-                        # Najpierw dolicz tokeny zdobyte za obejrzane reklamy.
-                        self._credit_pending_reward_tokens()
-                        # Spróbuj odblokować to przeliczenie jednym tokenem.
-                        if not self._entitlements.try_unlock_product_with_token(
-                            idx, self._pro_no_ads
-                        ):
-                            self._offer_reward_ad()
-                            return
-
-                masa = self._parse_required_field(self.in_m, self._t("field_mass"))
-                if masa <= 0:
-                    self._mark_field_error(
-                        self.in_m,
-                        self._t("invalid_field", name=self._t("field_mass")),
-                    )
-                    raise ValueError(
-                        self._t("invalid_field", name=self._t("field_mass"))
-                    )
-                if self._mass_unit == "t":
-                    masa *= 1000.0
-                T1 = self._parse_required_field(
-                    self.in_T1, self._t("field_temp_start")
-                )
-                T2 = self._parse_required_field(
-                    self.in_T2, self._t("field_temp_end")
-                )
-                warnings = [
-                    message
-                    for message in (
-                        self._validate_temperature_input(
-                            self.in_T1, self._t("field_temp_start"), T1
-                        ),
-                        self._validate_temperature_input(
-                            self.in_T2, self._t("field_temp_end"), T2
-                        ),
-                    )
-                    if message
-                ]
-                if warnings:
-                    self._show_error(warnings[0])
-                czas = self._parse_required_field(self.in_t, self._t("field_time"))
-                if czas <= 0:
-                    self._mark_field_error(
-                        self.in_t,
-                        self._t("invalid_field", name=self._t("field_time")),
-                    )
-                    raise ValueError(
-                        self._t("invalid_field", name=self._t("field_time"))
-                    )
-
-                inputs = FreezingInputs(masa_kg=masa, T_pocz_C=T1, T_konc_C=T2, czas_h=czas)
-                results = calculate_freezing(inputs, product)
-                self._last_results = results
-                self._render_results(results)
-                telemetry.log_event(
-                    "calculation_finished",
-                    {
-                        "calculator": "freezing",
-                        "mass_unit": self._mass_unit,
-                        "custom_product": custom_products.contains(
-                            product.kategoria, product.nazwa
-                        ),
-                    },
-                )
-            except ValueError as exc:
-                self._show_error(str(exc))
-            except Exception as exc:  # pragma: no cover
-                telemetry.record_exception(exc, "calculate_freezing")
-                log.exception("Błąd obliczeń")
-                self._show_error(self._t("calc_error", error=exc))
-
-        def _render_results(self, results, scroll=True):
-            total = results.P_total_kW or 0.0
-            self.lbl_total.text = self._total_text(total)
-
-            stages = {
-                "schladzanie": results.P_schladzanie_kW,
-                "zamrozenie": results.P_zamrozenie_kW,
-                "domrozenie": results.P_domrozenie_kW,
-            }
-            for key, value in stages.items():
-                pct = (value / total * 100.0) if total > 0 else 0.0
-                self.bars[key]["bar"].value = pct
-                self.bars[key]["value_label"].text = f"{value:.2f} kW ({pct:.0f}%)"
-
-            # Auto-scroll do wyników po obliczeniu — żeby nie chowały się pod akcjami.
-            if scroll:
-                try:
-                    self.scroll.scroll_to(self.results_card, padding=dp(12), animate=True)
-                except Exception:  # pragma: no cover
-                    pass
 
     ShockerCalcApp().run()
 

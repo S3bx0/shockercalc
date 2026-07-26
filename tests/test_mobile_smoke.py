@@ -60,11 +60,12 @@ def test_mobilny_naglowek_uzywa_brandowego_gradientu():
 
 def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
     source = _source("tpof/mobile/main.py")
+    freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     stage_source = _source("tpof/mobile/widgets/stage_icons.py")
     frost_source = _source("tpof/mobile/widgets/frost.py")
 
     assert "class StageMotionIcon" in stage_source
-    assert "StageMotionIcon(" in source
+    assert "StageMotionIcon(" in freezing_tab_source
     assert "self._position_bands()" in frost_source
     assert "assets/images" in source
 
@@ -118,7 +119,7 @@ def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
         source.index("def _show_tab") : source.index("def _set_tab_visibility")
     ]
     toggle_theme_block = source[
-        source.index("def _toggle_theme") : source.index("def _reset_inputs")
+        source.index("def _toggle_theme") : source.index("def _build_pdf_bytes")
     ]
 
     assert "self._sync_theme_surfaces()" in show_tab_block
@@ -154,12 +155,12 @@ def test_nieaktywna_zakladka_nie_blokuje_dotyku():
 
 
 def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/tabs/freezing.py")
     constants_source = _source("tpof/mobile/constants.py")
 
     assert "ABSOLUTE_ZERO_C = -273.15" in constants_source
     assert "TEMP_HIGH_ERROR_C = 130.0" in constants_source
-    assert "def _validate_temperature_input" in source
+    assert "def validate_temperature" in source
     assert "temperature_warning_co2" in source
 
 
@@ -231,19 +232,23 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/main.py")
+    freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
-    assert "def _configure_text_field" in source
-    assert "field.font_size = sp(18)" in source
-    assert "field.padding = [0, dp(12), 0, dp(8)]" in source
-    assert "self._configure_text_field(self.in_m)" in source
-    assert "self._configure_text_field(w)" in source
+    assert "def _configure_text_field" in freezing_tab_source
+    assert "field.font_size = sp(18)" in freezing_tab_source
+    assert "field.padding = [0, dp(12), 0, dp(8)]" in freezing_tab_source
+    assert "self._configure_text_field(mass_input" in freezing_tab_source
+    assert "self._configure_text_field(field" in freezing_tab_source
     assert "def _bind_keyboard_scroll" in source
     assert "def _scroll_input_into_view" in source
     assert "padding=dp(150)" in source
-    assert "(self.in_m, self.in_T1, self.in_T2, self.in_t)" in source
+    assert (
+        "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
+        in freezing_tab_source
+    )
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
     assert "self.view.volume_input" in valves_tab_source
     assert "self.view.flow_input" in valves_tab_source
