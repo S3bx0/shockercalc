@@ -89,6 +89,33 @@ class ThemeSyncView:
     pro_button: Any
     theme_button: Any
 
+    @classmethod
+    def from_shell(
+        cls,
+        shell: Any,
+        *,
+        set_window_clearcolor: Callable[[Any], None],
+    ) -> ThemeSyncView:
+        """Capture the theme-aware widgets exposed by the built app shell."""
+
+        return cls(
+            set_window_clearcolor=set_window_clearcolor,
+            root_bg_color=shell._root_bg_color,
+            root_layout=shell.root_layout,
+            frost_background=shell.frost_background,
+            tab_frost_background=shell.tab_frost_background,
+            bottom_nav=shell.bottom_nav,
+            nav_tabs={
+                "freezing": shell.bottom_freezing_tab,
+                "valves": shell.bottom_valves_tab,
+                "labor": shell.bottom_labor_tab,
+            },
+            ad_slot=shell.ad_slot,
+            footer_bar=shell.footer_bar,
+            pro_button=shell.btn_pro,
+            theme_button=shell.btn_theme,
+        )
+
 
 class ThemeSyncController:
     """Coordinates theme colors without owning the Kivy application shell."""

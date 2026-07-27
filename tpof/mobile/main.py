@@ -48,7 +48,11 @@ from tpof.mobile.entitlements import (
     Entitlements,
 )
 from tpof.mobile.i18n import display_category, translate
-from tpof.mobile.layout import clamp, compute_metrics
+from tpof.mobile.layout import (
+    ResponsiveLayoutController,
+    ResponsiveLayoutView,
+    clamp,
+)
 from tpof.mobile.navigation import TabNavigationController
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
@@ -158,6 +162,18 @@ def main() -> None:
                     self._freezing_tab_controller.close_product_dialog()
                 ),
                 schedule_once=Clock.schedule_once,
+            )
+            self._responsive_controller = ResponsiveLayoutController(
+                dp=dp,
+                get_screen_size=lambda: (Window.width, Window.height),
+                hints_enabled=lambda: self._hints_enabled,
+                native_ad_height_dp=lambda: self._native_ad_height_dp,
+                pro_no_ads=lambda: self._pro_no_ads,
+                bottom_nav_bg=self._theme_controller.bottom_nav_bg,
+                refresh_privacy_button=self._refresh_privacy_button,
+                apply_freezing_layout=lambda metrics: (
+                    self._freezing_tab_controller.apply_layout(metrics)
+                ),
             )
             self._legal_dialog_controller = LegalDialogController(
                 translate=self._t,
@@ -298,7 +314,9 @@ def main() -> None:
                 on_buy=self._buy_valve_module,
                 on_watch=self._offer_reward_ad,
                 menu_factory=self._menu,
-                is_compact=lambda: bool(self._layout_metrics(dp)["compact"]),
+                is_compact=lambda: bool(
+                    self._responsive_controller.metrics()["compact"]
+                ),
                 menu_text_color=self._theme_controller.menu_text_color,
             )
             self._freezing_tab_controller = FreezingTabController(
@@ -332,7 +350,7 @@ def main() -> None:
                 on_export_pdf=self._export_pdf,
                 menu_factory=self._menu,
                 is_compact=lambda: bool(
-                    self._layout_metrics(dp)["compact"]
+                    self._responsive_controller.metrics()["compact"]
                 ),
                 menu_text_color=self._theme_controller.menu_text_color,
                 divider_color=lambda: self.theme_cls.divider_color,
@@ -354,7 +372,10 @@ def main() -> None:
             with self.root_host.canvas.before:
                 self._root_bg_color = Color(*SURFACE_DARK)
                 self._root_bg_rect = Rectangle(pos=(0, 0), size=Window.size)
-            self.root_host.bind(pos=self._sync_root_background, size=self._sync_root_background)
+            self.root_host.bind(
+                pos=self._responsive_controller.sync_root_background,
+                size=self._responsive_controller.sync_root_background,
+            )
             self.frost_background = FrostBackground()
             self.root_layout = MDBoxLayout(
                 orientation="vertical",
@@ -414,32 +435,23 @@ def main() -> None:
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
             self.center_notice = CenterNotice()
             self.root_host.add_widget(self.center_notice)
+            self._responsive_controller.attach(
+                ResponsiveLayoutView.from_shell(self)
+            )
+            self._responsive_controller.sync_root_background()
             self._theme_controller.attach(
-                ThemeSyncView(
+                ThemeSyncView.from_shell(
+                    self,
                     set_window_clearcolor=lambda color: setattr(
                         Window,
                         "clearcolor",
                         color,
                     ),
-                    root_bg_color=self._root_bg_color,
-                    root_layout=self.root_layout,
-                    frost_background=self.frost_background,
-                    tab_frost_background=self.tab_frost_background,
-                    bottom_nav=self.bottom_nav,
-                    nav_tabs={
-                        "freezing": self.bottom_freezing_tab,
-                        "valves": self.bottom_valves_tab,
-                        "labor": self.bottom_labor_tab,
-                    },
-                    ad_slot=self.ad_slot,
-                    footer_bar=self.footer_bar,
-                    pro_button=self.btn_pro,
-                    theme_button=self.btn_theme,
                 )
             )
             self._theme_controller.apply()
-            Window.bind(size=self._apply_responsive_layout)
-            self._apply_responsive_layout()
+            Window.bind(size=self._responsive_controller.apply)
+            self._responsive_controller.apply()
             self._monetization.start()
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 1.2)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 3.5)
@@ -461,11 +473,6 @@ def main() -> None:
             return self.root_host
 
         # --- tekst / stan aplikacji -------------------------------------
-        def _sync_root_background(self, *_args):
-            if hasattr(self, "_root_bg_rect"):
-                self._root_bg_rect.pos = self.root_host.pos
-                self._root_bg_rect.size = self.root_host.size
-
         def _t(self, key: str, **kwargs) -> str:
             return translate(self._language, key, **kwargs)
 
@@ -479,7 +486,7 @@ def main() -> None:
             self._hints_enabled = not self._hints_enabled
             self._preferences.set_hints_enabled(self._hints_enabled)
             self._apply_hints()
-            self._apply_responsive_layout()
+            self._responsive_controller.apply()
             self._show_error(self._t("hints_on" if self._hints_enabled else "hints_off"))
             telemetry.log_event("hints_toggled", {"enabled": self._hints_enabled})
 
@@ -582,102 +589,6 @@ def main() -> None:
                 return f"{base}\n{self._t('trial_active', days=days)}"
             return f"{base}\n{self._t('trial_expired')}"
 
-        def _screen_dp(self, dp):
-            unit = max(float(dp(1)), 1.0)
-            return Window.width / unit, Window.height / unit
-
-        def _clamp(self, value: float, min_value: float, max_value: float) -> float:
-            return clamp(value, min_value, max_value)
-
-        def _layout_metrics(self, dp):
-            width_dp, height_dp = self._screen_dp(dp)
-            return compute_metrics(
-                dp,
-                width_dp,
-                height_dp,
-                hints_enabled=self._hints_enabled,
-                native_ad_height_dp=getattr(self, "_native_ad_height_dp", 0),
-            )
-
-        def _apply_responsive_layout(self, *_):
-            from kivy.metrics import dp
-
-            m = self._layout_metrics(dp)
-
-            if hasattr(self, "toolbar"):
-                self.toolbar.height = m["toolbar_h"]
-                self.toolbar.padding = [m["content_pad"], 0, dp(6 if m["compact"] else 8), 0]
-            if hasattr(self, "toolbar_brand_chip"):
-                self.toolbar_brand_chip.width = m["toolbar_icon_w"]
-                self.toolbar_brand_chip.height = m["toolbar_icon_w"]
-            if hasattr(self, "toolbar_snowflake"):
-                self.toolbar_snowflake.width = m["toolbar_icon_w"]
-                self.toolbar_snowflake.icon_size = f'{m["toolbar_icon_sp"]}sp'
-            if hasattr(self, "lbl_toolbar_title"):
-                self.lbl_toolbar_title.font_size = f'{m["toolbar_title_sp"]}sp'
-                self.lbl_toolbar_title.line_height = 0.88
-            for chip in (
-                getattr(self, "btn_hints_chip", None),
-                getattr(self, "btn_lang_chip", None),
-                getattr(self, "btn_theme_chip", None),
-                getattr(self, "btn_privacy_chip", None),
-            ):
-                if chip is not None and getattr(chip, "opacity", 1) > 0:
-                    chip.width = m["toolbar_btn_w"]
-                    chip.height = m["toolbar_btn_w"]
-            for btn in (
-                getattr(self, "btn_hints", None),
-                getattr(self, "btn_lang", None),
-                getattr(self, "btn_theme", None),
-                getattr(self, "btn_privacy", None),
-            ):
-                if btn is not None:
-                    btn.width = m["toolbar_btn_w"]
-                    btn.icon_size = f'{m["toolbar_btn_sp"]}sp'
-            if hasattr(self, "btn_privacy"):
-                self._refresh_privacy_button()
-
-            if hasattr(self, "tab_content_host"):
-                self.tab_content_host.size_hint_y = 1
-            if hasattr(self, "bottom_nav"):
-                self.bottom_nav.size_hint_y = None
-                self.bottom_nav.height = m["bottom_nav_h"]
-                self.bottom_nav.padding = [
-                    m["content_pad"],
-                    dp(3),
-                    m["content_pad"],
-                    dp(3),
-                ]
-                self.bottom_nav.spacing = dp(8 if m["compact"] else 10)
-                self.bottom_nav.md_bg_color = self._theme_controller.bottom_nav_bg()
-            for tab in (
-                getattr(self, "bottom_freezing_tab", None),
-                getattr(self, "bottom_valves_tab", None),
-                getattr(self, "bottom_labor_tab", None),
-            ):
-                if tab is not None:
-                    tab.set_metrics(
-                        icon_size=m["bottom_tab_icon"],
-                        label_sp=m["bottom_tab_sp"],
-                    )
-            self._freezing_tab_controller.apply_layout(m)
-            if hasattr(self, "footer_bar"):
-                self.footer_bar.height = m["footer_h"]
-                self.footer_bar.padding = [m["content_pad"], dp(3), m["content_pad"], dp(3)]
-                self.footer_bar.spacing = dp(10 if m["compact"] else 12)
-            if hasattr(self, "footer_label"):
-                self.footer_label.font_size = f'{m["footer_sp"]}sp'
-                self.footer_label.shorten = True
-            if hasattr(self, "btn_pro"):
-                self.btn_pro.width = m["pro_w"]
-                self.btn_pro.height = m["pro_h"]
-                self.btn_pro.font_size = f'{m["caption_sp"]}sp'
-            if hasattr(self, "ad_slot") and not self._pro_no_ads:
-                self.ad_slot.height = m["ad_h"]
-                self.ad_slot.padding = [m["content_pad"], dp(2), m["content_pad"], dp(2)]
-            if hasattr(self, "ad_label"):
-                self.ad_label.font_size = f'{m["caption_sp"]}sp'
-
         def _refresh_texts(self):
             if hasattr(self, "lbl_toolbar_title"):
                 self.lbl_toolbar_title.text = "Refrigeration\nCalc"
@@ -701,9 +612,9 @@ def main() -> None:
             return display_category(self._language, category)
 
         def _menu(self, caller, items, width_mult, max_height, dp, MDDropdownMenu):
-            width_dp, height_dp = self._screen_dp(dp)
+            width_dp, height_dp = self._responsive_controller.screen_dp()
             desired_width = min(width_mult * 56.0, max(180.0, width_dp - 32.0))
-            width_mult = self._clamp(desired_width / 56.0, 2.8, 5.0)
+            width_mult = clamp(desired_width / 56.0, 2.8, 5.0)
             max_height = min(max_height, dp(max(220.0, height_dp * 0.58)))
             menu = MDDropdownMenu(
                 caller=caller,
@@ -1062,13 +973,11 @@ def main() -> None:
             if height_dp <= 0 or height_dp == self._native_ad_height_dp:
                 return
             self._native_ad_height_dp = height_dp
-            self._apply_responsive_layout()
+            self._responsive_controller.apply()
 
         def _apply_pro_ui_state(self, active: bool, button_text: str):
-            from kivy.metrics import dp
-
             self._pro_no_ads = active
-            ad_height = self._layout_metrics(dp)["ad_h"]
+            ad_height = self._responsive_controller.metrics()["ad_h"]
             if hasattr(self, "btn_pro"):
                 self.btn_pro.disabled = active
                 self.btn_pro.text = button_text
@@ -1139,7 +1048,7 @@ def main() -> None:
             from kivy.metrics import dp
 
             try:
-                target_width = self._layout_metrics(dp)["toolbar_btn_w"]
+                target_width = self._responsive_controller.metrics()["toolbar_btn_w"]
             except Exception:
                 target_width = dp(48)
             btn.width = target_width if visible else 0

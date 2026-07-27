@@ -78,8 +78,12 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     assert "self._root_bg_rect = Rectangle" in source
     assert "self.tab_frost_background = FrostBackground" in source
     assert "self.bottom_nav.size_hint_y = 1" not in source
-    assert '"bottom_nav_h"' in source
-    assert 'self.bottom_nav.height = m["bottom_nav_h"]' in source
+    assert '"bottom_nav_h"' in layout_source
+    assert "class ResponsiveLayoutController" in layout_source
+    assert "self._responsive_controller = ResponsiveLayoutController(" in source
+    assert 'view.bottom_nav.height = metrics["bottom_nav_h"]' in layout_source
+    assert "ResponsiveLayoutView.from_shell(self)" in source
+    assert "def _apply_responsive_layout" not in source
     assert "reserved_ad_h = max(64 if compact else 70" in layout_source
 
 
