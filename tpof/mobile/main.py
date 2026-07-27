@@ -59,6 +59,11 @@ from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
 from tpof.mobile.settings_state import SettingsStateController
+from tpof.mobile.shell import (
+    MobileShellBuilder,
+    MobileShellCallbacks,
+    MobileShellFactories,
+)
 from tpof.mobile.tabs.freezing import FreezingTabController
 from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.tabs.valves import ValvesTabController
@@ -367,6 +372,40 @@ def main() -> None:
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
             )
+            self._shell_builder = MobileShellBuilder(
+                dp=dp,
+                factories=MobileShellFactories(
+                    box_layout=MDBoxLayout,
+                    icon=MDIcon,
+                    icon_button=MDIconButton,
+                    label=MDLabel,
+                    raised_button=MDRaisedButton,
+                    brand_toolbar=BrandToolbar,
+                    frost_chip=FrostChip,
+                    bottom_nav_tab=BottomNavTab,
+                    center_notice=CenterNotice,
+                ),
+                callbacks=MobileShellCallbacks(
+                    translate=self._t,
+                    hints_enabled=lambda: self._hints_enabled,
+                    on_toggle_hints=self._toggle_hints,
+                    on_toggle_language=self._toggle_language,
+                    on_toggle_theme=self._theme_controller.toggle,
+                    on_open_privacy=self._privacy_dialog_controller.open,
+                    on_open_settings=self._open_settings_dialog,
+                    on_select_tab=self._show_tab,
+                    bottom_nav_bg=self._theme_controller.bottom_nav_bg,
+                    footer_bg=self._theme_controller.footer_bg,
+                    ad_slot_bg=self._theme_controller.ad_slot_bg,
+                    footer_text=self._status_footer_text,
+                    pro_button_text=self._monetization.button_text,
+                    on_buy_pro=self._monetization.buy,
+                    ad_label_text=self._ad_label_text,
+                ),
+            )
+            self._shell_view = self._shell_builder.build()
+            self._shell_view.install_on(self)
+            self._refresh_privacy_button()
 
             self.root_host = FloatLayout()
             with self.root_host.canvas.before:
@@ -386,7 +425,6 @@ def main() -> None:
             self.root_host.add_widget(self.root_layout)
             root = self.root_layout
 
-            self.toolbar = self._build_toolbar(dp, MDBoxLayout, MDIcon, MDIconButton, MDLabel)
             root.add_widget(self.toolbar)
 
             # Własny host zakładek: tło pozostaje widoczne, a dolny pasek nie
@@ -405,7 +443,6 @@ def main() -> None:
             self.tab_content_host.add_widget(labor_scroll)
             root.add_widget(self.tab_content_host)
 
-            self.bottom_nav = self._build_bottom_nav(dp, MDBoxLayout)
             root.add_widget(self.bottom_nav)
             self._active_tab_name = "freezing"
             self._navigation_controller = TabNavigationController(
@@ -431,9 +468,8 @@ def main() -> None:
             )
             self._show_tab("freezing", animate=False, report=False)
 
-            root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
-            root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
-            self.center_notice = CenterNotice()
+            root.add_widget(self.footer_bar)
+            root.add_widget(self.ad_slot)
             self.root_host.add_widget(self.center_notice)
             self._responsive_controller.attach(
                 ResponsiveLayoutView.from_shell(self)
@@ -636,203 +672,6 @@ def main() -> None:
                 except Exception:
                     pass
             return menu
-
-        # --- karty -------------------------------------------------------
-        def _toolbar_chip_button(
-            self,
-            dp,
-            MDIconButton,
-            *,
-            icon: str,
-            icon_size: str,
-            on_release,
-            active: bool = False,
-            size_dp: int = 44,
-        ):
-            chip = FrostChip(
-                active=active,
-                size_hint_x=None,
-                size_hint_y=None,
-                width=dp(size_dp),
-                height=dp(size_dp),
-            )
-            button = MDIconButton(
-                icon=icon,
-                size_hint=(1, 1),
-                width=dp(size_dp),
-                icon_size=icon_size,
-                theme_text_color="Custom",
-                text_color=BRAND_ICE if active else (0.93, 0.98, 1.0, 0.94),
-                on_release=on_release,
-            )
-            chip.add_widget(button)
-            return chip, button
-
-        def _build_toolbar(self, dp, MDBoxLayout, MDIcon, MDIconButton, MDLabel):
-            bar = BrandToolbar(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(72),
-                padding=[dp(14), 0, dp(8), 0],
-                spacing=dp(5),
-            )
-            self.toolbar_brand_chip = FrostChip(
-                active=True,
-                size_hint_x=None,
-                size_hint_y=None,
-                width=dp(44),
-                height=dp(44),
-            )
-            self.toolbar_snowflake = MDIconButton(
-                icon="snowflake",
-                size_hint=(1, 1),
-                width=dp(44),
-                icon_size="28sp",
-                theme_text_color="Custom",
-                text_color=BRAND_ICE,
-                on_release=lambda *_: self._open_settings_dialog(),
-            )
-            self.toolbar_brand_chip.add_widget(self.toolbar_snowflake)
-            bar.add_widget(self.toolbar_brand_chip)
-            self.lbl_toolbar_title = MDLabel(
-                text="Refrigeration\nCalc",
-                halign="center",
-                valign="middle",
-                font_style="Subtitle1",
-                font_size="16sp",
-                line_height=0.88,
-                shorten=False,
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
-            )
-            bar.add_widget(self.lbl_toolbar_title)
-            self.btn_hints_chip, self.btn_hints = self._toolbar_chip_button(
-                dp,
-                MDIconButton,
-                icon="lightbulb-on-outline" if self._hints_enabled else "lightbulb-off-outline",
-                icon_size="26sp",
-                active=self._hints_enabled,
-                on_release=lambda *_: self._toggle_hints(),
-            )
-            self.btn_lang_chip, self.btn_lang = self._toolbar_chip_button(
-                dp,
-                MDIconButton,
-                icon="translate",
-                icon_size="28sp",
-                on_release=lambda *_: self._toggle_language(),
-            )
-            self.btn_theme_chip, self.btn_theme = self._toolbar_chip_button(
-                dp,
-                MDIconButton,
-                icon="weather-night",
-                icon_size="28sp",
-                on_release=lambda *_: self._theme_controller.toggle(),
-            )
-            bar.add_widget(self.btn_hints_chip)
-            bar.add_widget(self.btn_lang_chip)
-            bar.add_widget(self.btn_theme_chip)
-            self.btn_privacy_chip, self.btn_privacy = self._toolbar_chip_button(
-                dp,
-                MDIconButton,
-                icon="shield-account",
-                icon_size="26sp",
-                on_release=lambda *_: self._privacy_dialog_controller.open(),
-            )
-            bar.add_widget(self.btn_privacy_chip)
-            self._refresh_privacy_button()
-            return bar
-
-        def _build_bottom_nav(self, dp, MDBoxLayout):
-            """Kompaktowy pasek zakladek z lekkimi animacjami ikon."""
-            nav = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(70),
-                padding=[dp(16), dp(3), dp(16), dp(3)],
-                spacing=dp(8),
-                md_bg_color=self._theme_controller.bottom_nav_bg(),
-            )
-            self.bottom_freezing_tab = BottomNavTab(
-                name="freezing",
-                text=self._t("nav_freezing"),
-                mode="snowflake",
-                on_select=lambda name: self._show_tab(name),
-            )
-            self.bottom_valves_tab = BottomNavTab(
-                name="valves",
-                text=self._t("nav_valves"),
-                mode="valve",
-                on_select=lambda name: self._show_tab(name),
-            )
-            self.bottom_labor_tab = BottomNavTab(
-                name="labor",
-                text=self._t("nav_labor"),
-                mode="calculator",
-                on_select=lambda name: self._show_tab(name),
-            )
-            nav.add_widget(self.bottom_freezing_tab)
-            nav.add_widget(self.bottom_valves_tab)
-            nav.add_widget(self.bottom_labor_tab)
-            return nav
-
-        def _build_footer(self, dp, MDBoxLayout, MDLabel, MDRaisedButton):
-            footer = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(48),
-                padding=[dp(12), dp(4), dp(12), dp(4)],
-                spacing=dp(8),
-                md_bg_color=self._theme_controller.footer_bg(),
-            )
-            self.footer_bar = footer
-            self.footer_label = MDLabel(
-                text=self._status_footer_text(),
-                halign="center",
-                valign="middle",
-                theme_text_color="Hint",
-                font_style="Caption",
-            )
-            self.btn_pro = MDRaisedButton(
-                text=self._monetization.button_text(),
-                size_hint_x=None,
-                width=dp(128),
-                size_hint_y=None,
-                height=dp(30),
-                font_size="11sp",
-                pos_hint={"center_y": 0.5},
-                on_release=lambda *_: self._monetization.buy(),
-            )
-            footer.add_widget(self.btn_pro)
-            footer.add_widget(self.footer_label)
-            return footer
-
-        def _build_ad_slot(self, dp, MDBoxLayout, MDIcon, MDLabel):
-            slot = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(96),
-                padding=[dp(16), dp(6), dp(16), dp(6)],
-                spacing=dp(8),
-                md_bg_color=self._theme_controller.ad_slot_bg(),
-            )
-            self.ad_slot = slot
-            slot.add_widget(
-                MDIcon(
-                    icon="bullhorn",
-                    size_hint_x=None,
-                    width=dp(28),
-                    halign="center",
-                    theme_text_color="Hint",
-                )
-            )
-            self.ad_label = MDLabel(
-                text=self._ad_label_text(),
-                halign="center",
-                font_style="Caption",
-                theme_text_color="Hint",
-            )
-            slot.add_widget(self.ad_label)
-            return slot
 
         def _valve_module_available(self) -> bool:
             """Zwraca True gdy wolno wykonać przeliczenie zaworów.

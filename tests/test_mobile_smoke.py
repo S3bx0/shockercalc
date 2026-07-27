@@ -48,13 +48,15 @@ def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
 
 def test_mobilny_naglowek_uzywa_brandowego_gradientu():
     source = _source("tpof/mobile/main.py")
+    shell_source = _source("tpof/mobile/shell.py")
     toolbar_source = _source("tpof/mobile/widgets/toolbar.py")
 
     assert "class BrandToolbar" in toolbar_source
     assert "class FrostChip" in toolbar_source
     assert "from tpof.mobile.widgets import (" in source
-    assert 'text="Refrigeration\\nCalc"' in source
-    assert "self.toolbar_snowflake = MDIconButton" in source
+    assert 'text="Refrigeration\\nCalc"' in shell_source
+    assert "toolbar_snowflake = factories.icon_button" in shell_source
+    assert "MobileShellBuilder(" in source
     assert "md_bg_color=(0.12, 0.55, 0.86, 1)" not in source
 
 
@@ -107,6 +109,7 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
 
 def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     source = _source("tpof/mobile/main.py")
+    shell_source = _source("tpof/mobile/shell.py")
     constants_source = _source("tpof/mobile/constants.py")
     theme_source = _source("tpof/mobile/theme.py")
     nav_source = _source("tpof/mobile/widgets/bottom_nav.py")
@@ -114,7 +117,8 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     assert "BOTTOM_NAV_BG_LIGHT" in constants_source
     assert "class ThemeSyncController" in theme_source
     assert "self._theme_controller = ThemeSyncController(" in source
-    assert "self._theme_controller.bottom_nav_bg()" in source
+    assert "bottom_nav_bg=self._theme_controller.bottom_nav_bg" in source
+    assert "md_bg_color=callbacks.bottom_nav_bg()" in shell_source
     assert "view.bottom_nav.md_bg_color = bottom_nav_bg(dark)" in theme_source
     assert "def set_theme_light" in nav_source
     assert "tab.set_theme_light(not dark)" in theme_source
@@ -174,14 +178,16 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/main.py")
+    shell_source = _source("tpof/mobile/shell.py")
     settings_source = _source("tpof/mobile/dialogs/settings.py")
     state_source = _source("tpof/mobile/settings_state.py")
     i18n_source = _source("tpof/mobile/i18n.py")
     languages = ROOT / "resources" / "strings" / "languages.json"
 
     assert "def _open_settings_dialog" in source
-    assert "self.toolbar_snowflake = MDIconButton" in source
-    assert "on_release=lambda *_: self._open_settings_dialog()" in source
+    assert "toolbar_snowflake = factories.icon_button" in shell_source
+    assert "on_open_settings=self._open_settings_dialog" in source
+    assert "on_release=lambda *_args: callbacks.on_open_settings()" in shell_source
     assert "units_imperial_disabled" in state_source
     assert "SettingsStateController" in source
     assert "def refresh_exchange_rates_async" in state_source
@@ -236,10 +242,12 @@ def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
 
 def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
     source = _source("tpof/mobile/main.py")
+    shell_source = _source("tpof/mobile/shell.py")
     dialog_source = _source("tpof/mobile/dialogs/privacy.py")
 
     assert "PrivacyDialogController" in source
-    assert "self._privacy_dialog_controller.open()" in source
+    assert "on_open_privacy=self._privacy_dialog_controller.open" in source
+    assert "on_release=callbacks.on_open_privacy" in shell_source
     assert "self._privacy_dialog_controller.options_available()" in source
     assert "class PrivacyDialogController" in dialog_source
     assert "def prompt_telemetry_consent" in dialog_source
@@ -348,10 +356,12 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
     source = _source("tpof/mobile/main.py")
+    shell_source = _source("tpof/mobile/shell.py")
     notice_source = _source("tpof/mobile/widgets/notice.py")
 
     assert "class CenterNotice" in notice_source
-    assert "self.center_notice = CenterNotice()" in source
+    assert "center_notice=self._factories.center_notice()" in shell_source
+    assert "center_notice=CenterNotice" in source
     assert "notice.show(message)" in source
     assert "Animation(opacity=1, d=1.5) + Animation(opacity=0, d=0.5)" in notice_source
     assert '"center_y": 0.54' in notice_source
