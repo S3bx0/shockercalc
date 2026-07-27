@@ -18,7 +18,6 @@ Build APK:
 from __future__ import annotations
 
 import logging
-import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -53,6 +52,7 @@ from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
+from tpof.mobile.settings_state import SettingsStateController
 from tpof.mobile.tabs.freezing import FreezingTabController
 from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.tabs.valves import ValvesTabController
@@ -74,11 +74,6 @@ def main() -> None:
         from kivymd.uix.button import MDIconButton, MDRaisedButton
         from kivymd.uix.label import MDIcon, MDLabel
 
-        from tpof.mobile.currency import (
-            SUPPORTED_DISPLAY_CURRENCIES,
-            default_exchange_rates,
-            get_exchange_rates,
-        )
         from tpof.mobile.widgets import (
             BottomNavTab,
             BrandToolbar,
@@ -133,11 +128,6 @@ def main() -> None:
             self._language = "pl"
             self._preferences = UiPreferences()
             self._hints_enabled = self._preferences.hints_enabled
-            self._unit_system = self._preferences.unit_system
-            self._display_currency = self._preferences.display_currency
-            self._currency_auto_update = self._preferences.currency_auto_update
-            self._exchange_rates = default_exchange_rates()
-            self._currency_refresh_running = False
             self._custom_product_dialog = None
             self._privacy_dialog = None
             self._telemetry_dialog = None
@@ -150,18 +140,33 @@ def main() -> None:
                 translate=self._t,
                 project_root=PROJECT_ROOT,
             )
+            self._settings_state = SettingsStateController(
+                preferences=self._preferences,
+                translate=self._t,
+                refresh_settings_ui=lambda: self._settings_dialog_controller.refresh(),
+                convert_labor_currency=lambda currency: (
+                    self._labor_tab_controller.convert_additional_field_currency(
+                        currency
+                    )
+                ),
+                refresh_labor_results=lambda: (
+                    self._labor_tab_controller.refresh_results()
+                ),
+                show_message=self._show_error,
+                schedule_once=Clock.schedule_once,
+            )
             self._settings_dialog_controller = SettingsDialogController(
                 translate=self._t,
                 style_button=self._style_app_button,
                 card_bg=self._card_bg,
-                get_display_currency=lambda: self._display_currency,
-                get_exchange_rates=lambda: self._exchange_rates,
+                get_display_currency=lambda: self._settings_state.display_currency,
+                get_exchange_rates=lambda: self._settings_state.exchange_rates,
                 get_language=lambda: self._language,
-                get_auto_update=lambda: self._currency_auto_update,
-                get_status_text=self._currency_settings_status_text,
-                on_set_unit_system=self._set_unit_system,
-                on_set_display_currency=self._set_display_currency,
-                on_toggle_auto_update=self._toggle_currency_auto_update,
+                get_auto_update=lambda: self._settings_state.currency_auto_update,
+                get_status_text=self._settings_state.status_text,
+                on_set_unit_system=self._settings_state.set_unit_system,
+                on_set_display_currency=self._settings_state.set_display_currency,
+                on_toggle_auto_update=self._settings_state.toggle_currency_auto_update,
                 on_open_legal=self._open_legal_dialog,
             )
             self._labor_rates_dialog_controller = LaborRatesDialogController(
@@ -188,8 +193,8 @@ def main() -> None:
             self._labor_tab_controller = LaborTabController(
                 translate=self._t,
                 get_language=lambda: self._language,
-                get_display_currency=lambda: self._display_currency,
-                get_exchange_rates=lambda: self._exchange_rates,
+                get_display_currency=lambda: self._settings_state.display_currency,
+                get_exchange_rates=lambda: self._settings_state.exchange_rates,
                 get_rate_values=lambda: self._preferences.labor_rate_values,
                 reset_rate_values=self._preferences.reset_labor_rate_values,
                 is_pro=lambda: self._pro_no_ads,
@@ -359,7 +364,10 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
             Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
             Clock.schedule_once(lambda *_: self._prompt_telemetry_consent(), 2.0)
-            Clock.schedule_once(lambda *_: self._refresh_exchange_rates_async(), 1.0)
+            Clock.schedule_once(
+                lambda *_: self._settings_state.refresh_exchange_rates_async(),
+                1.0,
+            )
             telemetry.log_event("app_started", {"language": self._language})
             return self.root_host
 
@@ -376,7 +384,7 @@ def main() -> None:
             self._freezing_tab_controller.close_product_dialog()
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
-            self._update_currency_settings_ui()
+            self._settings_state.refresh_ui()
 
         def _toggle_hints(self):
             self._hints_enabled = not self._hints_enabled
@@ -1171,96 +1179,6 @@ def main() -> None:
 
         def _close_settings_dialog(self):
             self._settings_dialog_controller.close()
-
-        def _set_unit_system(self, unit_system: str):
-            # TODO: Implement full Imperial/US input and output conversion before enabling.
-            if str(unit_system).casefold() == "imperial":
-                self._show_error(self._t("units_imperial_disabled"))
-                return
-            self._unit_system = "metric"
-            self._preferences.set_unit_system("metric")
-            self._show_error(self._t("units_metric_active"))
-
-        def _currency_cache_path(self) -> Path:
-            return self._preferences.path.parent / "exchange_rates.json"
-
-        def _currency_rate_note(self) -> str:
-            currency = getattr(self, "_display_currency", "PLN")
-            rates = getattr(self, "_exchange_rates", default_exchange_rates())
-            if currency == "PLN":
-                return self._t("labor_currency_note_pln")
-            if rates.rate_for(currency) is None:
-                return self._t("labor_currency_note_missing", currency=currency)
-            values = {"currency": currency, "date": rates.date or "—", "source": rates.source or "NBP"}
-            key = "labor_currency_note_cached" if rates.from_cache else "labor_currency_note_rate"
-            return self._t(key, **values)
-
-        def _currency_settings_status_text(self) -> str:
-            if getattr(self, "_currency_refresh_running", False):
-                return self._t("settings_currency_refreshing")
-            rates = getattr(self, "_exchange_rates", default_exchange_rates())
-            if not rates.date:
-                return self._t("settings_currency_status_missing")
-            key = "settings_currency_status_cached" if rates.from_cache else "settings_currency_status"
-            return self._t(key, date=rates.date, source=rates.source or "NBP")
-
-        def _refresh_exchange_rates_async(self, notify: bool = False):
-            if not getattr(self, "_currency_auto_update", True):
-                self._exchange_rates = get_exchange_rates(
-                    self._currency_cache_path(),
-                    auto_update=False,
-                )
-                self._update_currency_settings_ui()
-                self._labor_tab_controller.refresh_results()
-                return
-            if getattr(self, "_currency_refresh_running", False):
-                return
-            self._currency_refresh_running = True
-            self._update_currency_settings_ui()
-            cache_path = self._currency_cache_path()
-
-            def worker():
-                rates = get_exchange_rates(cache_path, auto_update=True)
-                Clock.schedule_once(
-                    lambda *_: self._apply_exchange_rates(rates, notify=notify),
-                    0,
-                )
-
-            threading.Thread(target=worker, daemon=True).start()
-
-        def _apply_exchange_rates(self, rates, notify: bool = False):
-            self._currency_refresh_running = False
-            self._exchange_rates = rates
-            self._labor_tab_controller.convert_additional_field_currency(
-                getattr(self, "_display_currency", "PLN")
-            )
-            self._update_currency_settings_ui()
-            self._labor_tab_controller.refresh_results()
-            if notify and getattr(self, "_display_currency", "PLN") != "PLN":
-                self._show_error(self._currency_rate_note())
-
-        def _set_display_currency(self, currency: str):
-            value = str(currency or "").strip().upper()
-            if value not in SUPPORTED_DISPLAY_CURRENCIES:
-                value = "PLN"
-            self._labor_tab_controller.convert_additional_field_currency(value)
-            self._display_currency = value
-            self._preferences.set_display_currency(value)
-            self._update_currency_settings_ui()
-            self._labor_tab_controller.refresh_results()
-            if value != "PLN":
-                self._refresh_exchange_rates_async(notify=True)
-
-        def _toggle_currency_auto_update(self):
-            self._currency_auto_update = not bool(
-                getattr(self, "_currency_auto_update", True)
-            )
-            self._preferences.set_currency_auto_update(self._currency_auto_update)
-            self._update_currency_settings_ui()
-            self._refresh_exchange_rates_async(notify=True)
-
-        def _update_currency_settings_ui(self):
-            self._settings_dialog_controller.refresh()
 
         def _open_settings_dialog(self):
             self._freezing_tab_controller.close_product_dialog()

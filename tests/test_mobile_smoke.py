@@ -169,18 +169,21 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/main.py")
     settings_source = _source("tpof/mobile/dialogs/settings.py")
+    state_source = _source("tpof/mobile/settings_state.py")
     i18n_source = _source("tpof/mobile/i18n.py")
     languages = ROOT / "resources" / "strings" / "languages.json"
 
     assert "def _open_settings_dialog" in source
     assert "self.toolbar_snowflake = MDIconButton" in source
     assert "on_release=lambda *_: self._open_settings_dialog()" in source
-    assert "units_imperial_disabled" in source
-    assert "def _refresh_exchange_rates_async" in source
-    assert "SUPPORTED_DISPLAY_CURRENCIES" in source
-    assert "self._preferences.set_display_currency(value)" in source
+    assert "units_imperial_disabled" in state_source
+    assert "SettingsStateController" in source
+    assert "def refresh_exchange_rates_async" in state_source
+    assert "SUPPORTED_DISPLAY_CURRENCIES" in state_source
+    assert "self._preferences.set_display_currency(value)" in state_source
     assert "SettingsDialogController" in source
     assert "self._settings_dialog_controller.open()" in source
+    assert "class SettingsStateController" in state_source
     assert "class SettingsDialogController" in settings_source
     assert "settings_currency_rates_title" in settings_source
     assert "self._currency_rate_labels" in settings_source
