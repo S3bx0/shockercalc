@@ -1,10 +1,11 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 897 linii. Wszystkie trzy zakładki,
+Stan na 2026-07-27: `tpof/mobile/main.py` ma 783 linie. Wszystkie trzy zakładki,
 powłoka aplikacji, motyw, responsywny układ, dialogi oraz wspólna obsługa
-podpowiedzi, walidacji, klawiatury i lokalizacji są już wydzielone. W pliku
-pozostaje głównie składanie zależności oraz orkiestracja usług aplikacji. Dalsze
-zmiany robimy etapami, bez zmiany wzorów obliczeniowych.
+podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
+dostępu do modułu zaworów są już wydzielone. W pliku pozostaje głównie składanie
+zależności oraz orkiestracja usług aplikacji. Dalsze zmiany robimy etapami, bez
+zmiany wzorów obliczeniowych.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -44,15 +45,20 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 
 9. `tpof/mobile/services/monetization.py`
    - Stan PRO, lokalna cena Google Play i asynchroniczne odświeżanie zakupu.
-   - Pierwszy etap wykonany; reklamy rewarded i blokady modułów pozostają do
-     kolejnych małych migracji.
+   - Wykonane; kontroler nie importuje Kivy ani PyJNIus.
 
-10. `tpof/mobile/form_interactions.py` — wykonane
+10. `tpof/mobile/services/rewarded_access.py` — wykonane
+    - Reklamy rewarded, transfer tokenów z Androida, dostęp jednorazowy do
+      zablokowanych produktów i obliczeń zaworów.
+    - Synchronizacja i zakup `module_valves` oraz stan karty blokady.
+    - Kontroler nie importuje Kivy ani PyJNIus i ma osobne testy zachowania.
+
+11. `tpof/mobile/form_interactions.py` — wykonane
     - Stan podpowiedzi, wspólna prezentacja błędów pól oraz przewijanie
       aktywnego pola nad klawiaturę.
     - Moduł nie importuje Kivy i ma osobne testy zachowania.
 
-11. `tpof/mobile/localization.py` — wykonane
+12. `tpof/mobile/localization.py` — wykonane
     - Stan języka, tłumaczenie kategorii oraz synchronizacja tekstów powłoki,
       zakładek, formularzy i modułu PRO.
     - Moduł nie importuje Kivy i ma osobne testy przełączania PL/EN.

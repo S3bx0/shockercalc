@@ -1,11 +1,10 @@
 # Mobile `main.py` Refactor Skeleton
 
 Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
-i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-26 plik
-ma około 1475 linii, a `ShockerCalcApp` 79 metod. Widgety, kontrolery zakładek
-robocizny, zaworów i chłodnictwa oraz część dialogów i usług są już osobnymi
-modułami. Liczby trzeba nadal odświeżać przed kolejnym etapem, bo ten dokument
-jest żywym planem refaktoru.
+i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27 plik
+ma 783 linie. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
+dialogi, powłoka oraz kolejne usługi są już osobnymi modułami. Dokument
+pozostaje żywym planem refaktoru i liczby aktualizujemy po każdym checkpointcie.
 
 Cel refaktoru: podzielić mobilny UI na moduły bez zmiany zachowania, bez zmiany
 wzorów obliczeniowych i bez zmiany kluczy zapisanych danych.
@@ -71,7 +70,8 @@ tpof/mobile/
 │   └── labor.py             # zakładka robocizny
 └── services/
     ├── __init__.py
-    ├── monetization.py      # PRO, rewarded ads, aktywna zakładka reklam
+    ├── monetization.py      # status, cena i zakup PRO
+    ├── rewarded_access.py   # rewarded, tokeny, zakup i blokada zaworów
     ├── entitlements_ui.py   # odświeżanie blokad i statusów UI
     └── telemetry_ui.py      # zgody + zdarzenia UI
 ```
@@ -335,16 +335,15 @@ Przenieść lub opakować:
 - `_android_activity`
 - `_set_active_ad_tab`
 - `_refresh_ad_slot_height`
-- `_buy_valve_module`
-- `_offer_reward_ad`
 - `_open_ad_privacy_options`
 
-Na pierwszym etapie można zostawić metody w `ShockerCalcApp` jako delegaty do
-`self.android`.
+Zakup zaworów i rewarded zostały już wydzielone do
+`services/rewarded_access.py`; bridge pozostaje możliwym kolejnym etapem dla
+surowych wywołań aktywności.
 
 ### `tpof/mobile/services/monetization.py`
 
-Wykonany pierwszy etap:
+Wykonane:
 
 - `ProMonetizationController` przejął `_refresh_pro_status`, `_set_pro_status`
   i `_buy_pro`,
@@ -352,17 +351,14 @@ Wykonany pierwszy etap:
   stosuje bezpieczny fallback i nie importuje Kivy ani PyJNIus,
 - `main.py` zachowuje wyłącznie callback aktualizujący konkretne widżety.
 
-Pozostało przenieść:
+### `tpof/mobile/services/rewarded_access.py`
 
-- `_credit_pending_reward_tokens`
-- `_after_reward_ad`
-- `_valve_module_available`
-- `_refresh_module_valves_status`
-- `_refresh_valve_lock_ui`
-- `_after_valve_purchase`
+Wykonane:
 
-Ten moduł nadal może przyjmować `app` jako właściciela. Dopiero drugi refaktor
-może wprowadzić pełny model MVVM/controller.
+- kontroler przejął reklamy rewarded i transfer tokenów z warstwy Android,
+- obsługuje dostęp jednorazowy do produktu i obliczenia zaworów,
+- synchronizuje własność, zakup i widok blokady `module_valves`,
+- nie importuje Kivy ani PyJNIus i jest testowany przez czyste atrapowe mosty.
 
 ## Etap 6: dialogi
 

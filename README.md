@@ -44,7 +44,7 @@ tpof/                  # pakiet źródłowy
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
     ├── layout.py      # responsywny układ telefonu i tabletu
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
-    ├── services/      # kontrolery stanu UI, m.in. subskrypcji PRO
+    ├── services/      # PRO, reklamy nagradzane i dostęp do modułów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
@@ -137,6 +137,10 @@ acknowledge i synchronizacja uprawnień znajdują się w natywnym
 `BillingService`. Activity udostępnia warstwie Python tylko cienkie delegaty,
 a stan przycisku i odświeżanie zakupu obsługuje
 `tpof/mobile/services/monetization.py`.
+Reklamy nagradzane, transfer tokenów oraz jednorazowy zakup i blokadę modułu
+zaworów obsługuje niezależny
+`tpof/mobile/services/rewarded_access.py`. Oba kontrolery są testowane bez
+Kivy i PyJNIus; `main.py` jedynie łączy je z natywną aktywnością i widokami.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 

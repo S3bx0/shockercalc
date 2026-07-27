@@ -43,7 +43,6 @@ from tpof.mobile.dialogs.privacy import PrivacyDialogController
 from tpof.mobile.dialogs.settings import SettingsDialogController
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
-    MODULE_VALVES,
     Entitlements,
 )
 from tpof.mobile.form_interactions import FormInteractionController, FormInteractionView
@@ -56,8 +55,8 @@ from tpof.mobile.localization import LocalizationController, LocalizationView
 from tpof.mobile.navigation import TabNavigationController
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
-from tpof.mobile.services.entitlements_ui import _sync_module_ownership
 from tpof.mobile.services.monetization import ProMonetizationController
+from tpof.mobile.services.rewarded_access import RewardedAccessController
 from tpof.mobile.settings_state import SettingsStateController
 from tpof.mobile.shell import (
     MobileShellBuilder,
@@ -336,6 +335,19 @@ def main() -> None:
                 ),
                 is_dark=lambda: self.theme_cls.theme_style == "Dark",
             )
+            self._rewarded_access = RewardedAccessController(
+                is_android=IS_ANDROID,
+                entitlements=self._entitlements,
+                translate=self._t,
+                get_pro_no_ads=lambda: self._pro_no_ads,
+                get_products=lambda category: list_products(catalog, category),
+                get_android_activity=self._android_activity,
+                schedule_once=Clock.schedule_once,
+                refresh_valve_lock_view=lambda locked: (
+                    self._valves_tab_controller.refresh_lock_ui(locked)
+                ),
+                show_message=self._show_error,
+            )
             self._valves_tab_controller = ValvesTabController(
                 translate=self._t,
                 card_bg=self._theme_controller.card_bg,
@@ -349,10 +361,10 @@ def main() -> None:
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
-                can_calculate=self._valve_module_available,
-                on_access_denied=self._refresh_valve_lock_ui,
-                on_buy=self._buy_valve_module,
-                on_watch=self._offer_reward_ad,
+                can_calculate=self._rewarded_access.valve_module_available,
+                on_access_denied=self._rewarded_access.refresh_valve_lock_ui,
+                on_buy=self._rewarded_access.buy_valve_module,
+                on_watch=self._rewarded_access.offer_reward_ad,
                 menu_factory=self._menu,
                 is_compact=lambda: bool(
                     self._responsive_controller.metrics()["compact"]
@@ -375,7 +387,7 @@ def main() -> None:
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
-                ensure_product_access=self._ensure_freezing_product_access,
+                ensure_product_access=self._rewarded_access.ensure_product_access,
                 is_product_selectable=lambda index: (
                     self._entitlements.is_unlocked(self._pro_no_ads)
                     or index < FREE_PRODUCTS_PER_CATEGORY
@@ -497,7 +509,9 @@ def main() -> None:
                 set_active_name=lambda name: setattr(self, "_active_tab_name", name),
                 report_tab=self._report_tab,
                 on_tab_enter=lambda name: (
-                    self._refresh_valve_lock_ui() if name == "valves" else None
+                    self._rewarded_access.refresh_valve_lock_ui()
+                    if name == "valves"
+                    else None
                 ),
                 refresh_theme=self._theme_controller.apply,
                 schedule_once=Clock.schedule_once,
@@ -531,8 +545,14 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 3.0)
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
-            Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 1.0)
-            Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
+            Clock.schedule_once(
+                lambda *_: self._rewarded_access.refresh_valve_lock_ui(),
+                1.0,
+            )
+            Clock.schedule_once(
+                lambda *_: self._rewarded_access.refresh_valve_lock_ui(),
+                4.0,
+            )
             Clock.schedule_once(lambda *_: self._form_interactions.apply(), 0.2)
             Clock.schedule_once(
                 lambda *_: self._privacy_dialog_controller.prompt_telemetry_consent(),
@@ -573,96 +593,6 @@ def main() -> None:
                 except Exception:
                     pass
             return menu
-
-        def _valve_module_available(self) -> bool:
-            """Zwraca True gdy wolno wykonać przeliczenie zaworów.
-
-            Kolejność: trial/PRO-nie-dotyczy/kupiony moduł -> dostęp;
-            w przeciwnym razie próba odblokowania jednym tokenem (1 przeliczenie).
-            """
-            self._refresh_module_valves_status()
-            if self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads):
-                return True
-            # Dolicz tokeny zdobyte za reklamy i spróbuj odblokować jedno przeliczenie.
-            self._credit_pending_reward_tokens()
-            if self._entitlements.try_unlock_module_with_token(
-                MODULE_VALVES, self._pro_no_ads
-            ):
-                return True
-            self._show_error(self._t("valve_locked_hint"))
-            return False
-
-        def _ensure_freezing_product_access(
-            self,
-            category: str,
-            product_name: str,
-        ) -> bool:
-            """Consume a reward token when the selected product is locked."""
-
-            if self._entitlements.is_unlocked(self._pro_no_ads):
-                return True
-            products = list_products(catalog, category)
-            try:
-                index = products.index(product_name)
-            except ValueError:
-                index = FREE_PRODUCTS_PER_CATEGORY
-            if self._entitlements.is_product_allowed(
-                index,
-                self._pro_no_ads,
-            ):
-                return True
-            self._credit_pending_reward_tokens()
-            if self._entitlements.try_unlock_product_with_token(
-                index,
-                self._pro_no_ads,
-            ):
-                return True
-            self._offer_reward_ad()
-            return False
-
-        def _refresh_module_valves_status(self):
-            """Synchronizuje własność modułu zaworów z warstwą Android (Billing)."""
-            if not IS_ANDROID:
-                return
-            try:
-                owned = bool(self._android_activity().isModuleValvesOwned())
-            except Exception:  # pragma: no cover - Android only
-                log.debug("Nie udało się odczytać statusu modułu zaworów", exc_info=True)
-                return
-            _sync_module_ownership(self._entitlements, MODULE_VALVES, owned)
-
-        def _refresh_valve_lock_ui(self):
-            """Pokazuje/ukrywa kartę blokady modułu zaworów."""
-            self._refresh_module_valves_status()
-            locked = not self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads)
-            self._valves_tab_controller.refresh_lock_ui(locked)
-
-        def _buy_valve_module(self):
-            if self._entitlements.has_module(MODULE_VALVES, self._pro_no_ads):
-                return
-            if not IS_ANDROID:
-                self._show_error(self._t("pro_google_play_only"))
-                return
-            try:
-                self._android_activity().launchModulePurchase()
-                for delay in (1.0, 4.0, 10.0):
-                    Clock.schedule_once(
-                        lambda *_: self._after_valve_purchase(), delay
-                    )
-            except Exception:  # pragma: no cover - Android only
-                log.exception("Zakup modułu zaworów")
-                self._show_error(self._t("valve_purchase_unavailable"))
-
-        def _after_valve_purchase(self):
-            was_locked = not self._entitlements.has_module(
-                MODULE_VALVES, self._pro_no_ads
-            )
-            self._refresh_module_valves_status()
-            self._refresh_valve_lock_ui()
-            if was_locked and self._entitlements.has_module(
-                MODULE_VALVES, self._pro_no_ads
-            ):
-                self._show_error(self._t("valve_unlocked_thanks"))
 
         def _on_tab_switch(self, *args):
             """Zgodność z dawnym callbackiem dolnej nawigacji."""
@@ -730,51 +660,7 @@ def main() -> None:
             if hasattr(self, "footer_label"):
                 self.footer_label.text = self._localization.footer_text()
             self._freezing_tab_controller.set_custom_product_available(active)
-            self._refresh_valve_lock_ui()
-
-        def _credit_pending_reward_tokens(self):
-            """Dolicza tokeny zdobyte za reklamy rewarded (most z warstwy Android)."""
-            if not IS_ANDROID:
-                return
-            try:
-                pending = int(self._android_activity().consumePendingRewardTokens())
-            except Exception:  # pragma: no cover - Android only
-                log.debug("Nie udało się odczytać tokenów reward", exc_info=True)
-                return
-            for _ in range(max(0, pending)):
-                self._entitlements.grant_reward_for_ad()
-
-        def _offer_reward_ad(self):
-            """Blokada freemium: proponuje obejrzenie reklamy za 1 token."""
-            if not IS_ANDROID:
-                self._show_error(self._t("product_locked"))
-                return
-            if not self._entitlements.can_watch_ad():
-                self._show_error(self._t("ad_limit_reached"))
-                return
-            try:
-                activity = self._android_activity()
-                if not bool(activity.isRewardedAdReady()):
-                    self._show_error(self._t("ad_not_ready"))
-                    return
-                activity.showRewardedAd()
-                self._show_error(self._t("watch_ad_for_token"))
-                # Po zamknięciu reklamy dolicz token i odśwież status.
-                Clock.schedule_once(
-                    lambda *_: self._credit_pending_reward_tokens(), 1.0
-                )
-                Clock.schedule_once(
-                    lambda *_: self._after_reward_ad(), 3.0
-                )
-            except Exception:  # pragma: no cover - Android only
-                log.exception("Reklama rewarded")
-                self._show_error(self._t("pro_unavailable"))
-
-        def _after_reward_ad(self):
-            self._credit_pending_reward_tokens()
-            if self._entitlements.reward_tokens() > 0:
-                self._show_error(self._t("ad_thanks"))
-            self._refresh_valve_lock_ui()
+            self._rewarded_access.refresh_valve_lock_ui()
 
         def _refresh_privacy_button(self):
             """Pokazuje wspolne ustawienia UMP i dobrowolnej telemetrii."""
