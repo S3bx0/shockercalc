@@ -104,28 +104,30 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
 def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     source = _source("tpof/mobile/main.py")
     constants_source = _source("tpof/mobile/constants.py")
+    theme_source = _source("tpof/mobile/theme.py")
     nav_source = _source("tpof/mobile/widgets/bottom_nav.py")
 
     assert "BOTTOM_NAV_BG_LIGHT" in constants_source
-    assert "def _bottom_nav_bg" in source
-    assert "self.bottom_nav.md_bg_color = self._bottom_nav_bg()" in source
+    assert "class ThemeSyncController" in theme_source
+    assert "self._theme_controller = ThemeSyncController(" in source
+    assert "self._theme_controller.bottom_nav_bg()" in source
+    assert "view.bottom_nav.md_bg_color = bottom_nav_bg(dark)" in theme_source
     assert "def set_theme_light" in nav_source
-    assert "self.bottom_freezing_tab.set_theme_light" in source
-    assert "self.bottom_valves_tab.set_theme_light" in source
-    assert "self.bottom_labor_tab.set_theme_light" in source
+    assert "tab.set_theme_light(not dark)" in theme_source
     assert "self.bottom_nav.md_bg_color = (0.04, 0.05, 0.07, 1)" not in source
 
 
 def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
     source = _source("tpof/mobile/main.py")
     controller_source = _source("tpof/mobile/navigation.py")
-    toggle_theme_block = source[
-        source.index("def _toggle_theme") : source.index("def _build_pdf_bytes")
-    ]
+    theme_source = _source("tpof/mobile/theme.py")
 
     assert "self._refresh_theme()" in controller_source
     assert "self._schedule_once(lambda *_args: self._refresh_theme(), 0)" in controller_source
-    assert "Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)" in toggle_theme_block
+    assert "refresh_theme=self._theme_controller.apply" in source
+    assert "def toggle(self) -> bool" in theme_source
+    assert "self._schedule_once(lambda *_args: self.apply(), 0)" in theme_source
+    assert "def _toggle_theme" not in source
 
 
 def test_przyciski_zaworow_uzywaja_brandowej_palety():

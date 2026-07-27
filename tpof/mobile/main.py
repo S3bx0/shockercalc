@@ -27,7 +27,7 @@ from tpof.core import (
     list_products,
     load_products,
 )
-from tpof.mobile import telemetry, theme
+from tpof.mobile import telemetry
 from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
 from tpof.mobile.catalog import _safe_image_path
 from tpof.mobile.constants import (
@@ -58,6 +58,7 @@ from tpof.mobile.settings_state import SettingsStateController
 from tpof.mobile.tabs.freezing import FreezingTabController
 from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.tabs.valves import ValvesTabController
+from tpof.mobile.theme import ThemeSyncController, ThemeSyncView
 from tpof.mobile.user_data import CustomProductStore, UiPreferences
 from tpof.mobile.validation import _numeric_input_filter
 
@@ -135,6 +136,29 @@ def main() -> None:
             self._pro_no_ads = False
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._theme_controller = ThemeSyncController(
+                is_dark=lambda: self.theme_cls.theme_style == "Dark",
+                set_dark=lambda dark: setattr(
+                    self.theme_cls,
+                    "theme_style",
+                    "Dark" if dark else "Light",
+                ),
+                get_active_tab=lambda: getattr(
+                    self,
+                    "_active_tab_name",
+                    "freezing",
+                ),
+                get_themed_cards=lambda: self._themed_cards,
+                apply_tab_themes=(
+                    lambda: self._freezing_tab_controller.apply_theme(),
+                    lambda: self._labor_tab_controller.apply_theme(),
+                    lambda: self._valves_tab_controller.apply_theme(),
+                ),
+                close_product_dialog=lambda: (
+                    self._freezing_tab_controller.close_product_dialog()
+                ),
+                schedule_once=Clock.schedule_once,
+            )
             self._legal_dialog_controller = LegalDialogController(
                 translate=self._t,
                 project_root=PROJECT_ROOT,
@@ -196,8 +220,8 @@ def main() -> None:
             )
             self._settings_dialog_controller = SettingsDialogController(
                 translate=self._t,
-                style_button=self._style_app_button,
-                card_bg=self._card_bg,
+                style_button=self._theme_controller.style_button,
+                card_bg=self._theme_controller.card_bg,
                 get_display_currency=lambda: self._settings_state.display_currency,
                 get_exchange_rates=lambda: self._settings_state.exchange_rates,
                 get_language=lambda: self._language,
@@ -238,13 +262,13 @@ def main() -> None:
                 reset_rate_values=self._preferences.reset_labor_rate_values,
                 is_pro=lambda: self._pro_no_ads,
                 open_rates_dialog=lambda: self._labor_rates_dialog_controller.open(),
-                card_bg=self._card_bg,
+                card_bg=self._theme_controller.card_bg,
                 total_color=STAGE_COLORS["total"],
                 chart_factory=LaborPieChart,
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
                 bind_keyboard_scroll=self._bind_keyboard_scroll,
-                style_button=self._style_app_button,
+                style_button=self._theme_controller.style_button,
                 clear_field_error=self._clear_field_error,
                 mark_field_error=self._mark_field_error,
                 show_message=self._show_error,
@@ -258,12 +282,12 @@ def main() -> None:
             )
             self._valves_tab_controller = ValvesTabController(
                 translate=self._t,
-                card_bg=self._card_bg,
+                card_bg=self._theme_controller.card_bg,
                 total_color=STAGE_COLORS["total"],
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
                 bind_keyboard_scroll=self._bind_keyboard_scroll,
-                style_button=self._style_app_button,
+                style_button=self._theme_controller.style_button,
                 clear_field_error=self._clear_field_error,
                 mark_field_error=self._mark_field_error,
                 show_message=self._show_error,
@@ -275,19 +299,19 @@ def main() -> None:
                 on_watch=self._offer_reward_ad,
                 menu_factory=self._menu,
                 is_compact=lambda: bool(self._layout_metrics(dp)["compact"]),
-                menu_text_color=self._menu_text_color,
+                menu_text_color=self._theme_controller.menu_text_color,
             )
             self._freezing_tab_controller = FreezingTabController(
                 catalog=catalog,
                 categories=categories,
                 translate=self._t,
                 display_category=self._display_category,
-                card_bg=self._card_bg,
+                card_bg=self._theme_controller.card_bg,
                 total_color=STAGE_COLORS["total"],
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
                 bind_keyboard_scroll=self._bind_keyboard_scroll,
-                style_button=self._style_app_button,
+                style_button=self._theme_controller.style_button,
                 clear_field_error=self._clear_field_error,
                 mark_field_error=self._mark_field_error,
                 show_message=self._show_error,
@@ -310,7 +334,7 @@ def main() -> None:
                 is_compact=lambda: bool(
                     self._layout_metrics(dp)["compact"]
                 ),
-                menu_text_color=self._menu_text_color,
+                menu_text_color=self._theme_controller.menu_text_color,
                 divider_color=lambda: self.theme_cls.divider_color,
                 hints_enabled=lambda: self._hints_enabled,
             )
@@ -380,7 +404,7 @@ def main() -> None:
                 on_tab_enter=lambda name: (
                     self._refresh_valve_lock_ui() if name == "valves" else None
                 ),
-                refresh_theme=self._sync_theme_surfaces,
+                refresh_theme=self._theme_controller.apply,
                 schedule_once=Clock.schedule_once,
                 logger=log,
             )
@@ -390,7 +414,30 @@ def main() -> None:
             root.add_widget(self._build_ad_slot(dp, MDBoxLayout, MDIcon, MDLabel))
             self.center_notice = CenterNotice()
             self.root_host.add_widget(self.center_notice)
-            self._sync_theme_surfaces()
+            self._theme_controller.attach(
+                ThemeSyncView(
+                    set_window_clearcolor=lambda color: setattr(
+                        Window,
+                        "clearcolor",
+                        color,
+                    ),
+                    root_bg_color=self._root_bg_color,
+                    root_layout=self.root_layout,
+                    frost_background=self.frost_background,
+                    tab_frost_background=self.tab_frost_background,
+                    bottom_nav=self.bottom_nav,
+                    nav_tabs={
+                        "freezing": self.bottom_freezing_tab,
+                        "valves": self.bottom_valves_tab,
+                        "labor": self.bottom_labor_tab,
+                    },
+                    ad_slot=self.ad_slot,
+                    footer_bar=self.footer_bar,
+                    pro_button=self.btn_pro,
+                    theme_button=self.btn_theme,
+                )
+            )
+            self._theme_controller.apply()
             Window.bind(size=self._apply_responsive_layout)
             self._apply_responsive_layout()
             self._monetization.start()
@@ -602,7 +649,7 @@ def main() -> None:
                     dp(3),
                 ]
                 self.bottom_nav.spacing = dp(8 if m["compact"] else 10)
-                self.bottom_nav.md_bg_color = self._bottom_nav_bg()
+                self.bottom_nav.md_bg_color = self._theme_controller.bottom_nav_bg()
             for tab in (
                 getattr(self, "bottom_freezing_tab", None),
                 getattr(self, "bottom_valves_tab", None),
@@ -653,12 +700,6 @@ def main() -> None:
         def _display_category(self, category: str | None) -> str:
             return display_category(self._language, category)
 
-        def _menu_bg_color(self):
-            return theme.menu_bg_color(self.theme_cls.theme_style == "Dark")
-
-        def _menu_text_color(self):
-            return theme.menu_text_color(self.theme_cls.theme_style == "Dark")
-
         def _menu(self, caller, items, width_mult, max_height, dp, MDDropdownMenu):
             width_dp, height_dp = self._screen_dp(dp)
             desired_width = min(width_mult * 56.0, max(180.0, width_dp - 32.0))
@@ -671,7 +712,7 @@ def main() -> None:
                 max_height=max_height,
             )
             for attr, value in [
-                ("background_color", self._menu_bg_color()),
+                ("background_color", self._theme_controller.menu_bg_color()),
                 ("radius", [dp(14), dp(14), dp(14), dp(14)]),
                 ("border_margin", dp(14)),
                 ("opening_time", 0.12),
@@ -774,7 +815,7 @@ def main() -> None:
                 MDIconButton,
                 icon="weather-night",
                 icon_size="28sp",
-                on_release=lambda *_: self._toggle_theme(),
+                on_release=lambda *_: self._theme_controller.toggle(),
             )
             bar.add_widget(self.btn_hints_chip)
             bar.add_widget(self.btn_lang_chip)
@@ -798,7 +839,7 @@ def main() -> None:
                 height=dp(70),
                 padding=[dp(16), dp(3), dp(16), dp(3)],
                 spacing=dp(8),
-                md_bg_color=self._bottom_nav_bg(),
+                md_bg_color=self._theme_controller.bottom_nav_bg(),
             )
             self.bottom_freezing_tab = BottomNavTab(
                 name="freezing",
@@ -823,73 +864,6 @@ def main() -> None:
             nav.add_widget(self.bottom_labor_tab)
             return nav
 
-        def _card_bg(self):
-            return theme.card_bg(self.theme_cls.theme_style == "Dark")
-
-        def _surface_bg(self):
-            return theme.surface_bg(self.theme_cls.theme_style == "Dark")
-
-        def _bottom_nav_bg(self):
-            return theme.bottom_nav_bg(self.theme_cls.theme_style == "Dark")
-
-        def _footer_bg(self):
-            return theme.footer_bg(self.theme_cls.theme_style == "Dark")
-
-        def _ad_slot_bg(self):
-            return theme.ad_slot_bg(self.theme_cls.theme_style == "Dark")
-
-        def _style_app_button(self, button, variant: str = "primary"):
-            theme.style_app_button(button, variant)
-
-        def _sync_theme_surfaces(self):
-            surface = self._surface_bg()
-            Window.clearcolor = surface
-            if hasattr(self, "_root_bg_color"):
-                self._root_bg_color.rgba = surface
-            self.root_layout.md_bg_color = (0, 0, 0, 0)
-            if hasattr(self, "frost_background"):
-                self.frost_background.set_dark(
-                    self.theme_cls.theme_style == "Dark"
-                )
-            if hasattr(self, "tab_frost_background"):
-                self.tab_frost_background.set_dark(
-                    self.theme_cls.theme_style == "Dark"
-                )
-            if hasattr(self, "bottom_nav"):
-                self.bottom_nav.md_bg_color = self._bottom_nav_bg()
-            active_tab = getattr(self, "_active_tab_name", "freezing")
-            if hasattr(self, "bottom_freezing_tab"):
-                self.bottom_freezing_tab.set_theme_light(
-                    self.theme_cls.theme_style != "Dark"
-                )
-                self.bottom_freezing_tab.set_active(active_tab == "freezing")
-            if hasattr(self, "bottom_valves_tab"):
-                self.bottom_valves_tab.set_theme_light(
-                    self.theme_cls.theme_style != "Dark"
-                )
-                self.bottom_valves_tab.set_active(active_tab == "valves")
-            if hasattr(self, "bottom_labor_tab"):
-                self.bottom_labor_tab.set_theme_light(
-                    self.theme_cls.theme_style != "Dark"
-                )
-                self.bottom_labor_tab.set_active(active_tab == "labor")
-            for card in self._themed_cards:
-                card.md_bg_color = self._card_bg()
-            self._freezing_tab_controller.apply_theme()
-            self._labor_tab_controller.apply_theme()
-            self._valves_tab_controller.apply_theme()
-            ad_slot = getattr(self, "ad_slot", None)
-            if ad_slot is not None:
-                ad_slot.md_bg_color = self._ad_slot_bg()
-            footer_bar = getattr(self, "footer_bar", None)
-            if footer_bar is not None:
-                footer_bar.md_bg_color = self._footer_bg()
-            for button, variant in (
-                (getattr(self, "btn_pro", None), "pro"),
-            ):
-                if button is not None:
-                    self._style_app_button(button, variant)
-
         def _build_footer(self, dp, MDBoxLayout, MDLabel, MDRaisedButton):
             footer = MDBoxLayout(
                 orientation="horizontal",
@@ -897,7 +871,7 @@ def main() -> None:
                 height=dp(48),
                 padding=[dp(12), dp(4), dp(12), dp(4)],
                 spacing=dp(8),
-                md_bg_color=self._footer_bg(),
+                md_bg_color=self._theme_controller.footer_bg(),
             )
             self.footer_bar = footer
             self.footer_label = MDLabel(
@@ -928,7 +902,7 @@ def main() -> None:
                 height=dp(96),
                 padding=[dp(16), dp(6), dp(16), dp(6)],
                 spacing=dp(8),
-                md_bg_color=self._ad_slot_bg(),
+                md_bg_color=self._theme_controller.ad_slot_bg(),
             )
             self.ad_slot = slot
             slot.add_widget(
@@ -1187,15 +1161,6 @@ def main() -> None:
             self._close_settings_dialog()
             if self._legal_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "legal"})
-
-        def _toggle_theme(self):
-            self._freezing_tab_controller.close_product_dialog()
-            is_dark = self.theme_cls.theme_style == "Dark"
-            self.theme_cls.theme_style = "Light" if is_dark else "Dark"
-            self._sync_theme_surfaces()
-            Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)
-            if hasattr(self, "btn_theme"):
-                self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
 
         def _build_pdf_bytes(self) -> bytes | None:
             """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
