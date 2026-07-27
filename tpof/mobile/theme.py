@@ -15,6 +15,7 @@ from tpof.mobile.constants import (
     AD_SLOT_BG_LIGHT,
     BOTTOM_NAV_BG_DARK,
     BOTTOM_NAV_BG_LIGHT,
+    BRAND_ICE,
     CARD_BG_DARK,
     CARD_BG_LIGHT,
     FOOTER_BG_DARK,
@@ -22,6 +23,8 @@ from tpof.mobile.constants import (
     SURFACE_DARK,
     SURFACE_LIGHT,
 )
+
+_TOOLBAR_TEXT_COLOR = (0.93, 0.98, 1.0, 0.94)
 
 
 def card_bg(dark: bool):
@@ -86,8 +89,15 @@ class ThemeSyncView:
     nav_tabs: dict[str, Any]
     ad_slot: Any
     footer_bar: Any
+    footer_label: Any
     pro_button: Any
+    toolbar_title: Any
+    toolbar_snowflake: Any
+    hints_chip: Any
+    hints_button: Any
+    language_button: Any
     theme_button: Any
+    privacy_button: Any
 
     @classmethod
     def from_shell(
@@ -112,8 +122,15 @@ class ThemeSyncView:
             },
             ad_slot=shell.ad_slot,
             footer_bar=shell.footer_bar,
+            footer_label=shell.footer_label,
             pro_button=shell.btn_pro,
+            toolbar_title=shell.lbl_toolbar_title,
+            toolbar_snowflake=shell.toolbar_snowflake,
+            hints_chip=shell.btn_hints_chip,
+            hints_button=shell.btn_hints,
+            language_button=shell.btn_lang,
             theme_button=shell.btn_theme,
+            privacy_button=shell.btn_privacy,
         )
 
 
@@ -171,6 +188,40 @@ class ThemeSyncController:
     def style_button(self, button: Any, variant: str = "primary") -> None:
         style_app_button(button, variant)
 
+    @staticmethod
+    def _set_custom_color(widget: Any, color: Any) -> None:
+        widget.theme_text_color = "Custom"
+        widget.text_color = color
+
+    @staticmethod
+    def _redispatch(widget: Any, property_name: str) -> None:
+        """Force Kivy to rebuild icon/text textures after a theme transition."""
+
+        try:
+            widget.property(property_name).dispatch(widget)
+        except Exception:
+            value = getattr(widget, property_name, "")
+            setattr(widget, property_name, "")
+            setattr(widget, property_name, value)
+
+    def _refresh_shell_content(self) -> bool:
+        view = self._view
+        if view is None:
+            return False
+        self.apply()
+        for widget, property_name in (
+            (view.toolbar_title, "text"),
+            (view.toolbar_snowflake, "icon"),
+            (view.hints_button, "icon"),
+            (view.language_button, "icon"),
+            (view.theme_button, "icon"),
+            (view.privacy_button, "icon"),
+            (view.footer_label, "text"),
+            (view.pro_button, "text"),
+        ):
+            self._redispatch(widget, property_name)
+        return True
+
     def apply(self) -> bool:
         """Apply the current theme to every attached shell surface."""
 
@@ -199,6 +250,23 @@ class ThemeSyncController:
 
         view.ad_slot.md_bg_color = ad_slot_bg(dark)
         view.footer_bar.md_bg_color = footer_bg(dark)
+        self._set_custom_color(view.toolbar_title, (1, 1, 1, 1))
+        self._set_custom_color(view.toolbar_snowflake, BRAND_ICE)
+        self._set_custom_color(
+            view.hints_button,
+            BRAND_ICE if getattr(view.hints_chip, "active", False)
+            else _TOOLBAR_TEXT_COLOR,
+        )
+        for button in (
+            view.language_button,
+            view.theme_button,
+            view.privacy_button,
+        ):
+            self._set_custom_color(button, _TOOLBAR_TEXT_COLOR)
+        self._set_custom_color(
+            view.footer_label,
+            (0.72, 0.78, 0.82, 1) if dark else (0.34, 0.44, 0.48, 1),
+        )
         style_app_button(view.pro_button, "pro")
         view.theme_button.icon = "weather-night" if dark else "weather-sunny"
         return True
@@ -211,4 +279,5 @@ class ThemeSyncController:
         self._set_dark(dark)
         self.apply()
         self._schedule_once(lambda *_args: self.apply(), 0)
+        self._schedule_once(lambda *_args: self._refresh_shell_content(), 0.2)
         return dark
