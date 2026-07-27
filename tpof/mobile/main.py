@@ -37,6 +37,7 @@ from tpof.mobile.constants import (
     STAGE_COLORS,
     SURFACE_DARK,
 )
+from tpof.mobile.dialogs.custom_product import CustomProductDialogController
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
 from tpof.mobile.dialogs.legal import LegalDialogController
 from tpof.mobile.dialogs.settings import SettingsDialogController
@@ -56,7 +57,7 @@ from tpof.mobile.settings_state import SettingsStateController
 from tpof.mobile.tabs.freezing import FreezingTabController
 from tpof.mobile.tabs.labor import LaborTabController
 from tpof.mobile.tabs.valves import ValvesTabController
-from tpof.mobile.user_data import CustomProductStore, UiPreferences, create_custom_product
+from tpof.mobile.user_data import CustomProductStore, UiPreferences
 from tpof.mobile.validation import _numeric_input_filter
 
 log = logging.getLogger(__name__)
@@ -128,7 +129,6 @@ def main() -> None:
             self._language = "pl"
             self._preferences = UiPreferences()
             self._hints_enabled = self._preferences.hints_enabled
-            self._custom_product_dialog = None
             self._privacy_dialog = None
             self._telemetry_dialog = None
             self._validation_bound_fields = set()
@@ -154,6 +154,29 @@ def main() -> None:
                 ),
                 show_message=self._show_error,
                 schedule_once=Clock.schedule_once,
+            )
+            self._custom_product_dialog_controller = CustomProductDialogController(
+                translate=self._t,
+                is_pro=lambda: self._pro_no_ads,
+                get_product_limit=lambda: telemetry.remote_int(
+                    "custom_products_limit",
+                    250,
+                ),
+                store=custom_products,
+                catalog=catalog,
+                categories=categories,
+                get_selected_category=lambda: (
+                    self._freezing_tab_controller.selected_category
+                ),
+                select_saved_product=lambda product: (
+                    self._freezing_tab_controller.select_saved_product(product)
+                ),
+                numeric_input_filter=_numeric_input_filter,
+                clear_field_error=self._clear_field_error,
+                mark_field_error=self._mark_field_error,
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
             )
             self._settings_dialog_controller = SettingsDialogController(
                 translate=self._t,
@@ -265,7 +288,7 @@ def main() -> None:
                 add_recent_product=self._preferences.add_recent_product,
                 is_custom_product=custom_products.contains,
                 resolve_product_image=_safe_image_path,
-                on_add_custom_product=self._open_custom_product_dialog,
+                on_add_custom_product=self._custom_product_dialog_controller.open,
                 on_export_pdf=self._export_pdf,
                 menu_factory=self._menu,
                 is_compact=lambda: bool(
@@ -1254,123 +1277,6 @@ def main() -> None:
                 self._android_activity().showPrivacyOptionsForm()
             except Exception:  # pragma: no cover - Android only
                 log.exception("Formularz prywatności reklam")
-
-        def _open_custom_product_dialog(self):
-            if not self._pro_no_ads:
-                self._show_error(self._t("custom_product_pro"))
-                return
-            limit = max(1, telemetry.remote_int("custom_products_limit", 250))
-            if custom_products.count() >= limit:
-                self._show_error(self._t("custom_product_limit", limit=limit))
-                return
-            try:
-                from kivy.metrics import dp
-                from kivy.uix.scrollview import ScrollView
-                from kivymd.uix.boxlayout import MDBoxLayout
-                from kivymd.uix.button import MDFlatButton, MDRaisedButton
-                from kivymd.uix.dialog import MDDialog
-                from kivymd.uix.textfield import MDTextField
-
-                outer = MDBoxLayout(
-                    orientation="vertical",
-                    size_hint_y=None,
-                    height=dp(520),
-                )
-                scroll = ScrollView()
-                form = MDBoxLayout(
-                    orientation="vertical",
-                    spacing=dp(8),
-                    padding=[0, dp(4), dp(8), dp(8)],
-                    size_hint_y=None,
-                )
-                form.bind(minimum_height=form.setter("height"))
-                field_specs = [
-                    ("nazwa", "custom_name", None, ""),
-                    (
-                        "kategoria",
-                        "custom_category",
-                        None,
-                        self._freezing_tab_controller.selected_category or "",
-                    ),
-                    ("wilgotnosc", "custom_moisture", _numeric_input_filter, ""),
-                    ("t_zam", "custom_tzam", _numeric_input_filter, ""),
-                    ("c1", "custom_c1", _numeric_input_filter, ""),
-                    ("c2", "custom_c2", _numeric_input_filter, ""),
-                    ("l1", "custom_l1", _numeric_input_filter, ""),
-                    ("bialko", "custom_protein", _numeric_input_filter, ""),
-                    ("tluszcz", "custom_fat", _numeric_input_filter, ""),
-                    ("weglowodany", "custom_carbs", _numeric_input_filter, ""),
-                    ("blonnik", "custom_fiber", _numeric_input_filter, ""),
-                    ("popiol", "custom_ash", _numeric_input_filter, ""),
-                ]
-                self._custom_product_fields = {}
-                for key, label_key, input_filter, value in field_specs:
-                    field = MDTextField(
-                        hint_text=self._t(label_key),
-                        text=value,
-                        input_filter=input_filter,
-                        size_hint_y=None,
-                        height=dp(62),
-                    )
-                    field.bind(
-                        text=lambda widget, _value: self._clear_field_error(widget)
-                    )
-                    self._custom_product_fields[key] = field
-                    form.add_widget(field)
-                scroll.add_widget(form)
-                outer.add_widget(scroll)
-
-                self._custom_product_dialog = MDDialog(
-                    title=self._t("custom_product_title"),
-                    type="custom",
-                    content_cls=outer,
-                    buttons=[
-                        MDFlatButton(
-                            text=self._t("cancel"),
-                            on_release=lambda *_: self._close_custom_product_dialog(),
-                        ),
-                        MDRaisedButton(
-                            text=self._t("save"),
-                            on_release=lambda *_: self._save_custom_product(),
-                        ),
-                    ],
-                )
-                self._custom_product_dialog.open()
-                telemetry.log_event("settings_opened", {"section": "custom_product"})
-            except Exception as exc:
-                telemetry.record_exception(exc, "open_custom_product")
-                log.exception("Formularz własnego produktu")
-                self._show_error(self._t("calc_error", error=exc))
-
-        def _close_custom_product_dialog(self):
-            dialog = getattr(self, "_custom_product_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._custom_product_dialog = None
-
-        def _save_custom_product(self):
-            fields = getattr(self, "_custom_product_fields", {})
-            values = {key: field.text for key, field in fields.items()}
-            try:
-                product = create_custom_product(values)
-                custom_products.upsert(product)
-            except ValueError as exc:
-                field = fields.get(str(exc))
-                if field is not None:
-                    self._mark_field_error(field, self._t("custom_required"))
-                self._show_error(self._t("custom_required"))
-                return
-            except OSError as exc:
-                telemetry.record_exception(exc, "save_custom_product")
-                self._show_error(self._t("calc_error", error=exc))
-                return
-
-            custom_products.merge_into(catalog)
-            categories[:] = list_categories(catalog)
-            self._freezing_tab_controller.select_saved_product(product)
-            self._close_custom_product_dialog()
-            self._show_error(self._t("custom_product_saved"))
-            telemetry.log_event("custom_product_saved")
 
         def _toggle_theme(self):
             self._freezing_tab_controller.close_product_dialog()

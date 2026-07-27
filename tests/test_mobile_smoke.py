@@ -214,6 +214,20 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     assert "self._labor_rate_fields" not in source
 
 
+def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
+    source = _source("tpof/mobile/main.py")
+    dialog_source = _source("tpof/mobile/dialogs/custom_product.py")
+
+    assert "CustomProductDialogController" in source
+    assert "self._custom_product_dialog_controller.open" in source
+    assert "class CustomProductDialogController" in dialog_source
+    assert "CUSTOM_PRODUCT_FIELD_KEYS" in dialog_source
+    assert "create_custom_product(values)" in dialog_source
+    assert "self._store.upsert(product)" in dialog_source
+    assert "def _open_custom_product_dialog" not in source
+    assert "self._custom_product_fields" not in source
+
+
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/main.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
