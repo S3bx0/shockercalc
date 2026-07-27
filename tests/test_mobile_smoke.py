@@ -41,9 +41,14 @@ def test_mobilny_font_ma_fallback_do_kivy():
 
 def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
     source = _source("tpof/mobile/main.py")
+    interactions_source = _source("tpof/mobile/form_interactions.py")
 
     assert 'helper_text_mode = "none"' not in source
-    assert 'field.helper_text_mode = "on_focus"' in source
+    assert 'helper_text_mode = "none"' not in interactions_source
+    assert 'field.helper_text_mode = "on_focus"' in interactions_source
+    assert "class FormInteractionController" in interactions_source
+    assert "self._form_interactions = FormInteractionController(" in source
+    assert "def _apply_hints" not in source
 
 
 def test_mobilny_naglowek_uzywa_brandowego_gradientu():
@@ -280,6 +285,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/main.py")
+    interactions_source = _source("tpof/mobile/form_interactions.py")
     freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
@@ -290,9 +296,11 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     assert "field.padding = [0, dp(12), 0, dp(8)]" in freezing_tab_source
     assert "self._configure_text_field(mass_input" in freezing_tab_source
     assert "self._configure_text_field(field" in freezing_tab_source
-    assert "def _bind_keyboard_scroll" in source
-    assert "def _scroll_input_into_view" in source
-    assert "padding=dp(150)" in source
+    assert "def bind_keyboard_scroll" in interactions_source
+    assert "def _scroll_input_into_view" in interactions_source
+    assert "padding=self._dp(150)" in interactions_source
+    assert "def _bind_keyboard_scroll" not in source
+    assert "bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll" in source
     assert (
         "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
         in freezing_tab_source

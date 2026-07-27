@@ -32,7 +32,6 @@ from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_f
 from tpof.mobile.catalog import _safe_image_path
 from tpof.mobile.constants import (
     APP_NAME,
-    BRAND_ICE,
     IS_ANDROID,
     STAGE_COLORS,
     SURFACE_DARK,
@@ -47,6 +46,7 @@ from tpof.mobile.entitlements import (
     MODULE_VALVES,
     Entitlements,
 )
+from tpof.mobile.form_interactions import FormInteractionController, FormInteractionView
 from tpof.mobile.i18n import display_category, translate
 from tpof.mobile.layout import (
     ResponsiveLayoutController,
@@ -139,12 +139,28 @@ def main() -> None:
             self._themed_cards = []
             self._language = "pl"
             self._preferences = UiPreferences()
-            self._hints_enabled = self._preferences.hints_enabled
-            self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._form_interactions = FormInteractionController(
+                hints_enabled=self._preferences.hints_enabled,
+                set_hints_enabled=self._preferences.set_hints_enabled,
+                translate=self._t,
+                get_hint_field_items=lambda: (
+                    *self._freezing_tab_controller.hint_field_items(),
+                    *self._valves_tab_controller.hint_field_items(),
+                    *self._labor_tab_controller.hint_field_items(),
+                ),
+                refresh_freezing_texts=lambda: (
+                    self._freezing_tab_controller.refresh_texts()
+                ),
+                apply_responsive_layout=lambda: self._responsive_controller.apply(),
+                show_message=self._show_error,
+                log_event=telemetry.log_event,
+                schedule_once=Clock.schedule_once,
+                dp=dp,
+            )
             self._theme_controller = ThemeSyncController(
                 is_dark=lambda: self.theme_cls.theme_style == "Dark",
                 set_dark=lambda dark: setattr(
@@ -171,7 +187,7 @@ def main() -> None:
             self._responsive_controller = ResponsiveLayoutController(
                 dp=dp,
                 get_screen_size=lambda: (Window.width, Window.height),
-                hints_enabled=lambda: self._hints_enabled,
+                hints_enabled=lambda: self._form_interactions.hints_enabled,
                 native_ad_height_dp=lambda: self._native_ad_height_dp,
                 pro_no_ads=lambda: self._pro_no_ads,
                 bottom_nav_bg=self._theme_controller.bottom_nav_bg,
@@ -233,8 +249,8 @@ def main() -> None:
                     self._freezing_tab_controller.select_saved_product(product)
                 ),
                 numeric_input_filter=_numeric_input_filter,
-                clear_field_error=self._clear_field_error,
-                mark_field_error=self._mark_field_error,
+                clear_field_error=self._form_interactions.clear_field_error,
+                mark_field_error=self._form_interactions.mark_field_error,
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
@@ -258,8 +274,8 @@ def main() -> None:
                 get_values=lambda: self._preferences.labor_rate_values,
                 save_values=self._preferences.set_labor_rate_values,
                 reset_values=self._preferences.reset_labor_rate_values,
-                clear_field_error=self._clear_field_error,
-                mark_field_error=self._mark_field_error,
+                clear_field_error=self._form_interactions.clear_field_error,
+                mark_field_error=self._form_interactions.mark_field_error,
                 numeric_input_filter=_numeric_input_filter,
                 invalidate_results=lambda: self._labor_tab_controller.invalidate_results(),
                 show_message=self._show_error,
@@ -288,10 +304,10 @@ def main() -> None:
                 chart_factory=LaborPieChart,
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
-                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll,
                 style_button=self._theme_controller.style_button,
-                clear_field_error=self._clear_field_error,
-                mark_field_error=self._mark_field_error,
+                clear_field_error=self._form_interactions.clear_field_error,
+                mark_field_error=self._form_interactions.mark_field_error,
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 get_active_tab=lambda: getattr(
@@ -307,10 +323,10 @@ def main() -> None:
                 total_color=STAGE_COLORS["total"],
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
-                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll,
                 style_button=self._theme_controller.style_button,
-                clear_field_error=self._clear_field_error,
-                mark_field_error=self._mark_field_error,
+                clear_field_error=self._form_interactions.clear_field_error,
+                mark_field_error=self._form_interactions.mark_field_error,
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
@@ -333,10 +349,10 @@ def main() -> None:
                 total_color=STAGE_COLORS["total"],
                 numeric_input_filter=_numeric_input_filter,
                 register_themed_card=self._themed_cards.append,
-                bind_keyboard_scroll=self._bind_keyboard_scroll,
+                bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll,
                 style_button=self._theme_controller.style_button,
-                clear_field_error=self._clear_field_error,
-                mark_field_error=self._mark_field_error,
+                clear_field_error=self._form_interactions.clear_field_error,
+                mark_field_error=self._form_interactions.mark_field_error,
                 show_message=self._show_error,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
@@ -359,7 +375,7 @@ def main() -> None:
                 ),
                 menu_text_color=self._theme_controller.menu_text_color,
                 divider_color=lambda: self.theme_cls.divider_color,
-                hints_enabled=lambda: self._hints_enabled,
+                hints_enabled=lambda: self._form_interactions.hints_enabled,
             )
             self._monetization = ProMonetizationController(
                 is_android=IS_ANDROID,
@@ -387,8 +403,8 @@ def main() -> None:
                 ),
                 callbacks=MobileShellCallbacks(
                     translate=self._t,
-                    hints_enabled=lambda: self._hints_enabled,
-                    on_toggle_hints=self._toggle_hints,
+                    hints_enabled=lambda: self._form_interactions.hints_enabled,
+                    on_toggle_hints=self._form_interactions.toggle,
                     on_toggle_language=self._toggle_language,
                     on_toggle_theme=self._theme_controller.toggle,
                     on_open_privacy=self._privacy_dialog_controller.open,
@@ -405,6 +421,7 @@ def main() -> None:
             )
             self._shell_view = self._shell_builder.build()
             self._shell_view.install_on(self)
+            self._form_interactions.attach(FormInteractionView.from_shell(self))
             self._refresh_privacy_button()
 
             self.root_host = FloatLayout()
@@ -496,7 +513,7 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 1.0)
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
-            Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
+            Clock.schedule_once(lambda *_: self._form_interactions.apply(), 0.2)
             Clock.schedule_once(
                 lambda *_: self._privacy_dialog_controller.prompt_telemetry_consent(),
                 2.0,
@@ -517,95 +534,6 @@ def main() -> None:
             self._language = "en" if self._language == "pl" else "pl"
             self._refresh_texts()
             self._settings_state.refresh_ui()
-
-        def _toggle_hints(self):
-            self._hints_enabled = not self._hints_enabled
-            self._preferences.set_hints_enabled(self._hints_enabled)
-            self._apply_hints()
-            self._responsive_controller.apply()
-            self._show_error(self._t("hints_on" if self._hints_enabled else "hints_off"))
-            telemetry.log_event("hints_toggled", {"enabled": self._hints_enabled})
-
-        def _hint_field_items(self):
-            items = list(self._freezing_tab_controller.hint_field_items())
-            items.extend(self._valves_tab_controller.hint_field_items())
-            items.extend(self._labor_tab_controller.hint_field_items())
-            return items
-
-        def _apply_hints(self):
-            if hasattr(self, "btn_hints"):
-                self.btn_hints.icon = (
-                    "lightbulb-on-outline"
-                    if self._hints_enabled
-                    else "lightbulb-off-outline"
-                )
-                self.btn_hints.text_color = (
-                    BRAND_ICE
-                    if self._hints_enabled
-                    else (0.93, 0.98, 1.0, 0.94)
-                )
-            if hasattr(self, "btn_hints_chip"):
-                self.btn_hints_chip.set_active(self._hints_enabled)
-            self._freezing_tab_controller.refresh_texts()
-            for field, hint_key in self._hint_field_items():
-                if field is None:
-                    continue
-                field_id = id(field)
-                if field_id not in self._validation_bound_fields:
-                    field.bind(text=lambda widget, _value: self._clear_field_error(widget))
-                    self._validation_bound_fields.add(field_id)
-                if not getattr(field, "error", False):
-                    field.helper_text = self._t(hint_key) if self._hints_enabled else ""
-                    # KivyMD 1.2.0 nie obsluguje trybu "none". Pusty tekst w
-                    # prawidlowym trybie on_focus daje ten sam efekt wizualny.
-                    field.helper_text_mode = "on_focus"
-
-        def _clear_field_error(self, field):
-            if not getattr(field, "error", False):
-                return
-            field.error = False
-            hint_key = next(
-                (key for candidate, key in self._hint_field_items() if candidate is field),
-                None,
-            )
-            field.helper_text = (
-                self._t(hint_key) if self._hints_enabled and hint_key else ""
-            )
-            field.helper_text_mode = "on_focus"
-
-        def _mark_field_error(self, field, message: str | None = None):
-            field.error = True
-            field.helper_text = message or self._t("field_required")
-            field.helper_text_mode = "on_error"
-
-        def _bind_keyboard_scroll(self, fields, scroll):
-            if scroll is None:
-                return
-            for field in fields:
-                if field is None:
-                    continue
-                field.bind(
-                    focus=lambda widget, focused, _scroll=scroll: self._on_input_focus(
-                        widget, focused, _scroll
-                    )
-                )
-
-        def _on_input_focus(self, field, focused, scroll):
-            if not focused or scroll is None:
-                return
-            Clock.schedule_once(lambda *_: self._scroll_input_into_view(field, scroll), 0.08)
-            Clock.schedule_once(lambda *_: self._scroll_input_into_view(field, scroll), 0.35)
-
-        def _scroll_input_into_view(self, field, scroll):
-            try:
-                scroll.scroll_to(field, padding=dp(150), animate=True)
-            except TypeError:
-                try:
-                    scroll.scroll_to(field)
-                except Exception:
-                    log.debug("Could not scroll focused field above keyboard.", exc_info=True)
-            except Exception:
-                log.debug("Could not scroll focused field above keyboard.", exc_info=True)
 
         def _ad_label_text(self) -> str:
             if self._pro_no_ads:
@@ -642,7 +570,7 @@ def main() -> None:
             self._labor_tab_controller.refresh_texts()
             self._valves_tab_controller.refresh_texts()
             self._monetization.refresh_label()
-            self._apply_hints()
+            self._form_interactions.apply()
 
         def _display_category(self, category: str | None) -> str:
             return display_category(self._language, category)

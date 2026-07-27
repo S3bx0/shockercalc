@@ -68,6 +68,7 @@ files = [
     "tpof/mobile/layout.py",
     "tpof/mobile/navigation.py",
     "tpof/mobile/shell.py",
+    "tpof/mobile/form_interactions.py",
     "tpof/mobile/settings_state.py",
     "tpof/mobile/validation.py",
     "tpof/mobile/telemetry.py",
