@@ -38,6 +38,7 @@ tpof/                  # pakiet źródłowy
     ├── main.py        # composition root i pozostała orkiestracja ekranów
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
+    ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu

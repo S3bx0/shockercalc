@@ -184,6 +184,7 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/main.py")
     shell_source = _source("tpof/mobile/shell.py")
+    localization_source = _source("tpof/mobile/localization.py")
     settings_source = _source("tpof/mobile/dialogs/settings.py")
     state_source = _source("tpof/mobile/settings_state.py")
     i18n_source = _source("tpof/mobile/i18n.py")
@@ -202,6 +203,12 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert "self._settings_dialog_controller.open()" in source
     assert "class SettingsStateController" in state_source
     assert "class SettingsDialogController" in settings_source
+    assert "class LocalizationController" in localization_source
+    assert "self._localization = LocalizationController(" in source
+    assert "self._t = self._localization.translate" in source
+    assert "on_toggle_language=self._localization.toggle" in source
+    assert "def _toggle_language" not in source
+    assert "def _refresh_texts" not in source
     assert "settings_currency_rates_title" in settings_source
     assert "self._currency_rate_labels" in settings_source
     assert "format_exchange_rate(code, rates, language)" in settings_source

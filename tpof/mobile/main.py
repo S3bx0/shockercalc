@@ -47,12 +47,12 @@ from tpof.mobile.entitlements import (
     Entitlements,
 )
 from tpof.mobile.form_interactions import FormInteractionController, FormInteractionView
-from tpof.mobile.i18n import display_category, translate
 from tpof.mobile.layout import (
     ResponsiveLayoutController,
     ResponsiveLayoutView,
     clamp,
 )
+from tpof.mobile.localization import LocalizationController, LocalizationView
 from tpof.mobile.navigation import TabNavigationController
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
@@ -137,12 +137,31 @@ def main() -> None:
                 log.debug("Could not set soft keyboard mode.", exc_info=True)
 
             self._themed_cards = []
-            self._language = "pl"
             self._preferences = UiPreferences()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._localization = LocalizationController(
+                initial_language="pl",
+                is_android=IS_ANDROID,
+                is_dark=lambda: self.theme_cls.theme_style == "Dark",
+                is_pro_no_ads=lambda: self._pro_no_ads,
+                is_trial_active=self._entitlements.is_trial_active,
+                trial_days_left=self._entitlements.trial_days_left,
+                close_product_dialog=lambda: (
+                    self._freezing_tab_controller.close_product_dialog()
+                ),
+                refresh_settings_ui=lambda: self._settings_state.refresh_ui(),
+                refresh_callbacks=(
+                    lambda: self._freezing_tab_controller.refresh_texts(),
+                    lambda: self._labor_tab_controller.refresh_texts(),
+                    lambda: self._valves_tab_controller.refresh_texts(),
+                    lambda: self._monetization.refresh_label(),
+                    lambda: self._form_interactions.apply(),
+                ),
+            )
+            self._t = self._localization.translate
             self._form_interactions = FormInteractionController(
                 hints_enabled=self._preferences.hints_enabled,
                 set_hints_enabled=self._preferences.set_hints_enabled,
@@ -261,7 +280,7 @@ def main() -> None:
                 card_bg=self._theme_controller.card_bg,
                 get_display_currency=lambda: self._settings_state.display_currency,
                 get_exchange_rates=lambda: self._settings_state.exchange_rates,
-                get_language=lambda: self._language,
+                get_language=lambda: self._localization.language,
                 get_auto_update=lambda: self._settings_state.currency_auto_update,
                 get_status_text=self._settings_state.status_text,
                 on_set_unit_system=self._settings_state.set_unit_system,
@@ -292,7 +311,7 @@ def main() -> None:
             )
             self._labor_tab_controller = LaborTabController(
                 translate=self._t,
-                get_language=lambda: self._language,
+                get_language=lambda: self._localization.language,
                 get_display_currency=lambda: self._settings_state.display_currency,
                 get_exchange_rates=lambda: self._settings_state.exchange_rates,
                 get_rate_values=lambda: self._preferences.labor_rate_values,
@@ -344,7 +363,7 @@ def main() -> None:
                 catalog=catalog,
                 categories=categories,
                 translate=self._t,
-                display_category=self._display_category,
+                display_category=self._localization.display_category,
                 card_bg=self._theme_controller.card_bg,
                 total_color=STAGE_COLORS["total"],
                 numeric_input_filter=_numeric_input_filter,
@@ -405,7 +424,7 @@ def main() -> None:
                     translate=self._t,
                     hints_enabled=lambda: self._form_interactions.hints_enabled,
                     on_toggle_hints=self._form_interactions.toggle,
-                    on_toggle_language=self._toggle_language,
+                    on_toggle_language=self._localization.toggle,
                     on_toggle_theme=self._theme_controller.toggle,
                     on_open_privacy=self._privacy_dialog_controller.open,
                     on_open_settings=self._open_settings_dialog,
@@ -413,14 +432,15 @@ def main() -> None:
                     bottom_nav_bg=self._theme_controller.bottom_nav_bg,
                     footer_bg=self._theme_controller.footer_bg,
                     ad_slot_bg=self._theme_controller.ad_slot_bg,
-                    footer_text=self._status_footer_text,
+                    footer_text=self._localization.footer_text,
                     pro_button_text=self._monetization.button_text,
                     on_buy_pro=self._monetization.buy,
-                    ad_label_text=self._ad_label_text,
+                    ad_label_text=self._localization.ad_label_text,
                 ),
             )
             self._shell_view = self._shell_builder.build()
             self._shell_view.install_on(self)
+            self._localization.attach(LocalizationView.from_shell(self))
             self._form_interactions.attach(FormInteractionView.from_shell(self))
             self._refresh_privacy_button()
 
@@ -522,58 +542,11 @@ def main() -> None:
                 lambda *_: self._settings_state.refresh_exchange_rates_async(),
                 1.0,
             )
-            telemetry.log_event("app_started", {"language": self._language})
+            telemetry.log_event(
+                "app_started",
+                {"language": self._localization.language},
+            )
             return self.root_host
-
-        # --- tekst / stan aplikacji -------------------------------------
-        def _t(self, key: str, **kwargs) -> str:
-            return translate(self._language, key, **kwargs)
-
-        def _toggle_language(self):
-            self._freezing_tab_controller.close_product_dialog()
-            self._language = "en" if self._language == "pl" else "pl"
-            self._refresh_texts()
-            self._settings_state.refresh_ui()
-
-        def _ad_label_text(self) -> str:
-            if self._pro_no_ads:
-                return self._t("pro_ads_off")
-            return self._t("ad") if IS_ANDROID else self._t("ad_placeholder")
-
-        def _status_footer_text(self) -> str:
-            from tpof import __version__ as _app_version
-
-            base = f"{APP_NAME} v{_app_version}  |  Sebastian Milczarek"
-            if self._pro_no_ads:
-                return f"{base}\n{self._t('pro_unlocked_footer')}"
-            if self._entitlements.is_trial_active():
-                days = self._entitlements.trial_days_left()
-                if days <= 1:
-                    return f"{base}\n{self._t('trial_last_day')}"
-                return f"{base}\n{self._t('trial_active', days=days)}"
-            return f"{base}\n{self._t('trial_expired')}"
-
-        def _refresh_texts(self):
-            if hasattr(self, "lbl_toolbar_title"):
-                self.lbl_toolbar_title.text = "Refrigeration\nCalc"
-            if hasattr(self, "btn_theme"):
-                self.btn_theme.icon = "weather-night" if self.theme_cls.theme_style == "Dark" else "weather-sunny"
-            self._freezing_tab_controller.refresh_texts()
-            if hasattr(self, "ad_label"):
-                self.ad_label.text = self._ad_label_text()
-            if hasattr(self, "bottom_freezing_tab"):
-                self.bottom_freezing_tab.set_text(self._t("nav_freezing"))
-            if hasattr(self, "bottom_valves_tab"):
-                self.bottom_valves_tab.set_text(self._t("nav_valves"))
-            if hasattr(self, "bottom_labor_tab"):
-                self.bottom_labor_tab.set_text(self._t("nav_labor"))
-            self._labor_tab_controller.refresh_texts()
-            self._valves_tab_controller.refresh_texts()
-            self._monetization.refresh_label()
-            self._form_interactions.apply()
-
-        def _display_category(self, category: str | None) -> str:
-            return display_category(self._language, category)
 
         def _menu(self, caller, items, width_mult, max_height, dp, MDDropdownMenu):
             width_dp, height_dp = self._responsive_controller.screen_dp()
@@ -749,13 +722,13 @@ def main() -> None:
                 self.btn_pro.disabled = active
                 self.btn_pro.text = button_text
             if hasattr(self, "ad_label"):
-                self.ad_label.text = self._ad_label_text()
+                self.ad_label.text = self._localization.ad_label_text()
             if hasattr(self, "ad_slot"):
                 self.ad_slot.height = 0 if active else ad_height
                 self.ad_slot.opacity = 0 if active else 1
                 self.ad_slot.disabled = active
             if hasattr(self, "footer_label"):
-                self.footer_label.text = self._status_footer_text()
+                self.footer_label.text = self._localization.footer_text()
             self._freezing_tab_controller.set_custom_product_available(active)
             self._refresh_valve_lock_ui()
 

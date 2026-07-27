@@ -1,10 +1,10 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 924 linie. Wszystkie trzy zakładki,
+Stan na 2026-07-27: `tpof/mobile/main.py` ma 897 linii. Wszystkie trzy zakładki,
 powłoka aplikacji, motyw, responsywny układ, dialogi oraz wspólna obsługa
-podpowiedzi, walidacji i klawiatury są już wydzielone. W pliku pozostaje głównie
-składanie zależności oraz orkiestracja usług aplikacji. Dalsze zmiany robimy
-etapami, bez zmiany wzorów obliczeniowych.
+podpowiedzi, walidacji, klawiatury i lokalizacji są już wydzielone. W pliku
+pozostaje głównie składanie zależności oraz orkiestracja usług aplikacji. Dalsze
+zmiany robimy etapami, bez zmiany wzorów obliczeniowych.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -51,6 +51,11 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
     - Stan podpowiedzi, wspólna prezentacja błędów pól oraz przewijanie
       aktywnego pola nad klawiaturę.
     - Moduł nie importuje Kivy i ma osobne testy zachowania.
+
+11. `tpof/mobile/localization.py` — wykonane
+    - Stan języka, tłumaczenie kategorii oraz synchronizacja tekstów powłoki,
+      zakładek, formularzy i modułu PRO.
+    - Moduł nie importuje Kivy i ma osobne testy przełączania PL/EN.
 
 ## Kolejność prac
 
