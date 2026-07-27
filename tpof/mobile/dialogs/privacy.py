@@ -19,6 +19,45 @@ class PrivacyDialogWidgets:
     raised_button: Callable[..., Any]
 
 
+class PrivacyToolbarController:
+    """Synchronize visibility and sizing of the shell privacy controls."""
+
+    def __init__(
+        self,
+        *,
+        options_available: Callable[[], bool],
+        get_button: Callable[[], Any | None],
+        get_chip: Callable[[], Any | None],
+        get_target_width: Callable[[], float],
+        get_fallback_width: Callable[[], float],
+    ) -> None:
+        self._options_available = options_available
+        self._get_button = get_button
+        self._get_chip = get_chip
+        self._get_target_width = get_target_width
+        self._get_fallback_width = get_fallback_width
+
+    def refresh(self, *_args: object) -> None:
+        button = self._get_button()
+        if button is None:
+            return
+        visible = self._options_available()
+        button.disabled = not visible
+        button.opacity = 1 if visible else 0
+        try:
+            target_width = self._get_target_width()
+        except Exception:
+            target_width = self._get_fallback_width()
+        button.width = target_width if visible else 0
+
+        chip = self._get_chip()
+        if chip is not None:
+            chip.disabled = not visible
+            chip.opacity = 1 if visible else 0
+            chip.width = target_width if visible else 0
+            chip.height = target_width
+
+
 class PrivacyDialogController:
     """Owns Firebase telemetry consent and Google UMP privacy options."""
 

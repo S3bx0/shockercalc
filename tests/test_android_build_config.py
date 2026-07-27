@@ -70,7 +70,7 @@ def test_labor_tab_uses_dedicated_admob_units():
     assert 'if ("labor".equals(activeAdTab))' in advertising
     assert "normalizeAdTab(final String tab)" in advertising
     assert 'if ("labor".equals(tab))' in advertising
-    assert 'self._set_active_ad_tab(name)' in mobile_main
+    assert "self._android.set_active_ad_tab(name)" in mobile_main
     assert '"labor": self.bottom_labor_tab' in mobile_main
 
 

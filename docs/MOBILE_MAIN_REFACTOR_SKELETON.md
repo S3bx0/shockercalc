@@ -2,7 +2,7 @@
 
 Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
 i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27 plik
-ma 783 linie. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
+ma 744 linie. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
 dialogi, powłoka oraz kolejne usługi są już osobnymi modułami. Dokument
 pozostaje żywym planem refaktoru i liczby aktualizujemy po każdym checkpointcie.
 
@@ -317,29 +317,13 @@ Zasada:
 
 ### `tpof/mobile/android_bridge.py`
 
-Utworzyć cienką fasadę:
+Wykonane:
 
-```python
-class ActivityBridge:
-    def activity(self): ...
-    def show_banner(self, placement: str) -> None: ...
-    def set_active_ad_tab(self, tab: str) -> None: ...
-    def buy_pro(self) -> None: ...
-    def buy_module_valves(self) -> None: ...
-    def show_rewarded_ad(self, placement: str) -> None: ...
-    def open_privacy_options(self) -> bool: ...
-```
-
-Przenieść lub opakować:
-
-- `_android_activity`
-- `_set_active_ad_tab`
-- `_refresh_ad_slot_height`
-- `_open_ad_privacy_options`
-
-Zakup zaworów i rewarded zostały już wydzielone do
-`services/rewarded_access.py`; bridge pozostaje możliwym kolejnym etapem dla
-surowych wywołań aktywności.
+- `AndroidActivityBridge` przejął leniwe ładowanie i rzutowanie Activity,
+- fasada obsługuje aktywną kartę reklam, wysokość banera, UMP i udostępnianie,
+- kontrolery PRO i rewarded otrzymują już metodę `activity`, bez PyJNIus w
+  `main.py`,
+- wywołania opcjonalne mają bezpieczny fallback poza Androidem i osobne testy.
 
 ### `tpof/mobile/services/monetization.py`
 
@@ -374,9 +358,12 @@ Przenieść:
 
 ### `tpof/mobile/dialogs/privacy.py`
 
-Przenieść:
+Wykonane:
 
-- `_refresh_privacy_button`
+- `PrivacyToolbarController` przejął widoczność i rozmiar przycisku oraz chipa.
+
+Pozostałe historyczne elementy:
+
 - `_prompt_telemetry_consent`
 - `_set_telemetry_consent`
 - `_close_privacy_dialog`

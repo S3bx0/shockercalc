@@ -28,7 +28,11 @@ from tpof.core import (
     load_products,
 )
 from tpof.mobile import telemetry
-from tpof.mobile.android_bridge import _purge_host_arch_fonttools_so, _runtime_font_path
+from tpof.mobile.android_bridge import (
+    AndroidActivityBridge,
+    _purge_host_arch_fonttools_so,
+    _runtime_font_path,
+)
 from tpof.mobile.catalog import _safe_image_path
 from tpof.mobile.constants import (
     APP_NAME,
@@ -39,7 +43,10 @@ from tpof.mobile.constants import (
 from tpof.mobile.dialogs.custom_product import CustomProductDialogController
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
 from tpof.mobile.dialogs.legal import LegalDialogController
-from tpof.mobile.dialogs.privacy import PrivacyDialogController
+from tpof.mobile.dialogs.privacy import (
+    PrivacyDialogController,
+    PrivacyToolbarController,
+)
 from tpof.mobile.dialogs.settings import SettingsDialogController
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
@@ -141,6 +148,7 @@ def main() -> None:
             self._pro_no_ads = False
             self._entitlements = Entitlements()
             self._entitlements.ensure_started()
+            self._android = AndroidActivityBridge(is_android=IS_ANDROID)
             self._localization = LocalizationController(
                 initial_language="pl",
                 is_android=IS_ANDROID,
@@ -209,10 +217,19 @@ def main() -> None:
                 native_ad_height_dp=lambda: self._native_ad_height_dp,
                 pro_no_ads=lambda: self._pro_no_ads,
                 bottom_nav_bg=self._theme_controller.bottom_nav_bg,
-                refresh_privacy_button=self._refresh_privacy_button,
+                refresh_privacy_button=lambda: (
+                    self._privacy_toolbar_controller.refresh()
+                ),
                 apply_freezing_layout=lambda metrics: (
                     self._freezing_tab_controller.apply_layout(metrics)
                 ),
+            )
+            self._privacy_toolbar_controller = PrivacyToolbarController(
+                options_available=lambda: self._privacy_dialog_controller.options_available(),
+                get_button=lambda: getattr(self, "btn_privacy", None),
+                get_chip=lambda: getattr(self, "btn_privacy_chip", None),
+                get_target_width=lambda: self._responsive_controller.metrics()["toolbar_btn_w"],
+                get_fallback_width=lambda: dp(48),
             )
             self._legal_dialog_controller = LegalDialogController(
                 translate=self._t,
@@ -225,13 +242,9 @@ def main() -> None:
                 telemetry_has_preference=telemetry.has_preference,
                 telemetry_enabled=telemetry.is_enabled,
                 set_telemetry_enabled=telemetry.set_enabled,
-                privacy_options_required=lambda: bool(
-                    self._android_activity().isPrivacyOptionsRequired()
-                ),
-                show_privacy_options_form=lambda: (
-                    self._android_activity().showPrivacyOptionsForm()
-                ),
-                refresh_button=self._refresh_privacy_button,
+                privacy_options_required=self._android.privacy_options_required,
+                show_privacy_options_form=self._android.show_privacy_options_form,
+                refresh_button=self._privacy_toolbar_controller.refresh,
                 log_event=telemetry.log_event,
                 record_exception=telemetry.record_exception,
             )
@@ -341,7 +354,7 @@ def main() -> None:
                 translate=self._t,
                 get_pro_no_ads=lambda: self._pro_no_ads,
                 get_products=lambda category: list_products(catalog, category),
-                get_android_activity=self._android_activity,
+                get_android_activity=self._android.activity,
                 schedule_once=Clock.schedule_once,
                 refresh_valve_lock_view=lambda locked: (
                     self._valves_tab_controller.refresh_lock_ui(locked)
@@ -411,7 +424,7 @@ def main() -> None:
             self._monetization = ProMonetizationController(
                 is_android=IS_ANDROID,
                 translate=self._t,
-                get_android_activity=self._android_activity,
+                get_android_activity=self._android.activity,
                 schedule_once=Clock.schedule_once,
                 on_state_changed=self._apply_pro_ui_state,
                 refresh_ad_slot_height=self._refresh_ad_slot_height,
@@ -454,7 +467,7 @@ def main() -> None:
             self._shell_view.install_on(self)
             self._localization.attach(LocalizationView.from_shell(self))
             self._form_interactions.attach(FormInteractionView.from_shell(self))
-            self._refresh_privacy_button()
+            self._privacy_toolbar_controller.refresh()
 
             self.root_host = FloatLayout()
             with self.root_host.canvas.before:
@@ -543,8 +556,8 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 1.2)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 3.5)
             Clock.schedule_once(lambda *_: self._refresh_ad_slot_height(), 7.0)
-            Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 3.0)
-            Clock.schedule_once(lambda *_: self._refresh_privacy_button(), 8.0)
+            Clock.schedule_once(self._privacy_toolbar_controller.refresh, 3.0)
+            Clock.schedule_once(self._privacy_toolbar_controller.refresh, 8.0)
             Clock.schedule_once(
                 lambda *_: self._rewarded_access.refresh_valve_lock_ui(),
                 1.0,
@@ -607,40 +620,14 @@ def main() -> None:
             )
 
         def _report_tab(self, name: str):
-            self._set_active_ad_tab(name)
+            self._android.set_active_ad_tab(name)
             telemetry.set_screen(name)
 
-        def _set_active_ad_tab(self, tab: str):
-            if not IS_ANDROID:
-                return
-            try:
-                self._android_activity().setActiveAdTab(tab)
-            except Exception:  # pragma: no cover - Android only
-                log.debug("setActiveAdTab nie powiodło się", exc_info=True)
-
-        def _android_activity(self):
-            from jnius import autoclass, cast
-
-            activity = autoclass("org.kivy.android.PythonActivity").mActivity
-            # pyjnius opakowuje mActivity jako bazowy PythonActivity, przez co metody
-            # naszej podklasy są niewidoczne -> rzutujemy na właściwą aktywność.
-            try:
-                return cast(
-                    "pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity",
-                    activity,
-                )
-            except Exception:  # pragma: no cover - Android only
-                return activity
-
         def _refresh_ad_slot_height(self):
-            if not IS_ANDROID or self._pro_no_ads:
-                return
-            try:
-                height_dp = int(self._android_activity().getBannerHeightDp())
-            except Exception:  # pragma: no cover - Android only
-                log.debug("Nie udało się odczytać wysokości banera", exc_info=True)
-                return
-            if height_dp <= 0 or height_dp == self._native_ad_height_dp:
+            height_dp = self._android.resolved_banner_height(
+                self._pro_no_ads, self._native_ad_height_dp
+            )
+            if height_dp == self._native_ad_height_dp:
                 return
             self._native_ad_height_dp = height_dp
             self._responsive_controller.apply()
@@ -661,28 +648,6 @@ def main() -> None:
                 self.footer_label.text = self._localization.footer_text()
             self._freezing_tab_controller.set_custom_product_available(active)
             self._rewarded_access.refresh_valve_lock_ui()
-
-        def _refresh_privacy_button(self):
-            """Pokazuje wspolne ustawienia UMP i dobrowolnej telemetrii."""
-            btn = getattr(self, "btn_privacy", None)
-            if btn is None:
-                return
-            visible = self._privacy_dialog_controller.options_available()
-            btn.disabled = not visible
-            btn.opacity = 1 if visible else 0
-            chip = getattr(self, "btn_privacy_chip", None)
-            from kivy.metrics import dp
-
-            try:
-                target_width = self._responsive_controller.metrics()["toolbar_btn_w"]
-            except Exception:
-                target_width = dp(48)
-            btn.width = target_width if visible else 0
-            if chip is not None:
-                chip.disabled = not visible
-                chip.opacity = 1 if visible else 0
-                chip.width = target_width if visible else 0
-                chip.height = target_width
 
         def _close_settings_dialog(self):
             self._settings_dialog_controller.close()
@@ -740,20 +705,16 @@ def main() -> None:
                 out_path = out_dir / f"RefrigerationCalc_{nazwa}_{ts}.pdf"
                 out_path.write_bytes(pdf_bytes)
                 telemetry.log_event("pdf_generated", {"calculator": "freezing"})
-                if IS_ANDROID:
-                    try:
-                        self._android_activity().shareFile(
-                            str(out_path),
-                            "application/pdf",
-                            self._t("pdf_share_subject"),
-                            self._t("pdf_share_text"),
-                        )
-                        telemetry.log_event(
-                            "report_shared", {"calculator": "freezing"}
-                        )
-                    except Exception:  # pragma: no cover - Android only
-                        log.exception("Udostępnianie PDF")
-                        self._show_error(self._t("saved", path=out_path))
+                if self._android.share_file(
+                    str(out_path),
+                    "application/pdf",
+                    self._t("pdf_share_subject"),
+                    self._t("pdf_share_text"),
+                ):
+                    telemetry.log_event(
+                        "report_shared",
+                        {"calculator": "freezing"},
+                    )
                 else:
                     self._show_error(self._t("saved", path=out_path))
             except Exception as exc:  # pragma: no cover - UI feedback

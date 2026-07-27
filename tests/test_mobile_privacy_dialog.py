@@ -3,6 +3,7 @@ from __future__ import annotations
 from tpof.mobile.dialogs.privacy import (
     PrivacyDialogController,
     PrivacyDialogWidgets,
+    PrivacyToolbarController,
 )
 
 
@@ -25,6 +26,13 @@ class _Dialog:
 
     def dismiss(self) -> None:
         self.dismissed = True
+
+
+class _ToolbarItem:
+    disabled = False
+    opacity = 1
+    width = 0
+    height = 0
 
 
 def _state(
@@ -223,3 +231,71 @@ def test_ad_privacy_form_failure_is_reported_without_escaping():
     error, context = state["exceptions"][0]
     assert isinstance(error, RuntimeError)
     assert context == "open_ad_privacy_options"
+
+
+def test_privacy_toolbar_controller_shows_and_sizes_button_and_chip():
+    button = _ToolbarItem()
+    chip = _ToolbarItem()
+    controller = PrivacyToolbarController(
+        options_available=lambda: True,
+        get_button=lambda: button,
+        get_chip=lambda: chip,
+        get_target_width=lambda: 56,
+        get_fallback_width=lambda: 48,
+    )
+
+    controller.refresh()
+
+    assert button.disabled is False
+    assert button.opacity == 1
+    assert button.width == 56
+    assert chip.disabled is False
+    assert chip.opacity == 1
+    assert chip.width == 56
+    assert chip.height == 56
+
+
+def test_privacy_toolbar_controller_hides_unavailable_controls():
+    button = _ToolbarItem()
+    chip = _ToolbarItem()
+    controller = PrivacyToolbarController(
+        options_available=lambda: False,
+        get_button=lambda: button,
+        get_chip=lambda: chip,
+        get_target_width=lambda: 56,
+        get_fallback_width=lambda: 48,
+    )
+
+    controller.refresh()
+
+    assert button.disabled is True
+    assert button.opacity == 0
+    assert button.width == 0
+    assert chip.disabled is True
+    assert chip.opacity == 0
+    assert chip.width == 0
+    assert chip.height == 56
+
+
+def test_privacy_toolbar_controller_uses_fallback_and_allows_missing_view():
+    button = _ToolbarItem()
+    controller = PrivacyToolbarController(
+        options_available=lambda: True,
+        get_button=lambda: button,
+        get_chip=lambda: None,
+        get_target_width=lambda: (_ for _ in ()).throw(RuntimeError("no layout")),
+        get_fallback_width=lambda: 48,
+    )
+
+    controller.refresh()
+
+    assert button.width == 48
+
+    missing_controller = PrivacyToolbarController(
+        options_available=lambda: True,
+        get_button=lambda: None,
+        get_chip=lambda: None,
+        get_target_width=lambda: 56,
+        get_fallback_width=lambda: 48,
+    )
+    missing_controller.refresh()

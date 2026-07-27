@@ -1,11 +1,11 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 783 linie. Wszystkie trzy zakładki,
+Stan na 2026-07-27: `tpof/mobile/main.py` ma 744 linie. Wszystkie trzy zakładki,
 powłoka aplikacji, motyw, responsywny układ, dialogi oraz wspólna obsługa
 podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
-dostępu do modułu zaworów są już wydzielone. W pliku pozostaje głównie składanie
-zależności oraz orkiestracja usług aplikacji. Dalsze zmiany robimy etapami, bez
-zmiany wzorów obliczeniowych.
+dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
+widoczność przycisku prywatności także mają osobne, testowalne kontrolery. W
+pliku pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -23,8 +23,10 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 2. `tpof/mobile/i18n.py`
    - Słowniki tekstów, fallback językowy, helper `_t`.
 
-3. `tpof/mobile/android_bridge.py`
-   - Wywołania aktywności Androida: reklamy, billing, telemetry opt-in, aktywna zakładka reklam.
+3. `tpof/mobile/android_bridge.py` — wykonane
+   - Leniwy dostęp do natywnej Activity przez PyJNIus.
+   - Aktywna karta reklam, wysokość banera, opcje UMP i udostępnianie plików.
+   - Bezpieczne zachowanie poza Androidem i osobne testy kontraktu.
 
 4. `tpof/mobile/widgets/`
    - `BrandToolbar`, `FrostBackground`, `BottomNavTab`, `StageMotionIcon`, `CenterNotice`.
@@ -38,7 +40,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 7. `tpof/mobile/tabs/valves.py` — wykonane
    - Budowa widoku, stan trybu danych i typu zaworu, walidacja, obliczenia,
      wynik oraz prezentacja blokady dostępu.
-   - Polityka uprawnień, zakup i reklama nagradzana pozostają w orkiestratorze.
+   - Polityka uprawnień, zakup i reklama nagradzana są w osobnym kontrolerze.
 
 8. `tpof/mobile/tabs/labor.py` — wykonane
    - Budowa i obsługa zakładki robocizny, bez zmiany `tpof.labor`.

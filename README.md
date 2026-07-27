@@ -39,6 +39,7 @@ tpof/                  # pakiet źródłowy
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
+    ├── android_bridge.py # fasada PyJNIus: reklamy, prywatność i udostępnianie
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
