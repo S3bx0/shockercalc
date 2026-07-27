@@ -48,6 +48,7 @@ from tpof.mobile.entitlements import (
 )
 from tpof.mobile.i18n import display_category, translate
 from tpof.mobile.layout import clamp, compute_metrics
+from tpof.mobile.navigation import TabNavigationController
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
 from tpof.mobile.pdf_export import _pdf_output_dir
 from tpof.mobile.services.entitlements_ui import _sync_module_ownership
@@ -318,6 +319,27 @@ def main() -> None:
             self.bottom_nav = self._build_bottom_nav(dp, MDBoxLayout)
             root.add_widget(self.bottom_nav)
             self._active_tab_name = "freezing"
+            self._navigation_controller = TabNavigationController(
+                get_tab_widgets=lambda: {
+                    "freezing": self._freezing_tab_controller.scroll,
+                    "valves": self._valves_tab_controller.scroll,
+                    "labor": self._labor_tab_controller.scroll,
+                },
+                get_nav_tabs=lambda: {
+                    "freezing": self.bottom_freezing_tab,
+                    "valves": self.bottom_valves_tab,
+                    "labor": self.bottom_labor_tab,
+                },
+                get_host=lambda: self.tab_content_host,
+                set_active_name=lambda name: setattr(self, "_active_tab_name", name),
+                report_tab=self._report_tab,
+                on_tab_enter=lambda name: (
+                    self._refresh_valve_lock_ui() if name == "valves" else None
+                ),
+                refresh_theme=self._sync_theme_surfaces,
+                schedule_once=Clock.schedule_once,
+                logger=log,
+            )
             self._show_tab("freezing", animate=False, report=False)
 
             root.add_widget(self._build_footer(dp, MDBoxLayout, MDLabel, MDRaisedButton))
@@ -969,86 +991,19 @@ def main() -> None:
 
         def _on_tab_switch(self, *args):
             """Zgodność z dawnym callbackiem dolnej nawigacji."""
-            name = None
-            for a in args:
-                if isinstance(a, str) and a in ("freezing", "valves", "labor"):
-                    name = a
-                    break
-                item_name = getattr(a, "name", None)
-                if item_name in ("freezing", "valves", "labor"):
-                    name = item_name
-                    break
-            if name is None:
-                return
-            self._show_tab(name)
+            return self._navigation_controller.handle_legacy_switch(*args)
 
         def _show_tab(self, name: str, *, animate: bool = True, report: bool = True):
             """Przelacza widoczna karte bez ruszania wysokosci dolnego paska."""
-            if name not in ("freezing", "valves", "labor"):
-                return
-            self._active_tab_name = name
-            tab_widgets = {
-                "freezing": self._freezing_tab_controller.scroll,
-                "valves": self._valves_tab_controller.scroll,
-                "labor": self._labor_tab_controller.scroll,
-            }
-            for tab_name, widget in tab_widgets.items():
-                self._set_tab_visibility(widget, tab_name == name)
-            self._raise_tab_widget(tab_widgets.get(name))
-            if hasattr(self, "bottom_freezing_tab"):
-                self.bottom_freezing_tab.set_active(name == "freezing")
-            if hasattr(self, "bottom_valves_tab"):
-                self.bottom_valves_tab.set_active(name == "valves")
-            if hasattr(self, "bottom_labor_tab"):
-                self.bottom_labor_tab.set_active(name == "labor")
-            if report:
-                self._set_active_ad_tab(name)
-                telemetry.set_screen(name)
-            if animate:
-                self._animate_bottom_tab(name)
-            if name == "valves":
-                self._refresh_valve_lock_ui()
-            # Hidden tabs are disabled to avoid touch interception. After a
-            # theme switch they need a fresh pass once re-enabled, otherwise
-            # KivyMD can keep disabled/dark colors until app restart.
-            self._sync_theme_surfaces()
-            Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)
+            return self._navigation_controller.show(
+                name,
+                animate=animate,
+                report=report,
+            )
 
-        def _set_tab_visibility(self, widget, active: bool):
-            """Ukryta zakladka nie moze zostawac niewidzialna warstwa dotykowa."""
-            if widget is None:
-                return
-            if active:
-                widget.size_hint = (1, 1)
-                widget.pos_hint = {"x": 0, "y": 0}
-                widget.opacity = 1
-                widget.disabled = False
-            else:
-                widget.opacity = 0
-                widget.disabled = True
-                widget.size_hint = (None, None)
-                widget.size = (0, 0)
-                widget.pos = (0, 0)
-                widget.pos_hint = {}
-
-        def _raise_tab_widget(self, widget):
-            host = getattr(self, "tab_content_host", None)
-            if host is None or widget is None or widget.parent is not host:
-                return
-            host.remove_widget(widget)
-            host.add_widget(widget)
-
-        def _animate_bottom_tab(self, name: str):
-            """Lekka reakcja zakładki bez kosztownych animacji layoutu."""
-            try:
-                tab = {
-                    "freezing": self.bottom_freezing_tab,
-                    "valves": self.bottom_valves_tab,
-                    "labor": self.bottom_labor_tab,
-                }[name]
-                tab.play()
-            except Exception:
-                log.debug("Animacja zakładki nie powiodła się", exc_info=True)
+        def _report_tab(self, name: str):
+            self._set_active_ad_tab(name)
+            telemetry.set_screen(name)
 
         def _set_active_ad_tab(self, tab: str):
             if not IS_ANDROID:

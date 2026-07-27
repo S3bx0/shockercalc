@@ -66,6 +66,7 @@ files = [
     "tpof/mobile/i18n.py",
     "tpof/mobile/theme.py",
     "tpof/mobile/layout.py",
+    "tpof/mobile/navigation.py",
     "tpof/mobile/validation.py",
     "tpof/mobile/telemetry.py",
     "tpof/mobile/user_data.py",

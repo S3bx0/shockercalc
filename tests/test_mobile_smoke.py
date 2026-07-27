@@ -85,15 +85,18 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
 
 def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
     source = _source("tpof/mobile/main.py")
+    controller_source = _source("tpof/mobile/navigation.py")
     nav_source = _source("tpof/mobile/widgets/bottom_nav.py")
 
+    assert "class TabNavigationController" in controller_source
     assert "class BottomNavMotionIcon" in nav_source
     assert "class BottomNavTab" in nav_source
+    assert "self._navigation_controller = TabNavigationController(" in source
     assert "self.bottom_freezing_tab" in source
     assert "self.bottom_valves_tab" in source
     assert "self.bottom_labor_tab" in source
     assert "def _show_tab" in source
-    assert "tab.play()" in source
+    assert "tab.play()" in controller_source
     assert "width=dp(1.15)" in nav_source
     assert "width=dp(1.45)" not in nav_source
 
@@ -115,15 +118,13 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
 
 def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
     source = _source("tpof/mobile/main.py")
-    show_tab_block = source[
-        source.index("def _show_tab") : source.index("def _set_tab_visibility")
-    ]
+    controller_source = _source("tpof/mobile/navigation.py")
     toggle_theme_block = source[
         source.index("def _toggle_theme") : source.index("def _build_pdf_bytes")
     ]
 
-    assert "self._sync_theme_surfaces()" in show_tab_block
-    assert "Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)" in show_tab_block
+    assert "self._refresh_theme()" in controller_source
+    assert "self._schedule_once(lambda *_args: self._refresh_theme(), 0)" in controller_source
     assert "Clock.schedule_once(lambda *_: self._sync_theme_surfaces(), 0)" in toggle_theme_block
 
 
@@ -144,14 +145,15 @@ def test_przyciski_zaworow_uzywaja_brandowej_palety():
 
 def test_nieaktywna_zakladka_nie_blokuje_dotyku():
     source = _source("tpof/mobile/main.py")
+    controller_source = _source("tpof/mobile/navigation.py")
 
-    assert "def _set_tab_visibility" in source
-    assert "widget.size = (0, 0)" in source
+    assert "def set_tab_visibility" in controller_source
+    assert "widget.size = (0, 0)" in controller_source
     assert '"valves": self._valves_tab_controller.scroll' in source
     assert '"labor": self._labor_tab_controller.scroll' in source
-    assert "self._raise_tab_widget(tab_widgets.get(name))" in source
-    assert "host.remove_widget(widget)" in source
-    assert "host.add_widget(widget)" in source
+    assert "self.raise_tab_widget(self._get_host(), tab_widgets.get(name))" in controller_source
+    assert "host.remove_widget(widget)" in controller_source
+    assert "host.add_widget(widget)" in controller_source
 
 
 def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
