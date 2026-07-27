@@ -40,6 +40,7 @@ from tpof.mobile.constants import (
 from tpof.mobile.dialogs.custom_product import CustomProductDialogController
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
 from tpof.mobile.dialogs.legal import LegalDialogController
+from tpof.mobile.dialogs.privacy import PrivacyDialogController
 from tpof.mobile.dialogs.settings import SettingsDialogController
 from tpof.mobile.entitlements import (
     FREE_PRODUCTS_PER_CATEGORY,
@@ -129,8 +130,6 @@ def main() -> None:
             self._language = "pl"
             self._preferences = UiPreferences()
             self._hints_enabled = self._preferences.hints_enabled
-            self._privacy_dialog = None
-            self._telemetry_dialog = None
             self._validation_bound_fields = set()
             self._native_ad_height_dp = 0
             self._pro_no_ads = False
@@ -139,6 +138,23 @@ def main() -> None:
             self._legal_dialog_controller = LegalDialogController(
                 translate=self._t,
                 project_root=PROJECT_ROOT,
+            )
+            self._privacy_dialog_controller = PrivacyDialogController(
+                translate=self._t,
+                is_android=IS_ANDROID,
+                telemetry_available=telemetry.is_available,
+                telemetry_has_preference=telemetry.has_preference,
+                telemetry_enabled=telemetry.is_enabled,
+                set_telemetry_enabled=telemetry.set_enabled,
+                privacy_options_required=lambda: bool(
+                    self._android_activity().isPrivacyOptionsRequired()
+                ),
+                show_privacy_options_form=lambda: (
+                    self._android_activity().showPrivacyOptionsForm()
+                ),
+                refresh_button=self._refresh_privacy_button,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
             )
             self._settings_state = SettingsStateController(
                 preferences=self._preferences,
@@ -386,7 +402,10 @@ def main() -> None:
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 1.0)
             Clock.schedule_once(lambda *_: self._refresh_valve_lock_ui(), 4.0)
             Clock.schedule_once(lambda *_: self._apply_hints(), 0.2)
-            Clock.schedule_once(lambda *_: self._prompt_telemetry_consent(), 2.0)
+            Clock.schedule_once(
+                lambda *_: self._privacy_dialog_controller.prompt_telemetry_consent(),
+                2.0,
+            )
             Clock.schedule_once(
                 lambda *_: self._settings_state.refresh_exchange_rates_async(),
                 1.0,
@@ -765,7 +784,7 @@ def main() -> None:
                 MDIconButton,
                 icon="shield-account",
                 icon_size="26sp",
-                on_release=lambda *_: self._open_privacy_options(),
+                on_release=lambda *_: self._privacy_dialog_controller.open(),
             )
             bar.add_widget(self.btn_privacy_chip)
             self._refresh_privacy_button()
@@ -1139,15 +1158,7 @@ def main() -> None:
             btn = getattr(self, "btn_privacy", None)
             if btn is None:
                 return
-            ad_options_required = False
-            if IS_ANDROID:
-                try:
-                    ad_options_required = bool(
-                        self._android_activity().isPrivacyOptionsRequired()
-                    )
-                except Exception:  # pragma: no cover - Android only
-                    log.debug("Nie udało się sprawdzić opcji prywatności", exc_info=True)
-            visible = ad_options_required or telemetry.is_available()
+            visible = self._privacy_dialog_controller.options_available()
             btn.disabled = not visible
             btn.opacity = 1 if visible else 0
             chip = getattr(self, "btn_privacy_chip", None)
@@ -1164,42 +1175,6 @@ def main() -> None:
                 chip.width = target_width if visible else 0
                 chip.height = target_width
 
-        def _prompt_telemetry_consent(self):
-            if not telemetry.is_available() or telemetry.has_preference():
-                self._refresh_privacy_button()
-                return
-            try:
-                from kivymd.uix.button import MDFlatButton, MDRaisedButton
-                from kivymd.uix.dialog import MDDialog
-
-                self._telemetry_dialog = MDDialog(
-                    title=self._t("telemetry_title"),
-                    text=self._t("telemetry_text"),
-                    buttons=[
-                        MDFlatButton(
-                            text=self._t("telemetry_not_now"),
-                            on_release=lambda *_: self._set_telemetry_consent(False),
-                        ),
-                        MDRaisedButton(
-                            text=self._t("telemetry_enable"),
-                            on_release=lambda *_: self._set_telemetry_consent(True),
-                        ),
-                    ],
-                )
-                self._telemetry_dialog.open()
-            except Exception:
-                log.exception("Nie udało się pokazać zgody Firebase")
-
-        def _set_telemetry_consent(self, enabled: bool):
-            telemetry.set_enabled(enabled)
-            dialog = getattr(self, "_telemetry_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._telemetry_dialog = None
-            self._refresh_privacy_button()
-            if enabled:
-                telemetry.log_event("telemetry_enabled")
-
         def _close_settings_dialog(self):
             self._settings_dialog_controller.close()
 
@@ -1212,71 +1187,6 @@ def main() -> None:
             self._close_settings_dialog()
             if self._legal_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "legal"})
-
-        def _close_privacy_dialog(self):
-            dialog = getattr(self, "_privacy_dialog", None)
-            if dialog is not None:
-                dialog.dismiss()
-                self._privacy_dialog = None
-
-        def _open_privacy_options(self):
-            """Otwiera ustawienia telemetrii i, gdy trzeba, zgody reklamowej."""
-            if not IS_ANDROID:
-                return
-            try:
-                from kivymd.uix.button import MDFlatButton, MDRaisedButton
-                from kivymd.uix.dialog import MDDialog
-
-                analytics_available = telemetry.is_available()
-                enabled = telemetry.is_enabled()
-                text = self._t("telemetry_on" if enabled else "telemetry_off")
-                buttons = []
-                if analytics_available:
-                    buttons.append(
-                        MDRaisedButton(
-                            text=self._t(
-                                "telemetry_disable" if enabled else "telemetry_enable"
-                            ),
-                            on_release=lambda *_: self._change_telemetry_from_settings(
-                                not enabled
-                            ),
-                        )
-                    )
-                if bool(self._android_activity().isPrivacyOptionsRequired()):
-                    buttons.append(
-                        MDFlatButton(
-                            text=self._t("ad_privacy"),
-                            on_release=lambda *_: self._open_ad_privacy_options(),
-                        )
-                    )
-                buttons.append(
-                    MDFlatButton(
-                        text=self._t("close"),
-                        on_release=lambda *_: self._close_privacy_dialog(),
-                    )
-                )
-                self._privacy_dialog = MDDialog(
-                    title=self._t("privacy_title"),
-                    text=text,
-                    buttons=buttons,
-                )
-                self._privacy_dialog.open()
-                telemetry.log_event("settings_opened", {"section": "privacy"})
-            except Exception:  # pragma: no cover - Android only
-                log.exception("Ustawienia prywatności")
-
-        def _change_telemetry_from_settings(self, enabled: bool):
-            telemetry.set_enabled(enabled)
-            self._close_privacy_dialog()
-            if enabled:
-                telemetry.log_event("telemetry_enabled")
-
-        def _open_ad_privacy_options(self):
-            self._close_privacy_dialog()
-            try:
-                self._android_activity().showPrivacyOptionsForm()
-            except Exception:  # pragma: no cover - Android only
-                log.exception("Formularz prywatności reklam")
 
         def _toggle_theme(self):
             self._freezing_tab_controller.close_product_dialog()

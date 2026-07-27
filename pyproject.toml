@@ -79,6 +79,7 @@ files = [
     "tpof/mobile/dialogs/labor_rates.py",
     "tpof/mobile/dialogs/custom_product.py",
     "tpof/mobile/dialogs/legal.py",
+    "tpof/mobile/dialogs/privacy.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
     "tpof/mobile/tabs/valves.py",

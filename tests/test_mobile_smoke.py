@@ -228,6 +228,21 @@ def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
     assert "self._custom_product_fields" not in source
 
 
+def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
+    source = _source("tpof/mobile/main.py")
+    dialog_source = _source("tpof/mobile/dialogs/privacy.py")
+
+    assert "PrivacyDialogController" in source
+    assert "self._privacy_dialog_controller.open()" in source
+    assert "self._privacy_dialog_controller.options_available()" in source
+    assert "class PrivacyDialogController" in dialog_source
+    assert "def prompt_telemetry_consent" in dialog_source
+    assert "def open_ad_privacy_options" in dialog_source
+    assert "def _open_privacy_options" not in source
+    assert "self._privacy_dialog = None" not in source
+    assert "self._telemetry_dialog = None" not in source
+
+
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/main.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
