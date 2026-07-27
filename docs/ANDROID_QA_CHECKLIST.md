@@ -37,7 +37,7 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 - Docelowo przekazywać insety z Androida do warstwy Kivy zamiast nakładać padding
   na cały `android.R.id.content`, jeśli po testach na tabletach okaże się to
   potrzebne.
-- Rozbijać `tpof/mobile/main.py` stopniowo: tło, toolbar, mosty Ads/Billing i
-  eksport PDF jako osobne moduły. Nie robić tego w patchu hotfixowym.
+- `tpof/mobile/main.py` jest już cienkim launcherem. Dalej rozbijać composition
+  root w `tpof/mobile/app.py`; nie łączyć tego z patchem hotfixowym.
 - Nie podbijać `androidx.core:core` do linii wymagającej AGP 9 bez pełnej
   migracji toolchainu python-for-android/Buildozer.

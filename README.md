@@ -35,7 +35,8 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # composition root i pozostała orkiestracja ekranów
+    ├── main.py        # cienki, opcjonalnie importowany launcher
+    ├── app.py         # ShockerCalcApp i składanie kontrolerów
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
@@ -142,7 +143,8 @@ a stan przycisku i odświeżanie zakupu obsługuje
 Reklamy nagradzane, transfer tokenów oraz jednorazowy zakup i blokadę modułu
 zaworów obsługuje niezależny
 `tpof/mobile/services/rewarded_access.py`. Oba kontrolery są testowane bez
-Kivy i PyJNIus; `main.py` jedynie łączy je z natywną aktywnością i widokami.
+Kivy i PyJNIus; `app.py` jedynie łączy je z natywną aktywnością i widokami,
+a `main.py` pozostaje cienkim launcherem.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 

@@ -63,15 +63,15 @@ def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
 
 def test_labor_tab_uses_dedicated_admob_units():
     advertising = ADVERTISING_SERVICE.read_text(encoding="utf-8")
-    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
+    mobile_app = (ROOT / "tpof/mobile/app.py").read_text(encoding="utf-8")
 
     assert "ca-app-pub-7481054652344026/8198860699" in advertising
     assert "ca-app-pub-7481054652344026/7623346864" in advertising
     assert 'if ("labor".equals(activeAdTab))' in advertising
     assert "normalizeAdTab(final String tab)" in advertising
     assert 'if ("labor".equals(tab))' in advertising
-    assert "self._android.set_active_ad_tab(name)" in mobile_main
-    assert '"labor": self.bottom_labor_tab' in mobile_main
+    assert "self._android.set_active_ad_tab(name)" in mobile_app
+    assert '"labor": self.bottom_labor_tab' in mobile_app
 
 
 def test_native_splash_is_lightweight_and_started_by_activity():
@@ -159,14 +159,14 @@ def test_product_images_are_mobile_sized_and_bounded():
 
 def test_build_config_supports_rotation_and_current_android_libraries():
     spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
-    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
+    mobile_app = (ROOT / "tpof/mobile/app.py").read_text(encoding="utf-8")
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "android.permissions = INTERNET, ACCESS_NETWORK_STATE" in spec
     assert "WRITE_EXTERNAL_STORAGE" not in spec
     assert "READ_EXTERNAL_STORAGE" not in spec
-    assert "/sdcard/Download" not in mobile_main
-    assert "/storage/emulated/0/Download" not in mobile_main
+    assert "/sdcard/Download" not in mobile_app
+    assert "/storage/emulated/0/Download" not in mobile_app
     assert "com.google.android.gms:play-services-ads:25.4.0" in spec
     assert "com.android.billingclient:billing:9.1.0" in spec
     assert "com.google.android.ump:user-messaging-platform:4.0.0" in spec

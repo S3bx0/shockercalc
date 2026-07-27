@@ -2,9 +2,9 @@
 
 Stan na 2026-07-21. Ten dokument porządkuje pomysły z `Platformowe JAVA.docx`
 względem aktualnej architektury Refrigeration Calc. Nadrzędną zasadą pozostaje
-zmniejszanie `tpof/mobile/main.py` i `RefrigerationCalcActivity.java`; nowa
-funkcja platformowa nie może dokładać kolejnego podsystemu bezpośrednio do
-Activity.
+zmniejszanie mobilnego composition root (`tpof/mobile/app.py`) i
+`RefrigerationCalcActivity.java`; nowa funkcja platformowa nie może dokładać
+kolejnego podsystemu bezpośrednio do Activity.
 
 ## Korekty względem dokumentu źródłowego
 

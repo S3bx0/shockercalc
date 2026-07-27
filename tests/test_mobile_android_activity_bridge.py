@@ -154,18 +154,18 @@ def test_default_loader_keeps_pyjnius_cast_inside_bridge():
     assert "from jnius import autoclass, cast" in bridge_source
 
 
-def test_main_uses_bridge_without_direct_native_activity_calls():
-    main_source = (ROOT / "tpof" / "mobile" / "main.py").read_text(encoding="utf-8")
+def test_app_uses_bridge_without_direct_native_activity_calls():
+    app_source = (ROOT / "tpof" / "mobile" / "app.py").read_text(encoding="utf-8")
 
-    assert "self._android = AndroidActivityBridge(" in main_source
-    assert "get_android_activity=self._android.activity" in main_source
-    assert "self._android.set_active_ad_tab(name)" in main_source
-    assert "self._android.resolved_banner_height(" in main_source
-    assert "share_file=self._android.share_file" in main_source
-    assert "privacy_options_required=self._android.privacy_options_required" in main_source
-    assert "def _android_activity" not in main_source
-    assert "def _set_active_ad_tab" not in main_source
-    assert "from jnius" not in main_source
-    assert ".setActiveAdTab(" not in main_source
-    assert ".getBannerHeightDp(" not in main_source
-    assert ".shareFile(" not in main_source
+    assert "self._android = AndroidActivityBridge(" in app_source
+    assert "get_android_activity=self._android.activity" in app_source
+    assert "self._android.set_active_ad_tab(name)" in app_source
+    assert "self._android.resolved_banner_height(" in app_source
+    assert "share_file=self._android.share_file" in app_source
+    assert "privacy_options_required=self._android.privacy_options_required" in app_source
+    assert "def _android_activity" not in app_source
+    assert "def _set_active_ad_tab" not in app_source
+    assert "from jnius" not in app_source
+    assert ".setActiveAdTab(" not in app_source
+    assert ".getBannerHeightDp(" not in app_source
+    assert ".shareFile(" not in app_source

@@ -161,11 +161,11 @@ def test_export_contains_failures_and_reports_telemetry(tmp_path):
     assert state["shares"] == []
 
 
-def test_main_delegates_pdf_export_to_controller():
-    main_source = (ROOT / "tpof" / "mobile" / "main.py").read_text(encoding="utf-8")
+def test_app_delegates_pdf_export_to_controller():
+    app_source = (ROOT / "tpof" / "mobile" / "app.py").read_text(encoding="utf-8")
 
-    assert "self._pdf_export = PdfExportController(" in main_source
-    assert "share_file=self._android.share_file" in main_source
-    assert "on_export_pdf=self._pdf_export.export" in main_source
-    assert "def _build_pdf_bytes" not in main_source
-    assert "def _export_pdf" not in main_source
+    assert "self._pdf_export = PdfExportController(" in app_source
+    assert "share_file=self._android.share_file" in app_source
+    assert "on_export_pdf=self._pdf_export.export" in app_source
+    assert "def _build_pdf_bytes" not in app_source
+    assert "def _export_pdf" not in app_source

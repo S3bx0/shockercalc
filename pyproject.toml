@@ -56,7 +56,7 @@ ignore = ["E501", "B905"]
 
 [tool.mypy]
 python_version = "3.10"
-# Pure, framework-independent modules only. The Kivy UI (mobile/main.py) and the
+# Pure, framework-independent modules only. The Kivy UI (mobile/app.py) and the
 # Tkinter UI (desktop/app.py) use heavy dynamic attributes and are excluded.
 files = [
     "tpof/core",

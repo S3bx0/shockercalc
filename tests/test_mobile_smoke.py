@@ -3,7 +3,7 @@
 Sprawdzamy tylko, że:
   • moduł `tpof.mobile.main` importuje się bez błędu (czysty Python),
   • ścieżki do zasobów są poprawnie skonfigurowane,
-  • okablowanie mobilnego UI pozostaje obecne po refaktorze.
+  • okablowanie mobilnego UI pozostaje obecne w composition root `app.py`.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def test_mobile_main_importuje_sie():
 
 
 def test_mobilny_wynik_nie_ujawnia_wlasciwosci_produktu():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     pdf_source = _source("tpof/mobile/pdf_export.py")
 
     assert "self.props_grid" not in source
@@ -41,7 +41,7 @@ def test_mobilny_font_ma_fallback_do_kivy():
 
 
 def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     interactions_source = _source("tpof/mobile/form_interactions.py")
 
     assert 'helper_text_mode = "none"' not in source
@@ -53,7 +53,7 @@ def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
 
 
 def test_mobilny_naglowek_uzywa_brandowego_gradientu():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     shell_source = _source("tpof/mobile/shell.py")
     toolbar_source = _source("tpof/mobile/widgets/toolbar.py")
 
@@ -67,7 +67,7 @@ def test_mobilny_naglowek_uzywa_brandowego_gradientu():
 
 
 def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     stage_source = _source("tpof/mobile/widgets/stage_icons.py")
     frost_source = _source("tpof/mobile/widgets/frost.py")
@@ -79,7 +79,7 @@ def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
 
 
 def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     layout_source = _source("tpof/mobile/layout.py")
 
     assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
@@ -96,7 +96,7 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
 
 
 def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     controller_source = _source("tpof/mobile/navigation.py")
     nav_source = _source("tpof/mobile/widgets/bottom_nav.py")
 
@@ -114,7 +114,7 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
 
 
 def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     shell_source = _source("tpof/mobile/shell.py")
     constants_source = _source("tpof/mobile/constants.py")
     theme_source = _source("tpof/mobile/theme.py")
@@ -132,7 +132,7 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
 
 
 def test_przelaczenie_zakladki_odswieza_motyw_po_odblokowaniu():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     controller_source = _source("tpof/mobile/navigation.py")
     theme_source = _source("tpof/mobile/theme.py")
 
@@ -160,7 +160,7 @@ def test_przyciski_zaworow_uzywaja_brandowej_palety():
 
 
 def test_nieaktywna_zakladka_nie_blokuje_dotyku():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     controller_source = _source("tpof/mobile/navigation.py")
 
     assert "def set_tab_visibility" in controller_source
@@ -183,7 +183,7 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 
 
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     shell_source = _source("tpof/mobile/shell.py")
     localization_source = _source("tpof/mobile/localization.py")
     settings_source = _source("tpof/mobile/dialogs/settings.py")
@@ -220,7 +220,7 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
 
 
 def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
 
@@ -240,7 +240,7 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
 
 
 def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     dialog_source = _source("tpof/mobile/dialogs/custom_product.py")
 
     assert "CustomProductDialogController" in source
@@ -254,7 +254,7 @@ def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
 
 
 def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     shell_source = _source("tpof/mobile/shell.py")
     dialog_source = _source("tpof/mobile/dialogs/privacy.py")
 
@@ -271,7 +271,7 @@ def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
 
 
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
 
     assert "LaborTabController" in source
@@ -292,7 +292,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
 
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     interactions_source = _source("tpof/mobile/form_interactions.py")
     freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
@@ -322,7 +322,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
 
 
 def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
     assert "ValvesTabController" in source
@@ -341,7 +341,7 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
 
 
 def test_robocizna_ma_wykres_kolowy_kosztow():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     widgets_source = _source("tpof/mobile/widgets/__init__.py")
     chart_source = _source("tpof/mobile/widgets/charts.py")
@@ -371,7 +371,7 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():
-    source = _source("tpof/mobile/main.py")
+    source = _source("tpof/mobile/app.py")
     shell_source = _source("tpof/mobile/shell.py")
     notice_source = _source("tpof/mobile/widgets/notice.py")
 

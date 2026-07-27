@@ -144,18 +144,18 @@ def test_controller_reports_google_play_requirement_off_android():
     assert scheduled == []
 
 
-def test_main_delegates_pro_orchestration_to_controller():
-    main_source = (ROOT / "tpof" / "mobile" / "main.py").read_text(encoding="utf-8")
+def test_app_delegates_pro_orchestration_to_controller():
+    app_source = (ROOT / "tpof" / "mobile" / "app.py").read_text(encoding="utf-8")
     shell_source = (ROOT / "tpof" / "mobile" / "shell.py").read_text(encoding="utf-8")
     i18n_source = (ROOT / "tpof" / "mobile" / "i18n.py").read_text(encoding="utf-8")
 
-    assert "ProMonetizationController" in main_source
-    assert "self._monetization.start()" in main_source
-    assert "on_buy_pro=self._monetization.buy" in main_source
+    assert "ProMonetizationController" in app_source
+    assert "self._monetization.start()" in app_source
+    assert "on_buy_pro=self._monetization.buy" in app_source
     assert "callbacks.on_buy_pro()" in shell_source
-    assert "def _apply_pro_ui_state" in main_source
-    assert "def _refresh_pro_status" not in main_source
-    assert "def _set_pro_status" not in main_source
-    assert "def _buy_pro" not in main_source
+    assert "def _apply_pro_ui_state" in app_source
+    assert "def _refresh_pro_status" not in app_source
+    assert "def _set_pro_status" not in app_source
+    assert "def _buy_pro" not in app_source
     assert '"pro_button": "PRO 9,99 zł/mies."' in i18n_source
     assert '"pro_button_price": "PRO {price}/mies."' in i18n_source

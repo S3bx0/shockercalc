@@ -1,12 +1,14 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 689 linii. Wszystkie trzy zakładki,
-powłoka aplikacji, motyw, responsywny układ, dialogi oraz wspólna obsługa
+Stan na 2026-07-27: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
+launcherem. `ShockerCalcApp` oraz składanie zależności znajdują się w
+`tpof/mobile/app.py` (688 linii). Wszystkie trzy zakładki, powłoka aplikacji,
+motyw, responsywny układ, dialogi oraz wspólna obsługa
 podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
 dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
 widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
-Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`. W pliku
-pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
+Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`.
+W `app.py` pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -71,14 +73,19 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
      udostępnianie przez Android bridge.
    - Kontroler nie importuje Kivy i ma osobne testy sukcesu, fallbacków i błędów.
 
+14. `tpof/mobile/app.py` — wykonane
+   - `ShockerCalcApp`, cykl życia Kivy i składanie kontrolerów są poza launcherem.
+   - `tpof/mobile/main.py` zachowuje leniwy import KivyMD i tylko uruchamia klasę.
+   - Osobny test kontraktowy pilnuje granicy `main.py` → `app.py`.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
 2. Wydzielić czyste helpery bez zmiany zachowania.
-3. Wydzielić widżety wizualne, zostawiając `ShockerCalcApp` jako orkiestrator.
+3. Wydzielić widżety wizualne, zostawiając `ShockerCalcApp` jako orkiestrator — wykonane.
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
-6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu.
+6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu — w toku.
 
 ## Zasady bezpieczeństwa
 

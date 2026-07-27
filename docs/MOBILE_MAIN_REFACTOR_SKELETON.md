@@ -1,11 +1,12 @@
 # Mobile `main.py` Refactor Skeleton
 
 Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
-i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27 plik
-ma 689 linii. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
-dialogi, powłoka, eksport PDF oraz kolejne usługi są już osobnymi modułami.
-Dokument pozostaje żywym planem refaktoru i liczby aktualizujemy po każdym
-checkpointcie.
+i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27
+`main.py` ma 13 linii i jest cienkim launcherem, natomiast `app.py` ma 688
+linii i jest composition root. Widgety, kontrolery zakładek robocizny, zaworów
+i chłodnictwa, dialogi, powłoka, eksport PDF oraz kolejne usługi są już osobnymi
+modułami. Dokument pozostaje żywym planem refaktoru i liczby aktualizujemy po
+każdym checkpointcie.
 
 Cel refaktoru: podzielić mobilny UI na moduły bez zmiany zachowania, bez zmiany
 wzorów obliczeniowych i bez zmiany kluczy zapisanych danych.
@@ -79,15 +80,16 @@ tpof/mobile/
 
 ## Docelowy `main.py`
 
-Końcowo `tpof/mobile/main.py` powinien zostać sprowadzony do launchera:
+Od checkpointu `app.py` `tpof/mobile/main.py` jest sprowadzony do launchera.
+Import pozostaje wewnątrz `main()`, aby sam moduł można było importować na
+desktopie bez zainstalowanego KivyMD:
 
 ```python
 from __future__ import annotations
 
-from tpof.mobile.app import ShockerCalcApp
-
-
 def main() -> None:
+    from tpof.mobile.app import ShockerCalcApp
+
     ShockerCalcApp().run()
 
 
@@ -95,8 +97,8 @@ if __name__ == "__main__":
     main()
 ```
 
-W fazie przejściowej `main.py` może re-eksportować przeniesione symbole, jeżeli
-testy lub Buildozer oczekują starego importu. Re-eksport ma być tymczasowy.
+Buildozer i `python -m tpof.mobile` nadal używają funkcji `main`, więc zewnętrzny
+kontrakt uruchamiania nie uległ zmianie.
 
 ## Etap 0.5: stałe jako liść importów
 
