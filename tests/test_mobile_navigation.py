@@ -18,21 +18,21 @@ class _Widget:
 
 class _Host:
     def __init__(self) -> None:
-        self.removed = []
-        self.added = []
+        self.removed: list[_Widget] = []
+        self.added: list[_Widget] = []
 
-    def remove_widget(self, widget) -> None:
+    def remove_widget(self, widget: _Widget) -> None:
         self.removed.append(widget)
         widget.parent = None
 
-    def add_widget(self, widget) -> None:
+    def add_widget(self, widget: _Widget) -> None:
         self.added.append(widget)
         widget.parent = self
 
 
 class _Tab:
     def __init__(self) -> None:
-        self.active_states = []
+        self.active_states: list[bool] = []
         self.play_count = 0
 
     def set_active(self, active: bool) -> None:
