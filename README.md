@@ -40,6 +40,7 @@ tpof/                  # pakiet źródłowy
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
     ├── android_bridge.py # fasada PyJNIus: reklamy, prywatność i udostępnianie
+    ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu

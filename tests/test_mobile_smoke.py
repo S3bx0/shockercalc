@@ -27,10 +27,11 @@ def test_mobile_main_importuje_sie():
 
 def test_mobilny_wynik_nie_ujawnia_wlasciwosci_produktu():
     source = _source("tpof/mobile/main.py")
+    pdf_source = _source("tpof/mobile/pdf_export.py")
 
     assert "self.props_grid" not in source
     assert "lbl_props_title" not in source
-    assert "watermark_image_path=None" in source
+    assert "watermark_image_path=None" in pdf_source
 
 
 def test_mobilny_font_ma_fallback_do_kivy():

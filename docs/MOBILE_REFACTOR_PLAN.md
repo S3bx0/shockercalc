@@ -1,11 +1,12 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 744 linie. Wszystkie trzy zakładki,
+Stan na 2026-07-27: `tpof/mobile/main.py` ma 689 linii. Wszystkie trzy zakładki,
 powłoka aplikacji, motyw, responsywny układ, dialogi oraz wspólna obsługa
 podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
 dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
-widoczność przycisku prywatności także mają osobne, testowalne kontrolery. W
-pliku pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
+widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
+Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`. W pliku
+pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -61,9 +62,14 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
     - Moduł nie importuje Kivy i ma osobne testy zachowania.
 
 12. `tpof/mobile/localization.py` — wykonane
-    - Stan języka, tłumaczenie kategorii oraz synchronizacja tekstów powłoki,
-      zakładek, formularzy i modułu PRO.
-    - Moduł nie importuje Kivy i ma osobne testy przełączania PL/EN.
+   - Stan języka, tłumaczenie kategorii oraz synchronizacja tekstów powłoki,
+     zakładek, formularzy i modułu PRO.
+   - Moduł nie importuje Kivy i ma osobne testy przełączania PL/EN.
+
+13. `tpof/mobile/pdf_export.py` — wykonane
+   - Budowanie pełnego i mobilnego PDF, zapis w prywatnym katalogu oraz
+     udostępnianie przez Android bridge.
+   - Kontroler nie importuje Kivy i ma osobne testy sukcesu, fallbacków i błędów.
 
 ## Kolejność prac
 

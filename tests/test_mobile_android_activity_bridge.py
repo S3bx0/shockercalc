@@ -161,7 +161,7 @@ def test_main_uses_bridge_without_direct_native_activity_calls():
     assert "get_android_activity=self._android.activity" in main_source
     assert "self._android.set_active_ad_tab(name)" in main_source
     assert "self._android.resolved_banner_height(" in main_source
-    assert "self._android.share_file(" in main_source
+    assert "share_file=self._android.share_file" in main_source
     assert "privacy_options_required=self._android.privacy_options_required" in main_source
     assert "def _android_activity" not in main_source
     assert "def _set_active_ad_tab" not in main_source

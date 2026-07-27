@@ -18,8 +18,6 @@ Build APK:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from pathlib import Path
 
 from tpof.core import (
     Product,
@@ -30,7 +28,6 @@ from tpof.core import (
 from tpof.mobile import telemetry
 from tpof.mobile.android_bridge import (
     AndroidActivityBridge,
-    _purge_host_arch_fonttools_so,
     _runtime_font_path,
 )
 from tpof.mobile.catalog import _safe_image_path
@@ -61,7 +58,7 @@ from tpof.mobile.layout import (
 from tpof.mobile.localization import LocalizationController, LocalizationView
 from tpof.mobile.navigation import TabNavigationController
 from tpof.mobile.paths import DATA_PATH, PROJECT_ROOT
-from tpof.mobile.pdf_export import _pdf_output_dir
+from tpof.mobile.pdf_export import PdfExportController
 from tpof.mobile.services.monetization import ProMonetizationController
 from tpof.mobile.services.rewarded_access import RewardedAccessController
 from tpof.mobile.settings_state import SettingsStateController
@@ -384,6 +381,14 @@ def main() -> None:
                 ),
                 menu_text_color=self._theme_controller.menu_text_color,
             )
+            self._pdf_export = PdfExportController(
+                get_results=lambda: self._freezing_tab_controller.last_results,
+                translate=self._t,
+                show_message=self._show_error,
+                share_file=self._android.share_file,
+                log_event=telemetry.log_event,
+                record_exception=telemetry.record_exception,
+            )
             self._freezing_tab_controller = FreezingTabController(
                 catalog=catalog,
                 categories=categories,
@@ -412,7 +417,7 @@ def main() -> None:
                 is_custom_product=custom_products.contains,
                 resolve_product_image=_safe_image_path,
                 on_add_custom_product=self._custom_product_dialog_controller.open,
-                on_export_pdf=self._export_pdf,
+                on_export_pdf=self._pdf_export.export,
                 menu_factory=self._menu,
                 is_compact=lambda: bool(
                     self._responsive_controller.metrics()["compact"]
@@ -661,66 +666,6 @@ def main() -> None:
             self._close_settings_dialog()
             if self._legal_dialog_controller.open():
                 telemetry.log_event("settings_opened", {"section": "legal"})
-
-        def _build_pdf_bytes(self) -> bytes | None:
-            """Buduje PDF bez ujawniania źródłowych właściwości produktu."""
-            results = self._freezing_tab_controller.last_results
-            if results is None:
-                return None
-            runtime_font = _runtime_font_path()
-            if runtime_font is not None:
-                try:
-                    from tpof.core.pdf_report import build_pdf
-
-                    img_path = _safe_image_path(results.produkt.nazwa)
-                    return build_pdf(
-                        results,
-                        font_path=runtime_font,
-                        product_image_path=Path(img_path) if img_path else None,
-                        watermark_image_path=None,
-                    )
-                except ImportError:
-                    pass
-            try:
-                _purge_host_arch_fonttools_so()
-                from tpof.core.pdf_report_mobile import build_pdf_simple
-            except ImportError:
-                return None
-            return build_pdf_simple(results, font_path=runtime_font)
-
-        def _export_pdf(self):
-            results = self._freezing_tab_controller.last_results
-            if results is None:
-                self._show_error(self._t("pdf_first"))
-                return
-            try:
-                pdf_bytes = self._build_pdf_bytes()
-                if pdf_bytes is None:
-                    self._show_error(self._t("pdf_unavailable"))
-                    return
-                out_dir = _pdf_output_dir()
-                out_dir.mkdir(parents=True, exist_ok=True)
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                nazwa = results.produkt.nazwa.replace(" ", "_")
-                out_path = out_dir / f"RefrigerationCalc_{nazwa}_{ts}.pdf"
-                out_path.write_bytes(pdf_bytes)
-                telemetry.log_event("pdf_generated", {"calculator": "freezing"})
-                if self._android.share_file(
-                    str(out_path),
-                    "application/pdf",
-                    self._t("pdf_share_subject"),
-                    self._t("pdf_share_text"),
-                ):
-                    telemetry.log_event(
-                        "report_shared",
-                        {"calculator": "freezing"},
-                    )
-                else:
-                    self._show_error(self._t("saved", path=out_path))
-            except Exception as exc:  # pragma: no cover - UI feedback
-                telemetry.record_exception(exc, "export_pdf")
-                log.exception("Eksport PDF")
-                self._show_error(self._t("pdf_error", error=exc))
 
         def _show_error(self, message: str):
             notice = getattr(self, "center_notice", None)

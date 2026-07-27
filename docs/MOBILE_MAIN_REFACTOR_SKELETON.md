@@ -2,9 +2,10 @@
 
 Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
 i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27 plik
-ma 744 linie. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
-dialogi, powłoka oraz kolejne usługi są już osobnymi modułami. Dokument
-pozostaje żywym planem refaktoru i liczby aktualizujemy po każdym checkpointcie.
+ma 689 linii. Widgety, kontrolery zakładek robocizny, zaworów i chłodnictwa,
+dialogi, powłoka, eksport PDF oraz kolejne usługi są już osobnymi modułami.
+Dokument pozostaje żywym planem refaktoru i liczby aktualizujemy po każdym
+checkpointcie.
 
 Cel refaktoru: podzielić mobilny UI na moduły bez zmiany zachowania, bez zmiany
 wzorów obliczeniowych i bez zmiany kluczy zapisanych danych.
@@ -153,16 +154,18 @@ Kontrakt:
 - fallback obrazka zostaje identyczny,
 - desktop nie jest ruszany.
 
-### `tpof/mobile/files.py` albo `pdf_export.py`
+### `tpof/mobile/pdf_export.py` — wykonane
 
-Przenieść:
+Przeniesione:
 
-- `_runtime_font_path`
-- `_purge_host_arch_fonttools_so`
 - `_pdf_output_dir`
+- `_build_pdf_bytes` jako `PdfExportController.build_pdf_bytes`
+- `_export_pdf` jako `PdfExportController.export`
 
-Uwaga: `_build_pdf_bytes` i `_export_pdf` zostają na razie w `ShockerCalcApp`,
-bo mają dużo zależności od stanu UI. Przenosimy je dopiero w etapie PDF.
+Kontroler pobiera ostatni wynik przez callback, zachowuje pełny generator
+ReportLab i mobilny fallback `fpdf2`, zapisuje plik w prywatnym katalogu oraz
+deleguje udostępnianie do `AndroidActivityBridge`. Nie importuje Kivy i ma
+osobne testy zachowania.
 
 ### `tpof/mobile/validation.py`
 
@@ -640,5 +643,5 @@ właściciela:
 | `_hint_field_items` | `tpof.mobile.hints` |
 | `_menu` | `tpof.mobile.widgets.menus` |
 | `_toolbar_chip_button` | `tpof.mobile.widgets.toolbar` |
-| `_build_pdf_bytes` | `tpof.mobile.pdf_export` po odklejeniu od UI |
-| `_export_pdf` | `tpof.mobile.pdf_export` po odklejeniu od Android bridge |
+| `_build_pdf_bytes` | `tpof.mobile.pdf_export.PdfExportController` — wykonane |
+| `_export_pdf` | `tpof.mobile.pdf_export.PdfExportController` — wykonane |
