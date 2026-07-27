@@ -6,6 +6,7 @@ from tpof.mobile.constants import (
     AD_SLOT_BG_DARK,
     AD_SLOT_BG_LIGHT,
     BOTTOM_NAV_BG_DARK,
+    BRAND_ICE,
     CARD_BG_DARK,
     CARD_BG_LIGHT,
     FOOTER_BG_DARK,
@@ -45,6 +46,13 @@ class _Tab:
 
 class _Button:
     icon = ""
+    text = "label"
+    theme_text_color = None
+    text_color = None
+
+
+class _Chip:
+    active = True
 
 
 def _controller_state(*, dark=True, active_tab="valves"):
@@ -69,8 +77,15 @@ def _controller_state(*, dark=True, active_tab="valves"):
         nav_tabs=tabs,
         ad_slot=_Surface(),
         footer_bar=_Surface(),
+        footer_label=_Button(),
         pro_button=_Button(),
+        toolbar_title=_Button(),
+        toolbar_snowflake=_Button(),
+        hints_chip=_Chip(),
+        hints_button=_Button(),
+        language_button=_Button(),
         theme_button=_Button(),
+        privacy_button=_Button(),
     )
 
     def set_dark(value):
@@ -178,6 +193,12 @@ def test_theme_controller_applies_dark_surfaces_tabs_and_cards():
     assert state["tab_theme_calls"] == ["freezing", "labor", "valves"]
     assert view.ad_slot.md_bg_color == AD_SLOT_BG_DARK
     assert view.footer_bar.md_bg_color == FOOTER_BG_DARK
+    assert view.toolbar_title.text_color == (1, 1, 1, 1)
+    assert view.toolbar_snowflake.text_color == BRAND_ICE
+    assert view.hints_button.text_color == BRAND_ICE
+    assert view.language_button.text_color == (0.93, 0.98, 1.0, 0.94)
+    assert view.privacy_button.text_color == (0.93, 0.98, 1.0, 0.94)
+    assert view.footer_label.text_color == (0.72, 0.78, 0.82, 1)
     assert view.pro_button.md_bg_color == (0.05, 0.48, 0.72, 1)
     assert view.theme_button.icon == "weather-night"
 
@@ -195,8 +216,17 @@ def test_theme_controller_toggle_switches_to_light_and_schedules_refresh():
     assert state["window_colors"] == [SURFACE_LIGHT]
     assert view.root_bg_color.rgba == SURFACE_LIGHT
     assert view.theme_button.icon == "weather-sunny"
-    assert len(state["scheduled"]) == 1
-    callback, delay = state["scheduled"][0]
-    assert delay == 0
-    callback()
-    assert state["window_colors"] == [SURFACE_LIGHT, SURFACE_LIGHT]
+    assert len(state["scheduled"]) == 2
+    immediate_callback, immediate_delay = state["scheduled"][0]
+    refresh_callback, refresh_delay = state["scheduled"][1]
+    assert immediate_delay == 0
+    assert refresh_delay == 0.2
+    immediate_callback()
+    refresh_callback()
+    assert state["window_colors"] == [
+        SURFACE_LIGHT,
+        SURFACE_LIGHT,
+        SURFACE_LIGHT,
+    ]
+    assert view.toolbar_title.text == "label"
+    assert view.pro_button.text == "label"
