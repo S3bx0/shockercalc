@@ -22,9 +22,7 @@ def test_freezing_view_has_a_separate_composition_boundary():
     assert "class FreezingTabView" in view_source
     assert "class FreezingStageView" in view_source
     assert "def build(self: Any) -> FreezingTabView:" in view_source
-    assert "class FreezingTabController(FreezingTabViewCompositionMixin):" in (
-        controller_source
-    )
+    assert "FreezingTabViewCompositionMixin," in controller_source
     assert "def build(self) -> FreezingTabView:" not in controller_source
     assert "from kivy.uix.image import AsyncImage" not in controller_source
     assert "from kivymd.uix.card import MDCard" not in controller_source
@@ -32,6 +30,29 @@ def test_freezing_view_has_a_separate_composition_boundary():
     assert "class FreezingStageView:" not in controller_source
     assert "from tpof.mobile.tabs.freezing import" not in view_source
     assert len(controller_source.splitlines()) <= 820
+
+
+def test_freezing_product_selection_has_a_separate_module_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing.py"
+    ).read_text(encoding="utf-8")
+    products_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing_products.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class FreezingProductSelectionMixin" in products_source
+    assert (
+        "FreezingProductSelectionMixin," in controller_source
+        and "FreezingTabViewCompositionMixin," in controller_source
+    )
+    assert "def open_category_menu(" not in controller_source
+    assert "def open_product_menu(" not in controller_source
+    assert "def refresh_product_search_results(" not in controller_source
+    assert "def select_product(" not in controller_source
+    assert "_search_product_names" not in controller_source
+    assert "def calculate(" in controller_source
+    assert "from tpof.mobile.tabs.freezing import" not in products_source
+    assert len(controller_source.splitlines()) <= 590
 
 
 class _Widget:

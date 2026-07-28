@@ -11,8 +11,9 @@ dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
 widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
 Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`.
 Konstrukcja widoku chłodniczego jest już w `tabs/freezing_view.py` (491 linii),
-a `tabs/freezing.py` zmniejszył się z 1270 do 803 linii bez zmiany ciała
-metody budującej widżety.
+a wybór, wyszukiwanie i historia produktów w
+`tabs/freezing_products.py` (298 linii). `tabs/freezing.py` zmniejszył się
+z 1270 do 549 linii bez zmiany budowania widżetów, walidacji ani obliczeń.
 W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
 orkiestracja usług aplikacji.
 
@@ -101,6 +102,14 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Test kontraktowy pilnuje granicy, braku importu zwrotnego i maksymalnego
      rozmiaru kontrolera.
 
+17. `tpof/mobile/tabs/freezing_products.py` — wykonane
+   - Zawiera wybór kategorii i produktu, dialog wyszukiwania, ostatnie wybory,
+     blokady Free/PRO oraz prezentację zdjęcia produktu.
+   - Dwanaście metod przeniesiono bez zmian semantycznych; kontroler zachowuje
+     walidację, obliczenia i prezentację wyników.
+   - Test kontraktowy pilnuje jednokierunkowej zależności oraz maksymalnego
+     rozmiaru `tabs/freezing.py`.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -109,9 +118,12 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 377 testów.
-7. Następny krok: wydzielić wybór, wyszukiwanie i historię produktów z
-   `tabs/freezing.py`, bez przenoszenia walidacji i obliczeń.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 378 testów.
+7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
+   bez przenoszenia walidacji i obliczeń — wykonane.
+8. Następny krok: wydzielić walidację pól i uruchamianie obliczeń z
+   `tabs/freezing.py`, pozostawiając wzory w `tpof/core` i zachowując
+   dotychczasową prezentację wyników.
 
 ## Zasady bezpieczeństwa
 

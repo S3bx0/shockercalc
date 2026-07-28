@@ -71,6 +71,7 @@ tpof/mobile/
 ├── tabs/
 │   ├── __init__.py
 │   ├── freezing.py          # kontroler zakładki chłodniczej
+│   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
 │   ├── freezing_view.py     # konstrukcja i granica widoku chłodniczego
 │   ├── valves.py            # zakładka zaworów
 │   └── labor.py             # zakładka robocizny
@@ -429,6 +430,13 @@ ciało `build()` zostały przeniesione 1:1 do `freezing_view.py`. Publiczny
 import z `freezing.py` i metoda `controller.build()` pozostają kompatybilne.
 Kontroler zmniejszył się z 1270 do 803 linii; kolejną granicą jest wybór i
 wyszukiwanie produktów.
+
+Trzeci etap wykonano 2026-07-28. Wybór kategorii i produktu, dialog
+wyszukiwania, ostatnie wybory, blokady Free/PRO oraz zdjęcie produktu zostały
+przeniesione do `freezing_products.py`. Dwanaście metod zachowuje identyczne
+drzewo AST jak przed przeniesieniem, a `freezing.py` zmniejszył się z 803 do
+549 linii. Następną granicą jest walidacja pól i uruchamianie obliczeń, bez
+przenoszenia wzorów z `tpof/core`.
 
 Aktualny kontrakt:
 
