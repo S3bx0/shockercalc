@@ -69,12 +69,12 @@ def test_mobilny_naglowek_uzywa_brandowego_gradientu():
 
 def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
     source = _source("tpof/mobile/app.py")
-    freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
+    freezing_view_source = _source("tpof/mobile/tabs/freezing_view.py")
     stage_source = _source("tpof/mobile/widgets/stage_icons.py")
     frost_source = _source("tpof/mobile/widgets/frost.py")
 
     assert "class StageMotionIcon" in stage_source
-    assert "StageMotionIcon(" in freezing_tab_source
+    assert "StageMotionIcon(" in freezing_view_source
     assert "self._position_bands()" in frost_source
     assert "assets/images" in source
 
@@ -307,16 +307,16 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
     interactions_source = _source("tpof/mobile/form_interactions.py")
-    freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
+    freezing_view_source = _source("tpof/mobile/tabs/freezing_view.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
-    assert "def _configure_text_field" in freezing_tab_source
-    assert "field.font_size = sp(18)" in freezing_tab_source
-    assert "field.padding = [0, dp(12), 0, dp(8)]" in freezing_tab_source
-    assert "self._configure_text_field(mass_input" in freezing_tab_source
-    assert "self._configure_text_field(field" in freezing_tab_source
+    assert "def _configure_text_field" in freezing_view_source
+    assert "field.font_size = sp(18)" in freezing_view_source
+    assert "field.padding = [0, dp(12), 0, dp(8)]" in freezing_view_source
+    assert "self._configure_text_field(mass_input" in freezing_view_source
+    assert "self._configure_text_field(field" in freezing_view_source
     assert "def bind_keyboard_scroll" in interactions_source
     assert "def _scroll_input_into_view" in interactions_source
     assert "padding=self._dp(150)" in interactions_source
@@ -327,7 +327,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     )
     assert (
         "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
-        in freezing_tab_source
+        in freezing_view_source
     )
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
     assert "self.view.volume_input" in valves_tab_source

@@ -45,6 +45,7 @@ tpof/                  # pakiet źródłowy
     ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
+    │   └── freezing_view.py # konstrukcja widoku zakładki chłodniczej
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
     ├── layout.py      # responsywny układ telefonu i tabletu
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne

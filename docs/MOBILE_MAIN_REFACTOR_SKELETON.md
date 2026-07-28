@@ -70,7 +70,8 @@ tpof/mobile/
 │   └── labor_rates.py       # edycja stawek robocizny PRO
 ├── tabs/
 │   ├── __init__.py
-│   ├── freezing.py          # zakładka chłodnicza
+│   ├── freezing.py          # kontroler zakładki chłodniczej
+│   ├── freezing_view.py     # konstrukcja i granica widoku chłodniczego
 │   ├── valves.py            # zakładka zaworów
 │   └── labor.py             # zakładka robocizny
 └── services/
@@ -417,11 +418,17 @@ Zakładki wydzielać dopiero po widgetach i dialogach.
 
 ### `tpof/mobile/tabs/freezing.py`
 
-Etap wykonany 2026-07-26. Kontroler przejął kompletny widok zakładki, wybór
-kategorii i produktu, wyszukiwarkę katalogu, jednostkę masy, walidację,
+Pierwszy etap wykonano 2026-07-26. Kontroler przejął kompletny widok zakładki,
+wybór kategorii i produktu, wyszukiwarkę katalogu, jednostkę masy, walidację,
 obliczenia, prezentację wyników, teksty, motyw i responsywny layout.
 `ShockerCalcApp` przekazuje tylko politykę dostępu freemium oraz callbacki
 otwarcia formularza własnego produktu i eksportu PDF.
+
+Drugi etap wykonano 2026-07-28. `FreezingTabView`, `FreezingStageView` oraz
+ciało `build()` zostały przeniesione 1:1 do `freezing_view.py`. Publiczny
+import z `freezing.py` i metoda `controller.build()` pozostają kompatybilne.
+Kontroler zmniejszył się z 1270 do 803 linii; kolejną granicą jest wybór i
+wyszukiwanie produktów.
 
 Aktualny kontrakt:
 
@@ -463,8 +470,9 @@ Przeniesione odpowiedzialności:
 
 Właścicielstwo widgetów:
 
-- `FreezingTabController` buduje i przechowuje własne pola, etykiety, paski
-  wyników i przyciski.
+- `freezing_view.py` buduje typowaną granicę pól, etykiet, pasków wyników
+  i przycisków.
+- `FreezingTabController` przechowuje granicę widoku i obsługuje zachowanie.
 - `ShockerCalcApp` wywołuje metody kontrolera, ale nie powinien trzymać nowych
   bezpośrednich referencji do widgetów zakładki.
 

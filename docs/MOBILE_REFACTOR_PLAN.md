@@ -10,6 +10,9 @@ podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
 dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
 widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
 Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`.
+Konstrukcja widoku chłodniczego jest już w `tabs/freezing_view.py` (491 linii),
+a `tabs/freezing.py` zmniejszył się z 1270 do 803 linii bez zmiany ciała
+metody budującej widżety.
 W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
 orkiestracja usług aplikacji.
 
@@ -40,8 +43,10 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 5. `tpof/mobile/dialogs/`
    - Ustawienia, produkt użytkownika, edycja stawek robocizny, PRO/subskrypcje.
 
-6. `tpof/mobile/tabs/freezing.py`
-   - Budowa i obsługa zakładki chłodniczej.
+6. `tpof/mobile/tabs/freezing.py` — podział w toku
+   - Kontroler zachowuje wybór produktów, walidację, obliczenia oraz
+     prezentację wyników.
+   - Konstrukcja widżetów i typowana granica widoku są już osobnym modułem.
 
 7. `tpof/mobile/tabs/valves.py` — wykonane
    - Budowa widoku, stan trybu danych i typu zaworu, walidacja, obliczenia,
@@ -88,6 +93,14 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Osobny test kontraktowy pilnuje granicy
      `app.py` → `app_controllers.py` oraz maksymalnego rozmiaru `app.py`.
 
+16. `tpof/mobile/tabs/freezing_view.py` — wykonane
+   - Zawiera `FreezingTabView`, `FreezingStageView` i mechaniczne składanie
+     drzewa widżetów Kivy.
+   - `FreezingTabController` zachowuje kompatybilny import typów oraz metodę
+     `build()` przez mały mixin kompozycji.
+   - Test kontraktowy pilnuje granicy, braku importu zwrotnego i maksymalnego
+     rozmiaru kontrolera.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -96,7 +109,9 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 376 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 377 testów.
+7. Następny krok: wydzielić wybór, wyszukiwanie i historię produktów z
+   `tabs/freezing.py`, bez przenoszenia walidacji i obliczeń.
 
 ## Zasady bezpieczeństwa
 

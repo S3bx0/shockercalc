@@ -1,9 +1,37 @@
+from pathlib import Path
+
 from tpof.core import Product
 from tpof.mobile.tabs.freezing import (
     FreezingStageView,
     FreezingTabController,
     FreezingTabView,
 )
+
+ROOT = Path(__file__).parents[1]
+
+
+def test_freezing_view_has_a_separate_composition_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing.py"
+    ).read_text(encoding="utf-8")
+    view_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing_view.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class FreezingTabViewCompositionMixin" in view_source
+    assert "class FreezingTabView" in view_source
+    assert "class FreezingStageView" in view_source
+    assert "def build(self: Any) -> FreezingTabView:" in view_source
+    assert "class FreezingTabController(FreezingTabViewCompositionMixin):" in (
+        controller_source
+    )
+    assert "def build(self) -> FreezingTabView:" not in controller_source
+    assert "from kivy.uix.image import AsyncImage" not in controller_source
+    assert "from kivymd.uix.card import MDCard" not in controller_source
+    assert "class FreezingTabView:" not in controller_source
+    assert "class FreezingStageView:" not in controller_source
+    assert "from tpof.mobile.tabs.freezing import" not in view_source
+    assert len(controller_source.splitlines()) <= 820
 
 
 class _Widget:
