@@ -1,8 +1,9 @@
 # Platform features backlog
 
-Stan na 2026-07-21. Ten dokument porządkuje pomysły z `Platformowe JAVA.docx`
+Stan na 2026-07-28. Ten dokument porządkuje pomysły z `Platformowe JAVA.docx`
 względem aktualnej architektury Refrigeration Calc. Nadrzędną zasadą pozostaje
-zmniejszanie mobilnego composition root (`tpof/mobile/app.py`) i
+zmniejszanie mobilnych modułów kompozycji (`tpof/mobile/app.py` oraz
+`tpof/mobile/app_controllers.py`) i
 `RefrigerationCalcActivity.java`; nowa funkcja platformowa nie może dokładać
 kolejnego podsystemu bezpośrednio do Activity.
 

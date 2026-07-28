@@ -1,14 +1,17 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-27: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
-launcherem. `ShockerCalcApp` oraz składanie zależności znajdują się w
-`tpof/mobile/app.py` (688 linii). Wszystkie trzy zakładki, powłoka aplikacji,
+Stan na 2026-07-28: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
+launcherem. `ShockerCalcApp` i cykl życia Kivy znajdują się w
+`tpof/mobile/app.py` (374 linie, z czego `build()` zajmuje 174), a składanie
+stanu i kontrolerów w niezależnym od frameworka
+`tpof/mobile/app_controllers.py` (355 linii). Wszystkie trzy zakładki, powłoka aplikacji,
 motyw, responsywny układ, dialogi oraz wspólna obsługa
 podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
 dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
 widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
 Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`.
-W `app.py` pozostaje głównie składanie zależności i orkiestracja usług aplikacji.
+W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
+orkiestracja usług aplikacji.
 
 Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej migracji są opisane w `docs/MOBILE_MAIN_REFACTOR_SKELETON.md`.
 
@@ -78,6 +81,13 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - `tpof/mobile/main.py` zachowuje leniwy import KivyMD i tylko uruchamia klasę.
    - Osobny test kontraktowy pilnuje granicy `main.py` → `app.py`.
 
+15. `tpof/mobile/app_controllers.py` — wykonane
+   - Składanie stanu oraz 17 kontrolerów zostało usunięte z `build()`.
+   - Moduł nie importuje Kivy, KivyMD ani PyJNIus; zależności runtime otrzymuje
+     jawnie w `compose_controllers()`.
+   - Osobny test kontraktowy pilnuje granicy
+     `app.py` → `app_controllers.py` oraz maksymalnego rozmiaru `app.py`.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -85,7 +95,8 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 3. Wydzielić widżety wizualne, zostawiając `ShockerCalcApp` jako orkiestrator — wykonane.
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
-6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu — w toku.
+6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 376 testów.
 
 ## Zasady bezpieczeństwa
 

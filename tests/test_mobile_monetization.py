@@ -146,10 +146,13 @@ def test_controller_reports_google_play_requirement_off_android():
 
 def test_app_delegates_pro_orchestration_to_controller():
     app_source = (ROOT / "tpof" / "mobile" / "app.py").read_text(encoding="utf-8")
+    composition_source = (
+        ROOT / "tpof" / "mobile" / "app_controllers.py"
+    ).read_text(encoding="utf-8")
     shell_source = (ROOT / "tpof" / "mobile" / "shell.py").read_text(encoding="utf-8")
     i18n_source = (ROOT / "tpof" / "mobile" / "i18n.py").read_text(encoding="utf-8")
 
-    assert "ProMonetizationController" in app_source
+    assert "ProMonetizationController" in composition_source
     assert "self._monetization.start()" in app_source
     assert "on_buy_pro=self._monetization.buy" in app_source
     assert "callbacks.on_buy_pro()" in shell_source

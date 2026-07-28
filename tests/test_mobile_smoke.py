@@ -3,7 +3,7 @@
 Sprawdzamy tylko, że:
   • moduł `tpof.mobile.main` importuje się bez błędu (czysty Python),
   • ścieżki do zasobów są poprawnie skonfigurowane,
-  • okablowanie mobilnego UI pozostaje obecne w composition root `app.py`.
+  • okablowanie mobilnego UI pozostaje obecne w modułach kompozycji aplikacji.
 """
 from __future__ import annotations
 
@@ -42,13 +42,14 @@ def test_mobilny_font_ma_fallback_do_kivy():
 
 def test_przelacznik_podpowiedzi_uzywa_obslugiwanego_trybu_kivymd():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     interactions_source = _source("tpof/mobile/form_interactions.py")
 
     assert 'helper_text_mode = "none"' not in source
     assert 'helper_text_mode = "none"' not in interactions_source
     assert 'field.helper_text_mode = "on_focus"' in interactions_source
     assert "class FormInteractionController" in interactions_source
-    assert "self._form_interactions = FormInteractionController(" in source
+    assert "self._form_interactions = FormInteractionController(" in composition_source
     assert "def _apply_hints" not in source
 
 
@@ -80,6 +81,7 @@ def test_mobilne_wyniki_uzywaja_animowanych_ikon_i_tla_marki():
 
 def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     layout_source = _source("tpof/mobile/layout.py")
 
     assert "self._root_bg_color = Color(*SURFACE_DARK)" in source
@@ -88,7 +90,7 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     assert "self.bottom_nav.size_hint_y = 1" not in source
     assert '"bottom_nav_h"' in layout_source
     assert "class ResponsiveLayoutController" in layout_source
-    assert "self._responsive_controller = ResponsiveLayoutController(" in source
+    assert "self._responsive_controller = ResponsiveLayoutController(" in composition_source
     assert 'view.bottom_nav.height = metrics["bottom_nav_h"]' in layout_source
     assert "ResponsiveLayoutView.from_shell(self)" in source
     assert "def _apply_responsive_layout" not in source
@@ -115,6 +117,7 @@ def test_mobilne_zakladki_maja_wlasne_animowane_ikony():
 
 def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     shell_source = _source("tpof/mobile/shell.py")
     constants_source = _source("tpof/mobile/constants.py")
     theme_source = _source("tpof/mobile/theme.py")
@@ -122,8 +125,8 @@ def test_jasny_motyw_ma_lodowy_dolny_pasek_zakladek():
 
     assert "BOTTOM_NAV_BG_LIGHT" in constants_source
     assert "class ThemeSyncController" in theme_source
-    assert "self._theme_controller = ThemeSyncController(" in source
-    assert "bottom_nav_bg=self._theme_controller.bottom_nav_bg" in source
+    assert "self._theme_controller = ThemeSyncController(" in composition_source
+    assert "bottom_nav_bg=self._theme_controller.bottom_nav_bg" in composition_source
     assert "md_bg_color=callbacks.bottom_nav_bg()" in shell_source
     assert "view.bottom_nav.md_bg_color = bottom_nav_bg(dark)" in theme_source
     assert "def set_theme_light" in nav_source
@@ -184,6 +187,7 @@ def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
 
 def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     shell_source = _source("tpof/mobile/shell.py")
     localization_source = _source("tpof/mobile/localization.py")
     settings_source = _source("tpof/mobile/dialogs/settings.py")
@@ -196,17 +200,17 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
     assert "on_open_settings=self._open_settings_dialog" in source
     assert "on_release=lambda *_args: callbacks.on_open_settings()" in shell_source
     assert "units_imperial_disabled" in state_source
-    assert "SettingsStateController" in source
+    assert "SettingsStateController" in composition_source
     assert "def refresh_exchange_rates_async" in state_source
     assert "SUPPORTED_DISPLAY_CURRENCIES" in state_source
     assert "self._preferences.set_display_currency(value)" in state_source
-    assert "SettingsDialogController" in source
+    assert "SettingsDialogController" in composition_source
     assert "self._settings_dialog_controller.open()" in source
     assert "class SettingsStateController" in state_source
     assert "class SettingsDialogController" in settings_source
     assert "class LocalizationController" in localization_source
-    assert "self._localization = LocalizationController(" in source
-    assert "self._t = self._localization.translate" in source
+    assert "self._localization = LocalizationController(" in composition_source
+    assert "self._t = self._localization.translate" in composition_source
     assert "on_toggle_language=self._localization.toggle" in source
     assert "def _toggle_language" not in source
     assert "def _refresh_texts" not in source
@@ -220,31 +224,35 @@ def test_mobilne_ustawienia_i_lokalizacja_sa_przygotowane():
 
 
 def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
-    source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
 
-    assert "open_rates_dialog=lambda: self._labor_rates_dialog_controller.open()" in source
+    assert (
+        "open_rates_dialog=lambda: self._labor_rates_dialog_controller.open()"
+        in composition_source
+    )
     assert "def open_rates" in labor_tab_source
     assert "labor_rates_pro_required" in labor_tab_source
-    assert "LaborRatesDialogController" in source
-    assert "self._preferences.set_labor_rate_values" in source
-    assert "self._preferences.reset_labor_rate_values" in source
+    assert "LaborRatesDialogController" in composition_source
+    assert "self._preferences.set_labor_rate_values" in composition_source
+    assert "self._preferences.reset_labor_rate_values" in composition_source
     assert "def _rate_config" in labor_tab_source
     assert "rate_config_from_values(self._get_rate_values())" in labor_tab_source
     assert "class LaborRatesDialogController" in dialog_source
     assert "labor_rates_factory" in dialog_source
     assert "def save(" in dialog_source
     assert "def reset(" in dialog_source
-    assert "self._labor_rate_fields" not in source
+    assert "self._labor_rate_fields" not in composition_source
 
 
 def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     dialog_source = _source("tpof/mobile/dialogs/custom_product.py")
 
-    assert "CustomProductDialogController" in source
-    assert "self._custom_product_dialog_controller.open" in source
+    assert "CustomProductDialogController" in composition_source
+    assert "self._custom_product_dialog_controller.open" in composition_source
     assert "class CustomProductDialogController" in dialog_source
     assert "CUSTOM_PRODUCT_FIELD_KEYS" in dialog_source
     assert "create_custom_product(values)" in dialog_source
@@ -255,13 +263,16 @@ def test_mobilny_formularz_wlasnego_produktu_ma_osobny_kontroler():
 
 def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     shell_source = _source("tpof/mobile/shell.py")
     dialog_source = _source("tpof/mobile/dialogs/privacy.py")
 
-    assert "PrivacyDialogController" in source
+    assert "PrivacyDialogController" in composition_source
     assert "on_open_privacy=self._privacy_dialog_controller.open" in source
     assert "on_release=callbacks.on_open_privacy" in shell_source
-    assert "self._privacy_dialog_controller.options_available()" in source
+    assert (
+        "self._privacy_dialog_controller.options_available()" in composition_source
+    )
     assert "class PrivacyDialogController" in dialog_source
     assert "def prompt_telemetry_consent" in dialog_source
     assert "def open_ad_privacy_options" in dialog_source
@@ -272,12 +283,13 @@ def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
 
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
 
-    assert "LaborTabController" in source
+    assert "LaborTabController" in composition_source
     assert "labor_scroll = self._labor_tab_controller.build().scroll" in source
-    assert "self._labor_tab_controller.refresh_texts()" in source
-    assert "self._labor_tab_controller.apply_theme()" in source
+    assert "self._labor_tab_controller.refresh_texts()" in composition_source
+    assert "self._labor_tab_controller.apply_theme()" in composition_source
     assert "class LaborTabPresenter" in presenter_source
     assert "class LaborTabController" in presenter_source
     assert "class LaborTabView" in presenter_source
@@ -293,6 +305,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
 
 def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     interactions_source = _source("tpof/mobile/form_interactions.py")
     freezing_tab_source = _source("tpof/mobile/tabs/freezing.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
@@ -308,7 +321,10 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     assert "def _scroll_input_into_view" in interactions_source
     assert "padding=self._dp(150)" in interactions_source
     assert "def _bind_keyboard_scroll" not in source
-    assert "bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll" in source
+    assert (
+        "bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll"
+        in composition_source
+    )
     assert (
         "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
         in freezing_tab_source
@@ -323,12 +339,13 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
 
 def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
     source = _source("tpof/mobile/app.py")
+    composition_source = _source("tpof/mobile/app_controllers.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
-    assert "ValvesTabController" in source
+    assert "ValvesTabController" in composition_source
     assert "valve_scroll = self._valves_tab_controller.build().scroll" in source
-    assert "self._valves_tab_controller.refresh_texts()" in source
-    assert "self._valves_tab_controller.apply_theme()" in source
+    assert "self._valves_tab_controller.refresh_texts()" in composition_source
+    assert "self._valves_tab_controller.apply_theme()" in composition_source
     assert "class ValvesTabController" in valves_tab_source
     assert "class ValvesTabView" in valves_tab_source
     assert "def calculate(self) -> bool" in valves_tab_source

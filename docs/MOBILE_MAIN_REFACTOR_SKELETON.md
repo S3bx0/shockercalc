@@ -1,9 +1,11 @@
 # Mobile `main.py` Refactor Skeleton
 
 Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
-i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-27
-`main.py` ma 13 linii i jest cienkim launcherem, natomiast `app.py` ma 688
-linii i jest composition root. Widgety, kontrolery zakładek robocizny, zaworów
+i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-28
+`main.py` ma 13 linii i jest cienkim launcherem, `app.py` ma 374 linie,
+a niezależny od Kivy `app_controllers.py` ma 355 linii. Konstrukcja 17
+kontrolerów została przeniesiona z `build()` do jawnej kompozycji zależności.
+Widgety, kontrolery zakładek robocizny, zaworów
 i chłodnictwa, dialogi, powłoka, eksport PDF oraz kolejne usługi są już osobnymi
 modułami. Dokument pozostaje żywym planem refaktoru i liczby aktualizujemy po
 każdym checkpointcie.
@@ -41,7 +43,8 @@ Jeżeli metoda jest przenoszona, jej ciało powinno zostać przeniesione możliw
 ```text
 tpof/mobile/
 ├── main.py                  # cienki launcher
-├── app.py                   # ShockerCalcApp: cykl życia + składanie kontrolerów
+├── app.py                   # ShockerCalcApp: cykl życia Kivy + składanie widoku
+├── app_controllers.py       # stan i kompozycja kontrolerów bez importów Kivy
 ├── android_bridge.py        # ActivityBridge: Java/Kivy/Android, reklamy, billing, privacy
 ├── catalog.py               # mobilne helpery katalogu produktów i obrazków
 ├── constants.py             # liść: BRAND_*, ADMOB_*, PRO_*, STAGE_COLORS
@@ -523,14 +526,18 @@ Przenieść metody:
 
 ## Etap 8: `ShockerCalcApp` jako composition root
 
-Po wydzieleniu zakładek `ShockerCalcApp` powinien trzymać tylko:
+Etap wykonany. Po wydzieleniu zakładek i `app_controllers.py`
+`ShockerCalcApp` trzyma tylko:
 
 - cykl życia Kivy (`build`),
-- globalny stan aplikacji (`lang`, `dark`, `unit_system`, entitlements),
-- instancje kontrolerów,
+- wywołanie kompozycji globalnego stanu i instancji kontrolerów,
 - przełączanie zakładek,
 - odświeżanie globalnych powierzchni,
 - integracje wysokiego poziomu z Android bridge.
+
+`AppControllerCompositionMixin.compose_controllers()` otrzymuje zależności
+runtime (`Clock`, `Window`, `dp`, fabrykę wykresu) jawnie, dzięki czemu sam
+moduł nie importuje Kivy, KivyMD ani PyJNIus.
 
 Metody, które mogą zostać w `app.py`:
 

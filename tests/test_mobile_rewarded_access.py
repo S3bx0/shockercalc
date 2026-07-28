@@ -252,17 +252,23 @@ def test_pro_access_bypasses_product_and_module_tokens(tmp_path):
 
 def test_app_delegates_rewarded_access_orchestration_to_controller():
     app_source = (ROOT / "tpof" / "mobile" / "app.py").read_text(encoding="utf-8")
+    composition_source = (
+        ROOT / "tpof" / "mobile" / "app_controllers.py"
+    ).read_text(encoding="utf-8")
     controller_source = (
         ROOT / "tpof" / "mobile" / "services" / "rewarded_access.py"
     ).read_text(encoding="utf-8")
 
-    assert "RewardedAccessController" in app_source
-    assert "self._rewarded_access = RewardedAccessController(" in app_source
-    assert "can_calculate=self._rewarded_access.valve_module_available" in app_source
-    assert "on_watch=self._rewarded_access.offer_reward_ad" in app_source
+    assert "RewardedAccessController" in composition_source
+    assert "self._rewarded_access = RewardedAccessController(" in composition_source
+    assert (
+        "can_calculate=self._rewarded_access.valve_module_available"
+        in composition_source
+    )
+    assert "on_watch=self._rewarded_access.offer_reward_ad" in composition_source
     assert (
         "ensure_product_access=self._rewarded_access.ensure_product_access"
-        in app_source
+        in composition_source
     )
     assert "class RewardedAccessController" in controller_source
     assert "def _credit_pending_reward_tokens" not in app_source
