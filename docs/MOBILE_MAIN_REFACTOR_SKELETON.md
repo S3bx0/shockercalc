@@ -445,6 +445,12 @@ równolegle wysokości IME do paddingu głównego widoku — uwzględnia tylko p
 systemowe i wycięcie ekranu. Zapobiega to podwójnemu przesuwaniu lub kurczeniu
 powierzchni aplikacji bez zmiany filtrowania katalogu.
 
+Czwarty etap wydzielił parsowanie pól, walidację temperatur oraz orkiestrację
+`calculate()` do `freezing_workflow.py`. Wzory nadal należą do `tpof/core`,
+a renderowanie `FreezingResults` pozostało w kontrolerze. `freezing.py`
+zmniejszył się z 549 do 341 linii, natomiast nowy, testowalny workflow ma
+248 linii. Następną granicą jest prezentacja oraz zerowanie wyników.
+
 Aktualny kontrakt:
 
 ```python

@@ -105,8 +105,8 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 17. `tpof/mobile/tabs/freezing_products.py` — wykonane
    - Zawiera wybór kategorii i produktu, dialog wyszukiwania, ostatnie wybory,
      blokady Free/PRO oraz prezentację zdjęcia produktu.
-   - Dwanaście metod przeniesiono bez zmian semantycznych; kontroler zachowuje
-     walidację, obliczenia i prezentację wyników.
+   - Dwanaście metod przeniesiono bez zmian semantycznych; dalszy etap
+     wydzielił także walidację i uruchamianie obliczeń.
    - Test kontraktowy pilnuje jednokierunkowej zależności oraz maksymalnego
      rozmiaru `tabs/freezing.py`.
 
@@ -119,6 +119,13 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Przy zamknięciu pole traci fokus, a poprzedni tryb okna jest przywracany.
    - Testy regresyjne pilnują przejść stanu oraz braku podwójnego insetu IME.
 
+19. `tpof/mobile/tabs/freezing_workflow.py` — wykonane
+   - Zawiera parsowanie pól, walidację temperatur, przygotowanie
+     `FreezingInputs` oraz orkiestrację `calculate()`.
+   - Wzory pozostają w `tpof/core`, a kontroler zachowuje renderowanie
+     `FreezingResults`; zależności biegną tylko od workflow do core i widoku.
+   - `tabs/freezing.py` zmniejszył się z 549 do 341 linii.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -127,12 +134,14 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 380 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 381 testów.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
-8. Następny krok: wydzielić walidację pól i uruchamianie obliczeń z
+8. Wydzielić walidację pól i uruchamianie obliczeń z
    `tabs/freezing.py`, pozostawiając wzory w `tpof/core` i zachowując
-   dotychczasową prezentację wyników.
+   dotychczasową prezentację wyników — wykonane.
+9. Następny krok: wydzielić prezentację i zerowanie wyników, pozostawiając
+   `FreezingTabController` jako koordynator stanu, lokalizacji i motywu.
 
 ## Zasady bezpieczeństwa
 

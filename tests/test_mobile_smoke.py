@@ -176,7 +176,7 @@ def test_nieaktywna_zakladka_nie_blokuje_dotyku():
 
 
 def test_mobilna_walidacja_temperatur_chroni_przed_skrajnymi_wartosciami():
-    source = _source("tpof/mobile/tabs/freezing.py")
+    source = _source("tpof/mobile/tabs/freezing_workflow.py")
     constants_source = _source("tpof/mobile/constants.py")
 
     assert "ABSOLUTE_ZERO_C = -273.15" in constants_source
