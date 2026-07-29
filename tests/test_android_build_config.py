@@ -40,7 +40,6 @@ def test_activity_uses_modern_edge_to_edge_api():
     assert "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" not in source
     assert "WindowInsets.Type.systemBars()" in source
     assert "WindowInsets.Type.displayCutout()" in source
-    assert "WindowInsets.Type.ime()" in source
     assert "APPEARANCE_LIGHT_STATUS_BARS" in source
     assert "APPEARANCE_LIGHT_NAVIGATION_BARS" in source
     assert "import androidx.core.view.WindowCompat;" not in source
@@ -48,6 +47,14 @@ def test_activity_uses_modern_edge_to_edge_api():
     assert "setStatusBarColor" not in source
     assert "setNavigationBarColor" not in source
     assert "WindowCompat.setDecorFitsSystemWindows" not in source
+
+
+def test_activity_leaves_ime_positioning_to_kivy():
+    source = ACTIVITY.read_text(encoding="utf-8")
+
+    assert "WindowInsets.Type.ime()" not in source
+    assert "initialBottom + bars.bottom" in source
+    assert "Math.max(bars.bottom, ime.bottom)" not in source
 
 
 def test_firebase_collection_is_opt_in_and_python_errors_are_reported():

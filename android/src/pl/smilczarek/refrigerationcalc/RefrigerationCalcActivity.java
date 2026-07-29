@@ -233,13 +233,11 @@ public class RefrigerationCalcActivity extends PythonActivity {
                             WindowInsets.Type.systemBars()
                                     | WindowInsets.Type.displayCutout()
                     );
-                    Insets ime = windowInsets.getInsets(WindowInsets.Type.ime());
-                    int bottomInset = Math.max(bars.bottom, ime.bottom);
                     view.setPadding(
                             initialLeft + bars.left,
                             initialTop + bars.top,
                             initialRight + bars.right,
-                            initialBottom + bottomInset
+                            initialBottom + bars.bottom
                     );
                     return windowInsets;
                 }

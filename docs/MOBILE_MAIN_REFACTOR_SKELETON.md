@@ -440,8 +440,10 @@ przenoszenia wzorów z `tpof/core`.
 
 Następnego dnia dialog wyszukiwania otrzymał izolowaną obsługę klawiatury:
 na czas modalnego pola wyłączany jest tryb Kivy `below_target`, a po utracie
-fokusu przywracana jest wcześniejsza wartość. Zapobiega to przesuwaniu całej
-powierzchni aplikacji przez IME bez zmiany filtrowania katalogu.
+fokusu przywracana jest wcześniejsza wartość. Warstwa Androida nie dodaje
+równolegle wysokości IME do paddingu głównego widoku — uwzględnia tylko paski
+systemowe i wycięcie ekranu. Zapobiega to podwójnemu przesuwaniu lub kurczeniu
+powierzchni aplikacji bez zmiany filtrowania katalogu.
 
 Aktualny kontrakt:
 

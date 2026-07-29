@@ -113,8 +113,11 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 18. Dialog wyszukiwania produktów i klawiatura Androida — wykonane
    - Na czas dialogu wyłączane jest globalne przesuwanie `below_target`, które
      przenosiło całą powierzchnię Kivy do aktywnego pola wyszukiwania.
+   - Android `Activity` uwzględnia w głównym layoucie tylko paski systemowe
+     i wycięcie ekranu. Nie dodaje drugi raz wysokości IME do dolnego paddingu;
+     pozycjonowanie względem klawiatury pozostaje po stronie Kivy.
    - Przy zamknięciu pole traci fokus, a poprzedni tryb okna jest przywracany.
-   - Test regresyjny pilnuje obu przejść stanu.
+   - Testy regresyjne pilnują przejść stanu oraz braku podwójnego insetu IME.
 
 ## Kolejność prac
 
@@ -124,7 +127,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 379 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 380 testów.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Następny krok: wydzielić walidację pól i uruchamianie obliczeń z
