@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Mapping
-from typing import Any
+from typing import Any, Protocol, cast
 
 from tpof.core import (
     FreezingInputs,
@@ -24,6 +24,15 @@ from tpof.mobile.constants import (
 from tpof.mobile.tabs.freezing_view import FreezingTabView
 
 log = logging.getLogger(__name__)
+
+
+class _FreezingResultsPresenter(Protocol):
+    def render_results(
+        self,
+        results: FreezingResults,
+        *,
+        scroll: bool = True,
+    ) -> None: ...
 
 
 class FreezingCalculationWorkflowMixin:
@@ -215,7 +224,7 @@ class FreezingCalculationWorkflowMixin:
             )
             results = calculate_freezing(inputs, product)
             self.last_results = results
-            self.render_results(results)
+            cast(_FreezingResultsPresenter, self).render_results(results)
             self._log_event(
                 "calculation_finished",
                 {
@@ -236,13 +245,3 @@ class FreezingCalculationWorkflowMixin:
             log.exception("Freezing calculation failed")
             self._show_message(self._translate("calc_error", error=exc))
             return False
-
-    def render_results(
-        self,
-        results: FreezingResults,
-        *,
-        scroll: bool = True,
-    ) -> None:
-        """Render a successful calculation in the owning controller."""
-
-        raise NotImplementedError

@@ -73,9 +73,33 @@ def test_freezing_calculation_workflow_has_a_separate_module_boundary():
     assert "FreezingInputs" not in controller_source
     assert "calculate_freezing" not in controller_source
     assert "find_product" not in controller_source
-    assert "def render_results(" in controller_source
+    assert "class _FreezingResultsPresenter(Protocol)" in workflow_source
+    assert "STAGE_COLORS" not in workflow_source
+    assert "stage.bar.value" not in workflow_source
     assert "from tpof.mobile.tabs.freezing import" not in workflow_source
     assert len(controller_source.splitlines()) <= 390
+
+
+def test_freezing_results_have_a_separate_presentation_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing.py"
+    ).read_text(encoding="utf-8")
+    results_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing_results.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class FreezingResultsPresentationMixin" in results_source
+    assert "FreezingResultsPresentationMixin," in controller_source
+    assert "def total_text(" not in controller_source
+    assert "def render_results(" not in controller_source
+    assert "def reset_inputs(" not in controller_source
+    assert "def total_text(" in results_source
+    assert "def render_results(" in results_source
+    assert "def reset_inputs(" in results_source
+    assert "def calculate(" not in results_source
+    assert "FreezingInputs" not in results_source
+    assert "from tpof.mobile.tabs.freezing import" not in results_source
+    assert len(controller_source.splitlines()) <= 300
 
 
 class _Widget:

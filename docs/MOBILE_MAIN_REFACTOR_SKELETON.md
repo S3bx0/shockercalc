@@ -449,7 +449,13 @@ Czwarty etap wydzielił parsowanie pól, walidację temperatur oraz orkiestracj�
 `calculate()` do `freezing_workflow.py`. Wzory nadal należą do `tpof/core`,
 a renderowanie `FreezingResults` pozostało w kontrolerze. `freezing.py`
 zmniejszył się z 549 do 341 linii, natomiast nowy, testowalny workflow ma
-248 linii. Następną granicą jest prezentacja oraz zerowanie wyników.
+247 linii wraz z typowanym kontraktem prezentera wyników.
+
+Piąty etap przeniósł formatowanie sumy mocy, prezentację trzech etapów
+obliczenia i zerowanie formularza do `freezing_results.py`. Moduł otrzymuje
+gotowe `FreezingResults` i nie importuje kalkulatora. `freezing.py` zmniejszył
+się z 341 do 289 linii, a moduł wyników ma 72 linie. Następną granicą jest
+responsywny układ oraz synchronizacja motywu.
 
 Aktualny kontrakt:
 

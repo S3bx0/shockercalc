@@ -126,6 +126,13 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
      `FreezingResults`; zależności biegną tylko od workflow do core i widoku.
    - `tabs/freezing.py` zmniejszył się z 549 do 341 linii.
 
+20. `tpof/mobile/tabs/freezing_results.py` — wykonane
+   - Zawiera formatowanie sumy mocy, prezentację trzech etapów obliczenia
+     oraz pełne zerowanie pól i widoku wyników.
+   - Nie importuje kalkulatora ani `FreezingInputs`; otrzymuje wyłącznie
+     gotowe `FreezingResults`.
+   - `tabs/freezing.py` zmniejszył się z 341 do 289 linii.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -134,14 +141,17 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 381 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 382 testy.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Wydzielić walidację pól i uruchamianie obliczeń z
    `tabs/freezing.py`, pozostawiając wzory w `tpof/core` i zachowując
    dotychczasową prezentację wyników — wykonane.
-9. Następny krok: wydzielić prezentację i zerowanie wyników, pozostawiając
-   `FreezingTabController` jako koordynator stanu, lokalizacji i motywu.
+9. Wydzielić prezentację i zerowanie wyników, pozostawiając
+   `FreezingTabController` jako koordynator stanu, lokalizacji i motywu
+   — wykonane.
+10. Następny krok: wydzielić responsywny układ i synchronizację motywu do
+    osobnego modułu, pozostawiając kontrolerowi inicjalizację i lokalizację.
 
 ## Zasady bezpieczeństwa
 
