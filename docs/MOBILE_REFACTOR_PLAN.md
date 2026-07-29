@@ -1,6 +1,6 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-28: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
+Stan na 2026-07-29: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
 launcherem. `ShockerCalcApp` i cykl życia Kivy znajdują się w
 `tpof/mobile/app.py` (374 linie, z czego `build()` zajmuje 174), a składanie
 stanu i kontrolerów w niezależnym od frameworka
@@ -11,9 +11,11 @@ dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
 widoczność przycisku prywatności także mają osobne, testowalne kontrolery.
 Generowanie, zapis i udostępnianie PDF obsługuje `PdfExportController`.
 Konstrukcja widoku chłodniczego jest już w `tabs/freezing_view.py` (491 linii),
-a wybór, wyszukiwanie i historia produktów w
-`tabs/freezing_products.py` (298 linii). `tabs/freezing.py` zmniejszył się
-z 1270 do 549 linii bez zmiany budowania widżetów, walidacji ani obliczeń.
+wybór i historia produktów w `tabs/freezing_products.py` (342 linie),
+obliczenia w `tabs/freezing_workflow.py`, wyniki w
+`tabs/freezing_results.py`, a motyw i responsywność w
+`tabs/freezing_presentation.py`. `tabs/freezing.py` zmniejszył się z 1270 do
+160 linii bez zmiany zachowania.
 W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
 orkiestracja usług aplikacji.
 
@@ -44,10 +46,9 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 5. `tpof/mobile/dialogs/`
    - Ustawienia, produkt użytkownika, edycja stawek robocizny, PRO/subskrypcje.
 
-6. `tpof/mobile/tabs/freezing.py` — podział w toku
-   - Kontroler zachowuje wybór produktów, walidację, obliczenia oraz
-     prezentację wyników.
-   - Konstrukcja widżetów i typowana granica widoku są już osobnym modułem.
+6. `tpof/mobile/tabs/freezing.py` — wykonane
+   - Kontroler zachowuje inicjalizację, stan jednostki masy i lokalizację.
+   - Widok, produkty, workflow, wyniki oraz prezentacja mają osobne moduły.
 
 7. `tpof/mobile/tabs/valves.py` — wykonane
    - Budowa widoku, stan trybu danych i typu zaworu, walidacja, obliczenia,
@@ -133,6 +134,12 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
      gotowe `FreezingResults`.
    - `tabs/freezing.py` zmniejszył się z 341 do 289 linii.
 
+21. `tpof/mobile/tabs/freezing_presentation.py` — wykonane
+   - Zawiera synchronizację motywu przycisków i zastosowanie kompletu
+     responsywnych metryk do widoku zakładki.
+   - Lokalizacja oraz stan jednostki masy pozostają w koordynatorze.
+   - `tabs/freezing.py` zmniejszył się z 289 do 160 linii.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -141,7 +148,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 382 testy.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 384 testy.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Wydzielić walidację pól i uruchamianie obliczeń z
@@ -150,8 +157,10 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 9. Wydzielić prezentację i zerowanie wyników, pozostawiając
    `FreezingTabController` jako koordynator stanu, lokalizacji i motywu
    — wykonane.
-10. Następny krok: wydzielić responsywny układ i synchronizację motywu do
-    osobnego modułu, pozostawiając kontrolerowi inicjalizację i lokalizację.
+10. Wydzielić responsywny układ i synchronizację motywu do osobnego modułu,
+    pozostawiając kontrolerowi inicjalizację i lokalizację — wykonane.
+11. Następny krok: podzielić `tabs/labor.py` na granicę widoku, workflow
+    obliczeń i prezentację wyników, bez przenoszenia wzorów z `tpof/labor`.
 
 ## Zasady bezpieczeństwa
 

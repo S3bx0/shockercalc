@@ -36,6 +36,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - `ValvesTabController` przejął budowę widoku, tryb kubatura/wymiary, wybór
   zaworu, walidację, obliczenia i wyniki zakładki zaworów. Zakupy i reklamy
   nagradzane nadal są obsługiwane przez orkiestrator aplikacji.
+- Motyw i responsywny układ zakładki chłodniczej przeniesiono do
+  `freezing_presentation.py`. `FreezingTabController` pozostaje koordynatorem
+  inicjalizacji, stanu jednostki i lokalizacji, a jego rozmiar spadł z 289 do
+  160 linii.
 
 ### Testy
 
@@ -52,6 +56,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano testy kontraktu `ValvesTabController` dla obu trybów objętości,
   walidacji liczby chłodnic, przecinka dziesiętnego, blokady dostępu,
   lokalizacji, motywu i renderowania wyników.
+- Dodano test granicy modułu prezentacji zakładki chłodniczej i test
+  zastosowania responsywnych metryk do jej widoku.
 
 ## [1.5.11] - 2026-07-20
 

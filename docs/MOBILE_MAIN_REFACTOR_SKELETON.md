@@ -73,6 +73,9 @@ tpof/mobile/
 │   ├── freezing.py          # kontroler zakładki chłodniczej
 │   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
 │   ├── freezing_view.py     # konstrukcja i granica widoku chłodniczego
+│   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
+│   ├── freezing_results.py  # prezentacja i zerowanie wyników
+│   ├── freezing_presentation.py # motyw i responsywny układ
 │   ├── valves.py            # zakładka zaworów
 │   └── labor.py             # zakładka robocizny
 └── services/
@@ -454,8 +457,14 @@ zmniejszył się z 549 do 341 linii, natomiast nowy, testowalny workflow ma
 Piąty etap przeniósł formatowanie sumy mocy, prezentację trzech etapów
 obliczenia i zerowanie formularza do `freezing_results.py`. Moduł otrzymuje
 gotowe `FreezingResults` i nie importuje kalkulatora. `freezing.py` zmniejszył
-się z 341 do 289 linii, a moduł wyników ma 72 linie. Następną granicą jest
+się z 341 do 289 linii, a moduł wyników ma 72 linie. Następną granicą był
 responsywny układ oraz synchronizacja motywu.
+
+Szósty etap przeniósł synchronizację motywu oraz zastosowanie responsywnych
+metryk do `freezing_presentation.py`. Lokalizacja, stan jednostki masy i
+inicjalizacja pozostały w koordynatorze. `freezing.py` zmniejszył się z 289 do
+160 linii, a zależności nadal biegną wyłącznie od małych mixinów do granicy
+widoku.
 
 Aktualny kontrakt:
 

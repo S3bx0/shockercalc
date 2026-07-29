@@ -5,7 +5,7 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.11`
 
-**Stan jakości:** 382 testy automatyczne, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 384 testy automatyczne, statyczna kontrola Ruff i mypy,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
@@ -70,6 +70,7 @@ tpof/                  # pakiet źródłowy
     │   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
     │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
     │   ├── freezing_results.py  # prezentacja i zerowanie wyników
+    │   ├── freezing_presentation.py # motyw i responsywny układ
     │   ├── valves.py            # dobór zaworów dekompresyjnych
     │   └── labor.py             # robocizna, waluty i wykres kosztów
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
@@ -96,7 +97,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 382 testy logiki, UI i kontraktów natywnych
+tests/                 # 384 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 

@@ -1,6 +1,9 @@
+import sys
 from pathlib import Path
+from types import ModuleType
 
 from tpof.core import Product
+from tpof.mobile.layout import compute_metrics
 from tpof.mobile.tabs.freezing import (
     FreezingStageView,
     FreezingTabController,
@@ -100,6 +103,25 @@ def test_freezing_results_have_a_separate_presentation_boundary():
     assert "FreezingInputs" not in results_source
     assert "from tpof.mobile.tabs.freezing import" not in results_source
     assert len(controller_source.splitlines()) <= 300
+
+
+def test_freezing_theme_and_layout_have_a_separate_presentation_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing.py"
+    ).read_text(encoding="utf-8")
+    presentation_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "freezing_presentation.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class FreezingTabPresentationMixin" in presentation_source
+    assert "FreezingTabPresentationMixin," in controller_source
+    assert "def apply_theme(" not in controller_source
+    assert "def apply_layout(" not in controller_source
+    assert "def apply_theme(" in presentation_source
+    assert "def apply_layout(" in presentation_source
+    assert "def refresh_texts(" not in presentation_source
+    assert "from tpof.mobile.tabs.freezing import" not in presentation_source
+    assert len(controller_source.splitlines()) <= 180
 
 
 class _Widget:
@@ -445,3 +467,32 @@ def test_freezing_controller_refreshes_localized_text_and_theme():
     assert (view.category_button, "primary") in state["styled"]
     assert (view.pdf_button, "ice") in state["styled"]
     assert (view.clear_button, "dark") in state["styled"]
+
+
+def test_freezing_controller_applies_responsive_layout(monkeypatch):
+    fake_kivy = ModuleType("kivy")
+    fake_metrics = ModuleType("kivy.metrics")
+    fake_metrics.dp = lambda value: value
+    fake_kivy.metrics = fake_metrics
+    monkeypatch.setitem(sys.modules, "kivy", fake_kivy)
+    monkeypatch.setitem(sys.modules, "kivy.metrics", fake_metrics)
+
+    controller, _state = _controller()
+    view = controller.view
+    assert view is not None
+    metrics = compute_metrics(
+        lambda value: value,
+        412,
+        800,
+        hints_enabled=True,
+    )
+
+    controller.apply_layout(metrics)
+
+    assert view.content.padding == [16, 20, 16, 30]
+    assert view.product_body.orientation == "horizontal"
+    assert view.product_card.height == metrics["product_card_h"]
+    assert view.mass_input.height == metrics["field_h"]
+    assert view.results_card.height == metrics["results_h"]
+    assert view.product_hint_label.opacity == 1
+    assert view.stages["schladzanie"].icon_chip.width == metrics["stage_icon_w"]
