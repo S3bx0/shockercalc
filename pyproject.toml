@@ -56,7 +56,7 @@ ignore = ["E501", "B905"]
 
 [tool.mypy]
 python_version = "3.10"
-# Pure, framework-independent modules only. The Kivy UI (mobile/main.py) and the
+# Pure, framework-independent modules only. The Kivy UI (mobile/app.py) and the
 # Tkinter UI (desktop/app.py) use heavy dynamic attributes and are excluded.
 files = [
     "tpof/core",
@@ -66,6 +66,11 @@ files = [
     "tpof/mobile/i18n.py",
     "tpof/mobile/theme.py",
     "tpof/mobile/layout.py",
+    "tpof/mobile/navigation.py",
+    "tpof/mobile/shell.py",
+    "tpof/mobile/form_interactions.py",
+    "tpof/mobile/localization.py",
+    "tpof/mobile/settings_state.py",
     "tpof/mobile/validation.py",
     "tpof/mobile/telemetry.py",
     "tpof/mobile/user_data.py",
@@ -73,10 +78,15 @@ files = [
     "tpof/mobile/paths.py",
     "tpof/mobile/android_bridge.py",
     "tpof/mobile/pdf_export.py",
+    "tpof/mobile/services/monetization.py",
+    "tpof/mobile/services/rewarded_access.py",
     "tpof/mobile/dialogs/labor_rates.py",
+    "tpof/mobile/dialogs/custom_product.py",
     "tpof/mobile/dialogs/legal.py",
+    "tpof/mobile/dialogs/privacy.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
+    "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
 ]
 ignore_missing_imports = true

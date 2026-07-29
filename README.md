@@ -3,6 +3,11 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
+**Aktualna wersja Android:** `1.5.11`
+
+**Stan jakości:** 382 testy automatyczne, statyczna kontrola Ruff i mypy,
+podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
+
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
 > nie jest projektem open source. Kod jest dostępny wyłącznie na warunkach
 > [`LICENSE`](LICENSE), a wszystkie prawa do użycia w AI i text-and-data mining
@@ -14,6 +19,21 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 Instrukcje budowania i testowania poniżej są dokumentacją techniczną dla
 Autora i osób przez niego upoważnionych. Same w sobie nie udzielają prawa do
 uruchamiania, kompilowania ani modyfikowania programu.
+
+## Najważniejsze funkcje
+
+- obliczanie mocy chłodniczej i mroźniczej dla produktów spożywczych,
+- dobór liczby zaworów dekompresyjnych,
+- kalkulator robocizny, dojazdów i kosztów organizacyjnych z interaktywnym
+  wykresem struktury kosztów,
+- prezentacja kosztów w PLN, EUR lub USD z kursami NBP i lokalnym cache
+  do pracy bez połączenia,
+- wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
+- eksport i udostępnianie raportów PDF,
+- polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
+  telefonu i tabletu,
+- model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
+  telemetria Firebase.
 
 ## Struktura projektu
 
@@ -35,11 +55,40 @@ tpof/                  # pakiet źródłowy
     ├── app.py
     └── paths.py
 └── mobile/            # warstwa mobilna (KivyMD)
-    ├── main.py        # UI + integracja AdMob/Billing/Firebase
+    ├── main.py        # cienki, opcjonalnie importowany launcher
+    ├── app.py         # ShockerCalcApp, cykl życia Kivy i składanie widoku
+    ├── app_controllers.py # niezależne od Kivy składanie stanu i kontrolerów
+    ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
+    ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
+    ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
+    ├── android_bridge.py # fasada PyJNIus: reklamy, prywatność i udostępnianie
+    ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
+    ├── dialogs/       # niezależne kontrolery dialogów
+    ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
+    │   ├── freezing.py          # koordynator zakładki chłodniczej
+    │   ├── freezing_view.py     # konstrukcja widoku
+    │   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
+    │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
+    │   ├── freezing_results.py  # prezentacja i zerowanie wyników
+    │   ├── valves.py            # dobór zaworów dekompresyjnych
+    │   └── labor.py             # robocizna, waluty i wykres kosztów
+    ├── theme.py       # synchronizacja jasnego i ciemnego motywu
+    ├── layout.py      # responsywny układ telefonu i tabletu
+    ├── currency.py    # kursy NBP, cache i przeliczanie PLN/EUR/USD
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
+    ├── services/      # PRO, reklamy nagradzane i dostęp do modułów
+    ├── widgets/       # współdzielone widżety, w tym wykres kosztów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
+
+android/src/.../       # natywna powłoka Android
+├── RefrigerationCalcActivity.java
+├── FirebaseTelemetryService.java
+├── PrivacyConsentService.java
+├── AdvertisingService.java
+├── BillingService.java
+└── FileShareService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
@@ -47,7 +96,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # testy pytest dla `tpof.core`
+tests/                 # 382 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 
@@ -72,7 +121,8 @@ python -m pytest
 
 ## Android / AdMob / PRO
 
-Build mobilny używa natywnego banera AdMob przez `RefrigerationCalcActivity`.
+Build mobilny używa natywnego banera AdMob przez `AdvertisingService`,
+udostępniany aplikacji jako cienka fasada w `RefrigerationCalcActivity`.
 W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednostki
 — **osobne dla każdej zakładki** (rozdzielone raporty):
 
@@ -80,7 +130,7 @@ W `debug` ładowane są testowe reklamy Google, a w `release` właściwe jednost
 |----------|-------|-------------------|
 | Chłodnicze (zamrażanie) | `…/5599859341` | `…/1548239161` |
 | Zawory dekompresyjne    | `…/6303778370` | `…/1060900411` |
-| Robocizna               | domyślny baner chłodniczy | domyślna ścieżka główna |
+| Robocizna               | `…/8198860699` | `…/7623346864` |
 
 App ID: `ca-app-pub-7481054652344026~2716191071`. Jednostka reklamowa jest
 przełączana w warstwie natywnej (`setActiveAdTab`) przy zmianie zakładki.
@@ -108,10 +158,24 @@ Miesięczna subskrypcja Google Play Billing:
 - base plan ID: `monthly-499`,
 - efekt aktywnej subskrypcji: usuwa reklamy, odblokowuje pełną listę produktów,
   eksport PDF oraz moduły PRO, w tym zawory dekompresyjne,
-- cena: ustawiana w Google Play Console, nie w kodzie aplikacji.
+- cena: ustawiana w Google Play Console; przycisk pobiera jej lokalny,
+  sformatowany zapis z `ProductDetails`, a przed odpowiedzią Billing pokazuje
+  awaryjnie `9,99 zł/mies.`.
 
 Legacy zakup jednorazowy `pro_no_ads` nadal jest rozpoznawany jako PRO, aby
 nie odbierać dostępu użytkownikom/testom ze starego modelu.
+
+Połączenie z Google Play, szczegóły produktów, uruchamianie zakupów,
+acknowledge i synchronizacja uprawnień znajdują się w natywnym
+`BillingService`. Activity udostępnia warstwie Python tylko cienkie delegaty,
+a stan przycisku i odświeżanie zakupu obsługuje
+`tpof/mobile/services/monetization.py`.
+Reklamy nagradzane, transfer tokenów oraz jednorazowy zakup i blokadę modułu
+zaworów obsługuje niezależny
+`tpof/mobile/services/rewarded_access.py`. Oba kontrolery są testowane bez
+Kivy i PyJNIus; `app_controllers.py` składa je z natywną aktywnością i
+callbackami widoków, `app.py` zarządza cyklem życia Kivy i powłoką UI, a
+`main.py` pozostaje cienkim launcherem.
 
 ### Moduł zaworów dekompresyjnych (`module_valves`)
 

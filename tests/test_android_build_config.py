@@ -10,6 +10,12 @@ import p4a_hooks
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVITY = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationCalcActivity.java"
+FIREBASE_SERVICE = (
+    ROOT / "android/src/pl/smilczarek/refrigerationcalc/FirebaseTelemetryService.java"
+)
+ADVERTISING_SERVICE = (
+    ROOT / "android/src/pl/smilczarek/refrigerationcalc/AdvertisingService.java"
+)
 SPLASH_VIEW = ROOT / "android/src/pl/smilczarek/refrigerationcalc/RefrigerationSplashView.java"
 
 
@@ -34,7 +40,6 @@ def test_activity_uses_modern_edge_to_edge_api():
     assert "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" not in source
     assert "WindowInsets.Type.systemBars()" in source
     assert "WindowInsets.Type.displayCutout()" in source
-    assert "WindowInsets.Type.ime()" in source
     assert "APPEARANCE_LIGHT_STATUS_BARS" in source
     assert "APPEARANCE_LIGHT_NAVIGATION_BARS" in source
     assert "import androidx.core.view.WindowCompat;" not in source
@@ -44,27 +49,36 @@ def test_activity_uses_modern_edge_to_edge_api():
     assert "WindowCompat.setDecorFitsSystemWindows" not in source
 
 
-def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
+def test_activity_leaves_ime_positioning_to_kivy():
     source = ACTIVITY.read_text(encoding="utf-8")
 
-    assert "setAnalyticsCollectionEnabled(enabled)" in source
-    assert "setCrashlyticsCollectionEnabled(enabled)" in source
-    assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in source
-    assert "recordPythonException" in source
-    assert "custom_products_limit" in source
+    assert "WindowInsets.Type.ime()" not in source
+    assert "initialBottom + bars.bottom" in source
+    assert "Math.max(bars.bottom, ime.bottom)" not in source
+
+
+def test_firebase_collection_is_opt_in_and_python_errors_are_reported():
+    activity = ACTIVITY.read_text(encoding="utf-8")
+    service = FIREBASE_SERVICE.read_text(encoding="utf-8")
+
+    assert "setAnalyticsCollectionEnabled(enabled)" in service
+    assert "setCrashlyticsCollectionEnabled(enabled)" in service
+    assert 'getBoolean(PREF_TELEMETRY_ENABLED, false)' in service
+    assert "recordPythonException" in activity
+    assert "custom_products_limit" in service
 
 
 def test_labor_tab_uses_dedicated_admob_units():
-    activity = ACTIVITY.read_text(encoding="utf-8")
-    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
+    advertising = ADVERTISING_SERVICE.read_text(encoding="utf-8")
+    mobile_app = (ROOT / "tpof/mobile/app.py").read_text(encoding="utf-8")
 
-    assert "ca-app-pub-7481054652344026/8198860699" in activity
-    assert "ca-app-pub-7481054652344026/7623346864" in activity
-    assert 'if ("labor".equals(activeAdTab))' in activity
-    assert "normalizeAdTab(final String tab)" in activity
-    assert 'if ("labor".equals(tab))' in activity
-    assert 'self._set_active_ad_tab(name)' in mobile_main
-    assert '"labor": self.bottom_labor_tab' in mobile_main
+    assert "ca-app-pub-7481054652344026/8198860699" in advertising
+    assert "ca-app-pub-7481054652344026/7623346864" in advertising
+    assert 'if ("labor".equals(activeAdTab))' in advertising
+    assert "normalizeAdTab(final String tab)" in advertising
+    assert 'if ("labor".equals(tab))' in advertising
+    assert "self._android.set_active_ad_tab(name)" in mobile_app
+    assert '"labor": self.bottom_labor_tab' in mobile_app
 
 
 def test_native_splash_is_lightweight_and_started_by_activity():
@@ -152,14 +166,14 @@ def test_product_images_are_mobile_sized_and_bounded():
 
 def test_build_config_supports_rotation_and_current_android_libraries():
     spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
-    mobile_main = (ROOT / "tpof/mobile/main.py").read_text(encoding="utf-8")
+    mobile_app = (ROOT / "tpof/mobile/app.py").read_text(encoding="utf-8")
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "android.permissions = INTERNET, ACCESS_NETWORK_STATE" in spec
     assert "WRITE_EXTERNAL_STORAGE" not in spec
     assert "READ_EXTERNAL_STORAGE" not in spec
-    assert "/sdcard/Download" not in mobile_main
-    assert "/storage/emulated/0/Download" not in mobile_main
+    assert "/sdcard/Download" not in mobile_app
+    assert "/storage/emulated/0/Download" not in mobile_app
     assert "com.google.android.gms:play-services-ads:25.4.0" in spec
     assert "com.android.billingclient:billing:9.1.0" in spec
     assert "com.google.android.ump:user-messaging-platform:4.0.0" in spec

@@ -1,13 +1,11 @@
-"""Android runtime helpers for the mobile application.
-
-The current implementation lives in ``tpof.mobile.main``. Keep this module
-framework-light while migrating methods so desktop/core tests can import it.
-"""
+"""Android runtime facade and helpers for the mobile application."""
 from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from tpof.mobile.constants import IS_ANDROID
 from tpof.mobile.paths import FONT_PATH
@@ -15,6 +13,90 @@ from tpof.mobile.paths import FONT_PATH
 log = logging.getLogger(__name__)
 
 _FONTTOOLS_SO_PURGED = False
+
+
+class AndroidActivityBridge:
+    """Expose the small native Activity contract used by Python controllers."""
+
+    def __init__(
+        self,
+        *,
+        is_android: bool = IS_ANDROID,
+        activity_loader: Callable[[], Any] | None = None,
+    ) -> None:
+        self._is_android = is_android
+        self._activity_loader = activity_loader or self._load_activity
+
+    @staticmethod
+    def _load_activity() -> Any:
+        from jnius import autoclass, cast
+
+        activity = autoclass("org.kivy.android.PythonActivity").mActivity
+        try:
+            return cast(
+                "pl.smilczarek.refrigerationcalc.RefrigerationCalcActivity",
+                activity,
+            )
+        except Exception:  # pragma: no cover - Android only
+            return activity
+
+    def activity(self) -> Any:
+        """Return the cast native Activity for Android-only service calls."""
+        if not self._is_android:
+            raise RuntimeError("Android Activity is unavailable outside Android")
+        return self._activity_loader()
+
+    def set_active_ad_tab(self, tab: str) -> bool:
+        if not self._is_android:
+            return False
+        try:
+            self.activity().setActiveAdTab(tab)
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.debug("setActiveAdTab nie powiodło się", exc_info=True)
+            return False
+
+    def banner_height_dp(self) -> int:
+        if not self._is_android:
+            return 0
+        try:
+            return int(self.activity().getBannerHeightDp())
+        except Exception:  # pragma: no cover - Android only
+            log.debug("Nie udało się odczytać wysokości banera", exc_info=True)
+            return 0
+
+    def resolved_banner_height(self, pro_active: bool, current_height: int) -> int:
+        """Return a usable changed height, or preserve the current UI value."""
+        if pro_active:
+            return current_height
+        height = self.banner_height_dp()
+        return height if height > 0 else current_height
+
+    def privacy_options_required(self) -> bool:
+        if not self._is_android:
+            return False
+        return bool(self.activity().isPrivacyOptionsRequired())
+
+    def show_privacy_options_form(self) -> None:
+        if not self._is_android:
+            return
+        self.activity().showPrivacyOptionsForm()
+
+    def share_file(
+        self,
+        path: str,
+        mime_type: str,
+        subject: str,
+        text: str,
+    ) -> bool:
+        if not self._is_android:
+            return False
+        try:
+            self.activity().shareFile(path, mime_type, subject, text)
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.exception("Udostępnianie pliku Android")
+            return False
 
 
 def _runtime_font_path() -> Path | None:

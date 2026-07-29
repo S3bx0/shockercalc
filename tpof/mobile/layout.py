@@ -8,6 +8,8 @@ stays decoupled from the Kivy application module.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 
 def clamp(value: float, min_value: float, max_value: float) -> float:
@@ -140,3 +142,190 @@ def compute_metrics(
         "pro_h": dp(28),
         "ad_h": dp(reserved_ad_h),
     }
+
+
+@dataclass(frozen=True)
+class ResponsiveLayoutView:
+    """Widgets resized by the responsive shell controller."""
+
+    root_host: Any
+    root_bg_rect: Any
+    toolbar: Any
+    toolbar_brand_chip: Any
+    toolbar_snowflake: Any
+    toolbar_title: Any
+    action_chips: tuple[Any, ...]
+    action_buttons: tuple[Any, ...]
+    tab_content_host: Any
+    bottom_nav: Any
+    bottom_tabs: tuple[Any, ...]
+    footer_bar: Any
+    footer_label: Any
+    pro_button: Any
+    ad_slot: Any
+    ad_label: Any
+
+    @classmethod
+    def from_shell(cls, shell: Any) -> ResponsiveLayoutView:
+        """Capture the responsive widgets exposed by the built app shell."""
+
+        return cls(
+            root_host=shell.root_host,
+            root_bg_rect=shell._root_bg_rect,
+            toolbar=shell.toolbar,
+            toolbar_brand_chip=shell.toolbar_brand_chip,
+            toolbar_snowflake=shell.toolbar_snowflake,
+            toolbar_title=shell.lbl_toolbar_title,
+            action_chips=(
+                shell.btn_hints_chip,
+                shell.btn_lang_chip,
+                shell.btn_theme_chip,
+                shell.btn_privacy_chip,
+            ),
+            action_buttons=(
+                shell.btn_hints,
+                shell.btn_lang,
+                shell.btn_theme,
+                shell.btn_privacy,
+            ),
+            tab_content_host=shell.tab_content_host,
+            bottom_nav=shell.bottom_nav,
+            bottom_tabs=(
+                shell.bottom_freezing_tab,
+                shell.bottom_valves_tab,
+                shell.bottom_labor_tab,
+            ),
+            footer_bar=shell.footer_bar,
+            footer_label=shell.footer_label,
+            pro_button=shell.btn_pro,
+            ad_slot=shell.ad_slot,
+            ad_label=shell.ad_label,
+        )
+
+
+class ResponsiveLayoutController:
+    """Computes metrics and applies them to the built mobile shell."""
+
+    def __init__(
+        self,
+        *,
+        dp: Callable[[float], float],
+        get_screen_size: Callable[[], tuple[float, float]],
+        hints_enabled: Callable[[], bool],
+        native_ad_height_dp: Callable[[], float],
+        pro_no_ads: Callable[[], bool],
+        bottom_nav_bg: Callable[[], Any],
+        refresh_privacy_button: Callable[[], None],
+        apply_freezing_layout: Callable[[dict[str, Any]], None],
+    ) -> None:
+        self._dp = dp
+        self._get_screen_size = get_screen_size
+        self._hints_enabled = hints_enabled
+        self._native_ad_height_dp = native_ad_height_dp
+        self._pro_no_ads = pro_no_ads
+        self._bottom_nav_bg = bottom_nav_bg
+        self._refresh_privacy_button = refresh_privacy_button
+        self._apply_freezing_layout = apply_freezing_layout
+        self._view: ResponsiveLayoutView | None = None
+
+    @property
+    def is_attached(self) -> bool:
+        return self._view is not None
+
+    def attach(self, view: ResponsiveLayoutView) -> None:
+        self._view = view
+
+    def screen_dp(self) -> tuple[float, float]:
+        width, height = self._get_screen_size()
+        unit = max(float(self._dp(1)), 1.0)
+        return width / unit, height / unit
+
+    def metrics(self) -> dict[str, Any]:
+        width_dp, height_dp = self.screen_dp()
+        return compute_metrics(
+            self._dp,
+            width_dp,
+            height_dp,
+            hints_enabled=self._hints_enabled(),
+            native_ad_height_dp=self._native_ad_height_dp(),
+        )
+
+    def sync_root_background(self, *_args: object) -> bool:
+        view = self._view
+        if view is None:
+            return False
+        view.root_bg_rect.pos = view.root_host.pos
+        view.root_bg_rect.size = view.root_host.size
+        return True
+
+    def apply(self, *_args: object) -> bool:
+        view = self._view
+        if view is None:
+            return False
+
+        dp = self._dp
+        metrics = self.metrics()
+        view.toolbar.height = metrics["toolbar_h"]
+        view.toolbar.padding = [
+            metrics["content_pad"],
+            0,
+            dp(6 if metrics["compact"] else 8),
+            0,
+        ]
+        view.toolbar_brand_chip.width = metrics["toolbar_icon_w"]
+        view.toolbar_brand_chip.height = metrics["toolbar_icon_w"]
+        view.toolbar_snowflake.width = metrics["toolbar_icon_w"]
+        view.toolbar_snowflake.icon_size = f'{metrics["toolbar_icon_sp"]}sp'
+        view.toolbar_title.font_size = f'{metrics["toolbar_title_sp"]}sp'
+        view.toolbar_title.line_height = 0.88
+
+        for chip in view.action_chips:
+            if getattr(chip, "opacity", 1) > 0:
+                chip.width = metrics["toolbar_btn_w"]
+                chip.height = metrics["toolbar_btn_w"]
+        for button in view.action_buttons:
+            button.width = metrics["toolbar_btn_w"]
+            button.icon_size = f'{metrics["toolbar_btn_sp"]}sp'
+        self._refresh_privacy_button()
+
+        view.tab_content_host.size_hint_y = 1
+        view.bottom_nav.size_hint_y = None
+        view.bottom_nav.height = metrics["bottom_nav_h"]
+        view.bottom_nav.padding = [
+            metrics["content_pad"],
+            dp(3),
+            metrics["content_pad"],
+            dp(3),
+        ]
+        view.bottom_nav.spacing = dp(8 if metrics["compact"] else 10)
+        view.bottom_nav.md_bg_color = self._bottom_nav_bg()
+        for tab in view.bottom_tabs:
+            tab.set_metrics(
+                icon_size=metrics["bottom_tab_icon"],
+                label_sp=metrics["bottom_tab_sp"],
+            )
+
+        self._apply_freezing_layout(metrics)
+        view.footer_bar.height = metrics["footer_h"]
+        view.footer_bar.padding = [
+            metrics["content_pad"],
+            dp(3),
+            metrics["content_pad"],
+            dp(3),
+        ]
+        view.footer_bar.spacing = dp(10 if metrics["compact"] else 12)
+        view.footer_label.font_size = f'{metrics["footer_sp"]}sp'
+        view.footer_label.shorten = True
+        view.pro_button.width = metrics["pro_w"]
+        view.pro_button.height = metrics["pro_h"]
+        view.pro_button.font_size = f'{metrics["caption_sp"]}sp'
+        if not self._pro_no_ads():
+            view.ad_slot.height = metrics["ad_h"]
+            view.ad_slot.padding = [
+                metrics["content_pad"],
+                dp(2),
+                metrics["content_pad"],
+                dp(2),
+            ]
+        view.ad_label.font_size = f'{metrics["caption_sp"]}sp'
+        return True

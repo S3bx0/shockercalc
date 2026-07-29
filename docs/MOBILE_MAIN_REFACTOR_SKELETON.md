@@ -1,20 +1,14 @@
 # Mobile `main.py` Refactor Skeleton
 
-Stan na podstawie roadmapy v1.5.1 i aktualnego kodu z tej gałęzi:
-`tpof/mobile/main.py` ma 4959 linii. To jest snapshot roboczy - przed każdym
-etapem refaktoru liczby trzeba odświeżyć skryptem/AST, bo plik nadal szybko się
-zmienia. Na poziomie modułu istnieje tylko kilka helperów oraz funkcja `main()`,
-a wewnątrz `main()` są zdefiniowane klasy UI:
-
-- `FrostBackground`
-- `BrandToolbar`
-- `FrostChip`
-- `StageIconBadge`
-- `StageMotionIcon`
-- `BottomNavMotionIcon`
-- `BottomNavTab`
-- `CenterNotice`
-- `ShockerCalcApp` z 122 metodami
+Pierwszy inwentarz roadmapy powstał, gdy `tpof/mobile/main.py` miał 4959 linii
+i lokalnie definiował wszystkie widgety. Po checkpointach do 2026-07-28
+`main.py` ma 13 linii i jest cienkim launcherem, `app.py` ma 374 linie,
+a niezależny od Kivy `app_controllers.py` ma 355 linii. Konstrukcja 17
+kontrolerów została przeniesiona z `build()` do jawnej kompozycji zależności.
+Widgety, kontrolery zakładek robocizny, zaworów
+i chłodnictwa, dialogi, powłoka, eksport PDF oraz kolejne usługi są już osobnymi
+modułami. Dokument pozostaje żywym planem refaktoru i liczby aktualizujemy po
+każdym checkpointcie.
 
 Cel refaktoru: podzielić mobilny UI na moduły bez zmiany zachowania, bez zmiany
 wzorów obliczeniowych i bez zmiany kluczy zapisanych danych.
@@ -49,7 +43,8 @@ Jeżeli metoda jest przenoszona, jej ciało powinno zostać przeniesione możliw
 ```text
 tpof/mobile/
 ├── main.py                  # cienki launcher
-├── app.py                   # ShockerCalcApp: cykl życia + składanie kontrolerów
+├── app.py                   # ShockerCalcApp: cykl życia Kivy + składanie widoku
+├── app_controllers.py       # stan i kompozycja kontrolerów bez importów Kivy
 ├── android_bridge.py        # ActivityBridge: Java/Kivy/Android, reklamy, billing, privacy
 ├── catalog.py               # mobilne helpery katalogu produktów i obrazków
 ├── constants.py             # liść: BRAND_*, ADMOB_*, PRO_*, STAGE_COLORS
@@ -75,27 +70,31 @@ tpof/mobile/
 │   └── labor_rates.py       # edycja stawek robocizny PRO
 ├── tabs/
 │   ├── __init__.py
-│   ├── freezing.py          # zakładka chłodnicza
+│   ├── freezing.py          # kontroler zakładki chłodniczej
+│   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
+│   ├── freezing_view.py     # konstrukcja i granica widoku chłodniczego
 │   ├── valves.py            # zakładka zaworów
 │   └── labor.py             # zakładka robocizny
 └── services/
     ├── __init__.py
-    ├── monetization.py      # PRO, rewarded ads, aktywna zakładka reklam
+    ├── monetization.py      # status, cena i zakup PRO
+    ├── rewarded_access.py   # rewarded, tokeny, zakup i blokada zaworów
     ├── entitlements_ui.py   # odświeżanie blokad i statusów UI
     └── telemetry_ui.py      # zgody + zdarzenia UI
 ```
 
 ## Docelowy `main.py`
 
-Końcowo `tpof/mobile/main.py` powinien zostać sprowadzony do launchera:
+Od checkpointu `app.py` `tpof/mobile/main.py` jest sprowadzony do launchera.
+Import pozostaje wewnątrz `main()`, aby sam moduł można było importować na
+desktopie bez zainstalowanego KivyMD:
 
 ```python
 from __future__ import annotations
 
-from tpof.mobile.app import ShockerCalcApp
-
-
 def main() -> None:
+    from tpof.mobile.app import ShockerCalcApp
+
     ShockerCalcApp().run()
 
 
@@ -103,8 +102,8 @@ if __name__ == "__main__":
     main()
 ```
 
-W fazie przejściowej `main.py` może re-eksportować przeniesione symbole, jeżeli
-testy lub Buildozer oczekują starego importu. Re-eksport ma być tymczasowy.
+Buildozer i `python -m tpof.mobile` nadal używają funkcji `main`, więc zewnętrzny
+kontrakt uruchamiania nie uległ zmianie.
 
 ## Etap 0.5: stałe jako liść importów
 
@@ -162,16 +161,18 @@ Kontrakt:
 - fallback obrazka zostaje identyczny,
 - desktop nie jest ruszany.
 
-### `tpof/mobile/files.py` albo `pdf_export.py`
+### `tpof/mobile/pdf_export.py` — wykonane
 
-Przenieść:
+Przeniesione:
 
-- `_runtime_font_path`
-- `_purge_host_arch_fonttools_so`
 - `_pdf_output_dir`
+- `_build_pdf_bytes` jako `PdfExportController.build_pdf_bytes`
+- `_export_pdf` jako `PdfExportController.export`
 
-Uwaga: `_build_pdf_bytes` i `_export_pdf` zostają na razie w `ShockerCalcApp`,
-bo mają dużo zależności od stanu UI. Przenosimy je dopiero w etapie PDF.
+Kontroler pobiera ostatni wynik przez callback, zachowuje pełny generator
+ReportLab i mobilny fallback `fpdf2`, zapisuje plik w prywatnym katalogu oraz
+deleguje udostępnianie do `AndroidActivityBridge`. Nie importuje Kivy i ma
+osobne testy zachowania.
 
 ### `tpof/mobile/validation.py`
 
@@ -326,47 +327,32 @@ Zasada:
 
 ### `tpof/mobile/android_bridge.py`
 
-Utworzyć cienką fasadę:
+Wykonane:
 
-```python
-class ActivityBridge:
-    def activity(self): ...
-    def show_banner(self, placement: str) -> None: ...
-    def set_active_ad_tab(self, tab: str) -> None: ...
-    def buy_pro(self) -> None: ...
-    def buy_module_valves(self) -> None: ...
-    def show_rewarded_ad(self, placement: str) -> None: ...
-    def open_privacy_options(self) -> bool: ...
-```
-
-Przenieść lub opakować:
-
-- `_android_activity`
-- `_set_active_ad_tab`
-- `_refresh_ad_slot_height`
-- `_buy_pro`
-- `_buy_valve_module`
-- `_offer_reward_ad`
-- `_open_ad_privacy_options`
-
-Na pierwszym etapie można zostawić metody w `ShockerCalcApp` jako delegaty do
-`self.android`.
+- `AndroidActivityBridge` przejął leniwe ładowanie i rzutowanie Activity,
+- fasada obsługuje aktywną kartę reklam, wysokość banera, UMP i udostępnianie,
+- kontrolery PRO i rewarded otrzymują już metodę `activity`, bez PyJNIus w
+  `main.py`,
+- wywołania opcjonalne mają bezpieczny fallback poza Androidem i osobne testy.
 
 ### `tpof/mobile/services/monetization.py`
 
-Przenieść orkiestrację stanu UI:
+Wykonane:
 
-- `_refresh_pro_status`
-- `_set_pro_status`
-- `_credit_pending_reward_tokens`
-- `_after_reward_ad`
-- `_valve_module_available`
-- `_refresh_module_valves_status`
-- `_refresh_valve_lock_ui`
-- `_after_valve_purchase`
+- `ProMonetizationController` przejął `_refresh_pro_status`, `_set_pro_status`
+  i `_buy_pro`,
+- kontroler pobiera z natywnego `BillingService` lokalną cenę subskrypcji,
+  stosuje bezpieczny fallback i nie importuje Kivy ani PyJNIus,
+- `main.py` zachowuje wyłącznie callback aktualizujący konkretne widżety.
 
-Ten moduł nadal może przyjmować `app` jako właściciela. Dopiero drugi refaktor
-może wprowadzić pełny model MVVM/controller.
+### `tpof/mobile/services/rewarded_access.py`
+
+Wykonane:
+
+- kontroler przejął reklamy rewarded i transfer tokenów z warstwy Android,
+- obsługuje dostęp jednorazowy do produktu i obliczenia zaworów,
+- synchronizuje własność, zakup i widok blokady `module_valves`,
+- nie importuje Kivy ani PyJNIus i jest testowany przez czyste atrapowe mosty.
 
 ## Etap 6: dialogi
 
@@ -382,9 +368,12 @@ Przenieść:
 
 ### `tpof/mobile/dialogs/privacy.py`
 
-Przenieść:
+Wykonane:
 
-- `_refresh_privacy_button`
+- `PrivacyToolbarController` przejął widoczność i rozmiar przycisku oraz chipa.
+
+Pozostałe historyczne elementy:
+
 - `_prompt_telemetry_consent`
 - `_set_telemetry_consent`
 - `_close_privacy_dialog`
@@ -430,19 +419,56 @@ Zakładki wydzielać dopiero po widgetach i dialogach.
 
 ### `tpof/mobile/tabs/freezing.py`
 
-Klasa:
+Pierwszy etap wykonano 2026-07-26. Kontroler przejął kompletny widok zakładki,
+wybór kategorii i produktu, wyszukiwarkę katalogu, jednostkę masy, walidację,
+obliczenia, prezentację wyników, teksty, motyw i responsywny layout.
+`ShockerCalcApp` przekazuje tylko politykę dostępu freemium oraz callbacki
+otwarcia formularza własnego produktu i eksportu PDF.
+
+Drugi etap wykonano 2026-07-28. `FreezingTabView`, `FreezingStageView` oraz
+ciało `build()` zostały przeniesione 1:1 do `freezing_view.py`. Publiczny
+import z `freezing.py` i metoda `controller.build()` pozostają kompatybilne.
+Kontroler zmniejszył się z 1270 do 803 linii; kolejną granicą jest wybór i
+wyszukiwanie produktów.
+
+Trzeci etap wykonano 2026-07-28. Wybór kategorii i produktu, dialog
+wyszukiwania, ostatnie wybory, blokady Free/PRO oraz zdjęcie produktu zostały
+przeniesione do `freezing_products.py`. Dwanaście metod zachowuje identyczne
+drzewo AST jak przed przeniesieniem, a `freezing.py` zmniejszył się z 803 do
+549 linii. Następną granicą jest walidacja pól i uruchamianie obliczeń, bez
+przenoszenia wzorów z `tpof/core`.
+
+Następnego dnia dialog wyszukiwania otrzymał izolowaną obsługę klawiatury:
+na czas modalnego pola wyłączany jest tryb Kivy `below_target`, a po utracie
+fokusu przywracana jest wcześniejsza wartość. Warstwa Androida nie dodaje
+równolegle wysokości IME do paddingu głównego widoku — uwzględnia tylko paski
+systemowe i wycięcie ekranu. Zapobiega to podwójnemu przesuwaniu lub kurczeniu
+powierzchni aplikacji bez zmiany filtrowania katalogu.
+
+Czwarty etap wydzielił parsowanie pól, walidację temperatur oraz orkiestrację
+`calculate()` do `freezing_workflow.py`. Wzory nadal należą do `tpof/core`,
+a renderowanie `FreezingResults` pozostało w kontrolerze. `freezing.py`
+zmniejszył się z 549 do 341 linii, natomiast nowy, testowalny workflow ma
+247 linii wraz z typowanym kontraktem prezentera wyników.
+
+Piąty etap przeniósł formatowanie sumy mocy, prezentację trzech etapów
+obliczenia i zerowanie formularza do `freezing_results.py`. Moduł otrzymuje
+gotowe `FreezingResults` i nie importuje kalkulatora. `freezing.py` zmniejszył
+się z 341 do 289 linii, a moduł wyników ma 72 linie. Następną granicą jest
+responsywny układ oraz synchronizacja motywu.
+
+Aktualny kontrakt:
 
 ```python
 class FreezingTabController:
-    def __init__(self, app: "ShockerCalcApp") -> None: ...
-    def build(self): ...
+    def build(self) -> FreezingTabView: ...
     def refresh_texts(self) -> None: ...
     def apply_layout(self, metrics) -> None: ...
-    def calculate(self) -> None: ...
+    def calculate(self) -> bool: ...
     def reset_inputs(self) -> None: ...
 ```
 
-Przenieść metody:
+Przeniesione odpowiedzialności:
 
 - `_hint_field_items` albo podpiąć wynik z `tpof.mobile.hints`
 - `_build_product_card`
@@ -471,12 +497,17 @@ Przenieść metody:
 
 Właścicielstwo widgetów:
 
-- `FreezingTabController` buduje i przechowuje własne pola, etykiety, paski
-  wyników i przyciski.
+- `freezing_view.py` buduje typowaną granicę pól, etykiet, pasków wyników
+  i przycisków.
+- `FreezingTabController` przechowuje granicę widoku i obsługuje zachowanie.
 - `ShockerCalcApp` wywołuje metody kontrolera, ale nie powinien trzymać nowych
   bezpośrednich referencji do widgetów zakładki.
 
 ### `tpof/mobile/tabs/valves.py`
+
+Etap wykonany 2026-07-26. `ValvesTabController` buduje kompletną zakładkę,
+przechowuje jej stan, waliduje dane, wykonuje obliczenia i prezentuje wynik.
+Polityka zakupu/tokenów pozostaje callbackiem composition root.
 
 Klasa:
 
@@ -498,6 +529,10 @@ Przenieść metody:
 - `_clear_valve_validation`
 
 ### `tpof/mobile/tabs/labor.py`
+
+Etap wykonany 2026-07-25. Kontroler przejął poniższe metody, stan obliczeń,
+walutę pola kosztu dodatkowego oraz referencje do widgetów. `main.py` wywołuje
+wyłącznie jawne API kontrolera.
 
 Klasa:
 
@@ -526,14 +561,18 @@ Przenieść metody:
 
 ## Etap 8: `ShockerCalcApp` jako composition root
 
-Po wydzieleniu zakładek `ShockerCalcApp` powinien trzymać tylko:
+Etap wykonany. Po wydzieleniu zakładek i `app_controllers.py`
+`ShockerCalcApp` trzyma tylko:
 
 - cykl życia Kivy (`build`),
-- globalny stan aplikacji (`lang`, `dark`, `unit_system`, entitlements),
-- instancje kontrolerów,
+- wywołanie kompozycji globalnego stanu i instancji kontrolerów,
 - przełączanie zakładek,
 - odświeżanie globalnych powierzchni,
 - integracje wysokiego poziomu z Android bridge.
+
+`AppControllerCompositionMixin.compose_controllers()` otrzymuje zależności
+runtime (`Clock`, `Window`, `dp`, fabrykę wykresu) jawnie, dzięki czemu sam
+moduł nie importuje Kivy, KivyMD ani PyJNIus.
 
 Metody, które mogą zostać w `app.py`:
 
@@ -648,5 +687,5 @@ właściciela:
 | `_hint_field_items` | `tpof.mobile.hints` |
 | `_menu` | `tpof.mobile.widgets.menus` |
 | `_toolbar_chip_button` | `tpof.mobile.widgets.toolbar` |
-| `_build_pdf_bytes` | `tpof.mobile.pdf_export` po odklejeniu od UI |
-| `_export_pdf` | `tpof.mobile.pdf_export` po odklejeniu od Android bridge |
+| `_build_pdf_bytes` | `tpof.mobile.pdf_export.PdfExportController` — wykonane |
+| `_export_pdf` | `tpof.mobile.pdf_export.PdfExportController` — wykonane |

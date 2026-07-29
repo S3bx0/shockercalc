@@ -27,16 +27,19 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 
 ## Build testowy
 
-- Stała `TEST_BUILD_EXPIRES_AT_EPOCH_MS` dotyczy wyłącznie zamkniętych testów.
-- Przed wydaniem produkcyjnym trzeba podbić `versionCode` i wyłączyć/usunąć
-  blokadę terminu testowego.
+- Blokada terminu testowego została całkowicie usunięta z Activity.
+- `tests/test_android_build_config.py` sprawdza, że stała, gate, overlay i tekst
+  wygasania nie wróciły do kodu.
+- Każdy build wysyłany do Google Play nadal musi mieć rosnący `versionCode`.
 
 ## TODO techniczne
 
 - Docelowo przekazywać insety z Androida do warstwy Kivy zamiast nakładać padding
   na cały `android.R.id.content`, jeśli po testach na tabletach okaże się to
   potrzebne.
-- Rozbijać `tpof/mobile/main.py` stopniowo: tło, toolbar, mosty Ads/Billing i
-  eksport PDF jako osobne moduły. Nie robić tego w patchu hotfixowym.
+- `tpof/mobile/main.py` jest cienkim launcherem, a składanie kontrolerów jest
+  już w niezależnym od Kivy `tpof/mobile/app_controllers.py`. Kolejne kroki
+  zmniejszające `app.py` wykonywać jako osobne checkpointy, bez łączenia z
+  patchem hotfixowym.
 - Nie podbijać `androidx.core:core` do linii wymagającej AGP 9 bez pełnej
   migracji toolchainu python-for-android/Buildozer.

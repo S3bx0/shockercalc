@@ -4,6 +4,55 @@ Wszystkie istotne zmiany w projekcie **Refrigeration Calc** (`pl.smilczarek.refr
 Format na podstawie [Keep a Changelog](https://keepachangelog.com/),
 wersjonowanie wg [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Naprawiono
+
+- Przycisk PRO nie pokazuje już nieaktualnej ceny `4,99 zł`. Po połączeniu
+  z Google Play wyświetla lokalną, sformatowaną cenę bieżącego planu
+  subskrypcji; do czasu odpowiedzi Billing używa fallbacku `9,99 zł/mies.`.
+- Wysokość banera AdMob jest zapamiętywana podczas tworzenia widoku na wątku
+  interfejsu. Python może ją teraz bezpiecznie odczytać bez wywoływania metod
+  widoku reklamowego poza głównym wątkiem Androida.
+
+### Zmieniono
+
+- Wydzielono integrację Google Play Billing z
+  `RefrigerationCalcActivity` do osobnego `BillingService`. Serwis przejął
+  połączenie z Google Play, pobieranie produktów, uruchamianie zakupów,
+  acknowledge, synchronizację refund/revoke oraz zapis uprawnień PRO i modułu
+  zaworów.
+- `RefrigerationCalcActivity` zachowuje wyłącznie cienkie metody wywoływane
+  przez PyJNIus oraz przekazuje do serwisu zdarzenia cyklu życia.
+- Wydzielono eksport plików przez MediaStore i uruchamianie Android Sharesheet
+  z `RefrigerationCalcActivity` do osobnego `FileShareService`. Publiczna metoda
+  `shareFile` pozostaje zgodnym, cienkim delegatem dla PyJNIus.
+- Wydzielono stan, etykietę ceny i orkiestrację zakupu PRO z `main.py` do
+  niezależnego od Kivy i PyJNIus kontrolera `ProMonetizationController`.
+- `LaborTabController` przejął stan przełączników, walidację pól, obsługę
+  waluty kosztu dodatkowego, obliczenia, wyniki i wykres zakładki robocizny.
+  Z `main.py` usunięto tymczasowe aliasy widżetów oraz ponad 600 linii logiki
+  tego ekranu.
+- `ValvesTabController` przejął budowę widoku, tryb kubatura/wymiary, wybór
+  zaworu, walidację, obliczenia i wyniki zakładki zaworów. Zakupy i reklamy
+  nagradzane nadal są obsługiwane przez orkiestrator aplikacji.
+
+### Testy
+
+- Dodano testy kontraktu Billing chroniące identyfikatory produktów i planu,
+  zakup subskrypcji i modułu jednorazowego, obsługę anulowania, acknowledge
+  oraz cofanie lokalnych uprawnień po utracie zakupu.
+- Dodano testy kontraktu udostępniania plików chroniące eksport do katalogu
+  Pobrane na Androidzie 10+, starszy fallback URI, MIME, temat, treść i flagę
+  odczytu dla aplikacji odbierającej.
+- Dodano testy dynamicznej ceny subskrypcji i kontrolera PRO, w tym fallback,
+  lokalną cenę Google Play, harmonogram odświeżania i komunikat po zakupie.
+- Dodano testy kontraktu `LaborTabController` dla stanu przełączników,
+  poprawnego obliczenia, przewinięcia do wyniku i błędu wymaganego pola.
+- Dodano testy kontraktu `ValvesTabController` dla obu trybów objętości,
+  walidacji liczby chłodnic, przecinka dziesiętnego, blokady dostępu,
+  lokalizacji, motywu i renderowania wyników.
+
 ## [1.5.11] - 2026-07-20
 
 ### Dodano

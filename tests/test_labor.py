@@ -109,6 +109,55 @@ def test_labor_delegation_mode_counts_travel_and_hotels():
 
 
 @pytest.mark.parametrize(
+    "distance,expected_mode,expected_round_trips",
+    [
+        (150, "Dojazd dzienny", 5),
+        (151, "Delegacja tygodniowa", 1),
+    ],
+)
+def test_labor_travel_mode_boundary_is_stable(
+    distance, expected_mode, expected_round_trips
+):
+    data = CalculationInput(
+        number_of_people=1,
+        number_of_days=5,
+        distance_km_one_way=distance,
+        use_highways=False,
+        number_of_lifts=0,
+        number_of_containers=0,
+        additional_costs_value=Decimal("0"),
+    )
+
+    result = calculate_cost_breakdown(data, build_rates())
+
+    assert result.travel_mode == expected_mode
+    assert result.travel_round_trips == expected_round_trips
+
+
+def test_labor_highway_toggle_changes_only_tolls_for_same_daily_route():
+    common = {
+        "number_of_people": 1,
+        "number_of_days": 3,
+        "distance_km_one_way": 20,
+        "number_of_lifts": 0,
+        "number_of_containers": 0,
+        "additional_costs_value": Decimal("0"),
+    }
+
+    without_highways = calculate_cost_breakdown(
+        CalculationInput(use_highways=False, **common), build_rates()
+    )
+    with_highways = calculate_cost_breakdown(
+        CalculationInput(use_highways=True, **common), build_rates()
+    )
+
+    assert without_highways.highway_toll_days == 0
+    assert with_highways.highway_toll_days == 3
+    assert with_highways.travel_cost - without_highways.travel_cost == Decimal("150.00")
+    assert with_highways.travel_round_trips == without_highways.travel_round_trips
+
+
+@pytest.mark.parametrize(
     "days,workdays,weeks,nights,travel_days",
     [
         (1, 5, 1, 0, 1),

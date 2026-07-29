@@ -22,13 +22,23 @@ Wdrożone cięcia:
 
 - kontroler dialogu ustawień w `tpof/mobile/dialogs/settings.py`,
 - kontroler dialogu stawek w `tpof/mobile/dialogs/labor_rates.py`,
-- niezależny od Kivy prezenter wykresu i trybu dojazdu oraz kontroler budujący
-  kompletny widok robocizny w `tpof/mobile/tabs/labor.py`.
+- `LaborTabController` w `tpof/mobile/tabs/labor.py`, który buduje widok i
+  posiada stan przełączników, walutę kosztu dodatkowego, walidację, obliczenia,
+  wyniki oraz wykres; `main.py` nie przechowuje już aliasów jego widgetów,
+- `ValvesTabController` w `tpof/mobile/tabs/valves.py`, który przejął budowę
+  karty, tryb kubatura/wymiary, wybór typu, walidację, obliczenia i prezentację
+  wyników; polityka PRO, zakup i reklama nagradzana pozostają w orkiestratorze,
+- natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
+  `AdvertisingService`, `BillingService` i `FileShareService`, pozostawiające
+  w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
+- niezależny od Kivy i PyJNIus `ProMonetizationController`, który przejął
+  lokalną cenę Google Play, stan przycisku PRO i harmonogram odświeżania zakupu
+  z `main.py`.
 
-Następny naturalny krok to usunięcie tymczasowych aliasów widgetów z `main.py`
-i przeniesienie stanu oraz orkiestracji obliczeń robocizny do kontrolera
-zakładki. Po zamknięciu tej granicy można rozpocząć wydzielanie natywnych
-serwisów Firebase, AdMob i Billing z Activity.
+Następny naturalny krok to ustabilizowanie checkpointu zaworów na emulatorze
+i w AAB, a potem wydzielenie większej zakładki chłodniczej do
+`FreezingTabController`. Natywna bramka serwisów została zamknięta; kolejne
+integracje platformowe nie powinny ponownie rozbudowywać Activity.
 
 ## Future: WebView chart engine
 
