@@ -3,6 +3,11 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
+**Aktualna wersja Android:** `1.5.11`
+
+**Stan jakości:** 382 testy automatyczne, statyczna kontrola Ruff i mypy,
+podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
+
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
 > nie jest projektem open source. Kod jest dostępny wyłącznie na warunkach
 > [`LICENSE`](LICENSE), a wszystkie prawa do użycia w AI i text-and-data mining
@@ -14,6 +19,21 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 Instrukcje budowania i testowania poniżej są dokumentacją techniczną dla
 Autora i osób przez niego upoważnionych. Same w sobie nie udzielają prawa do
 uruchamiania, kompilowania ani modyfikowania programu.
+
+## Najważniejsze funkcje
+
+- obliczanie mocy chłodniczej i mroźniczej dla produktów spożywczych,
+- dobór liczby zaworów dekompresyjnych,
+- kalkulator robocizny, dojazdów i kosztów organizacyjnych z interaktywnym
+  wykresem struktury kosztów,
+- prezentacja kosztów w PLN, EUR lub USD z kursami NBP i lokalnym cache
+  do pracy bez połączenia,
+- wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
+- eksport i udostępnianie raportów PDF,
+- polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
+  telefonu i tabletu,
+- model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
+  telemetria Firebase.
 
 ## Struktura projektu
 
@@ -45,12 +65,19 @@ tpof/                  # pakiet źródłowy
     ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
-    │   ├── freezing_view.py # konstrukcja widoku zakładki chłodniczej
-    │   └── freezing_products.py # wybór, wyszukiwanie i historia produktów
+    │   ├── freezing.py          # koordynator zakładki chłodniczej
+    │   ├── freezing_view.py     # konstrukcja widoku
+    │   ├── freezing_products.py # wybór, wyszukiwanie i historia produktów
+    │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
+    │   ├── freezing_results.py  # prezentacja i zerowanie wyników
+    │   ├── valves.py            # dobór zaworów dekompresyjnych
+    │   └── labor.py             # robocizna, waluty i wykres kosztów
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
     ├── layout.py      # responsywny układ telefonu i tabletu
+    ├── currency.py    # kursy NBP, cache i przeliczanie PLN/EUR/USD
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
     ├── services/      # PRO, reklamy nagradzane i dostęp do modułów
+    ├── widgets/       # współdzielone widżety, w tym wykres kosztów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
     └── paths.py
@@ -69,7 +96,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # testy logiki, UI i kontraktów natywnych
+tests/                 # 382 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 
