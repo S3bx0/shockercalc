@@ -87,6 +87,19 @@ class _Scroll(_Widget):
         self.calls.append((widget, kwargs))
 
 
+class _Window:
+    def __init__(self, softinput_mode="below_target"):
+        self.softinput_mode = softinput_mode
+
+
+class _Dialog:
+    def __init__(self):
+        self.dismissed = False
+
+    def dismiss(self):
+        self.dismissed = True
+
+
 def _stage() -> FreezingStageView:
     return FreezingStageView(
         row=_Widget(),
@@ -243,6 +256,26 @@ def test_freezing_controller_owns_product_and_mass_unit_state():
     assert view.unit_button.text == "t"
     assert state["recent"] == [("Mieso", "Szynka")]
     assert view.product_image.source == "/images/Szynka.png"
+
+
+def test_product_dialog_temporarily_disables_below_target_window_panning():
+    controller, _state = _controller()
+    window = _Window()
+    search_field = _Widget()
+    search_field.focus = True
+    dialog = _Dialog()
+
+    controller._begin_product_dialog_softinput_mode(window)
+    controller._product_search_field = search_field
+    controller._product_dialog = dialog
+
+    assert window.softinput_mode == ""
+
+    controller.close_product_dialog()
+
+    assert window.softinput_mode == "below_target"
+    assert search_field.focus is False
+    assert dialog.dismissed is True
 
 
 def test_freezing_controller_calculates_and_renders_result():

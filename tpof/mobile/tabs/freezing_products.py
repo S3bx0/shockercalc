@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -12,6 +13,8 @@ from tpof.mobile.catalog import (
     _search_product_names,
 )
 from tpof.mobile.tabs.freezing_view import FreezingTabView
+
+log = logging.getLogger(__name__)
 
 
 class FreezingProductSelectionMixin:
@@ -41,6 +44,8 @@ class FreezingProductSelectionMixin:
     _product_results_list: Any | None
     _product_dialog_names: list[str]
     _product_dialog_indexes: dict[str, int]
+    _product_dialog_window: Any | None
+    _product_previous_softinput_mode: str | None
 
     def _initialize_product_selection(self) -> None:
         self.selected_category = None
@@ -51,6 +56,8 @@ class FreezingProductSelectionMixin:
         self._product_results_list = None
         self._product_dialog_names = []
         self._product_dialog_indexes = {}
+        self._product_dialog_window = None
+        self._product_previous_softinput_mode = None
 
     def set_custom_product_available(self, available: bool) -> None:
         if self.view is not None:
@@ -165,6 +172,7 @@ class FreezingProductSelectionMixin:
         if not self.selected_category:
             return
         self.close_product_dialog()
+        self._begin_product_dialog_softinput_mode(Window)
         self._product_dialog_names = _mobile_product_names(
             self._catalog,
             self.selected_category,
@@ -206,6 +214,39 @@ class FreezingProductSelectionMixin:
         )
         self.refresh_product_search_results("")
         self._product_dialog.open()
+
+    def _begin_product_dialog_softinput_mode(self, window: Any) -> None:
+        """Keep a modal search field from panning the whole Kivy surface."""
+
+        if self._product_dialog_window is not None:
+            return
+        previous = getattr(window, "softinput_mode", None)
+        self._product_dialog_window = window
+        self._product_previous_softinput_mode = (
+            previous if isinstance(previous, str) else None
+        )
+        try:
+            window.softinput_mode = ""
+        except Exception:
+            log.debug(
+                "Could not disable product-dialog soft-input panning.",
+                exc_info=True,
+            )
+
+    def _restore_product_dialog_softinput_mode(self) -> None:
+        window = self._product_dialog_window
+        previous = self._product_previous_softinput_mode
+        self._product_dialog_window = None
+        self._product_previous_softinput_mode = None
+        if window is None or previous is None:
+            return
+        try:
+            window.softinput_mode = previous
+        except Exception:
+            log.debug(
+                "Could not restore the window soft-input mode.",
+                exc_info=True,
+            )
 
     def _add_product_search_item(self, name: str, item_height: Any) -> None:
         from kivymd.uix.list import OneLineListItem
@@ -287,11 +328,14 @@ class FreezingProductSelectionMixin:
             self._add_product_search_item(name, item_height)
 
     def close_product_dialog(self) -> None:
+        if self._product_search_field is not None:
+            self._product_search_field.focus = False
         if self._product_dialog is not None:
             self._product_dialog.dismiss()
         self._product_dialog = None
         self._product_search_field = None
         self._product_results_list = None
+        self._restore_product_dialog_softinput_mode()
 
     def on_locked_product(self) -> None:
         self.close_product_dialog()

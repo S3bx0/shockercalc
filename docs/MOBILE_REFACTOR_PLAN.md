@@ -110,6 +110,12 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Test kontraktowy pilnuje jednokierunkowej zależności oraz maksymalnego
      rozmiaru `tabs/freezing.py`.
 
+18. Dialog wyszukiwania produktów i klawiatura Androida — wykonane
+   - Na czas dialogu wyłączane jest globalne przesuwanie `below_target`, które
+     przenosiło całą powierzchnię Kivy do aktywnego pola wyszukiwania.
+   - Przy zamknięciu pole traci fokus, a poprzedni tryb okna jest przywracany.
+   - Test regresyjny pilnuje obu przejść stanu.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -118,7 +124,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 378 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 379 testów.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Następny krok: wydzielić walidację pól i uruchamianie obliczeń z

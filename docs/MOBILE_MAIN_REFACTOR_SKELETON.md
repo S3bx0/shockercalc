@@ -438,6 +438,11 @@ drzewo AST jak przed przeniesieniem, a `freezing.py` zmniejszył się z 803 do
 549 linii. Następną granicą jest walidacja pól i uruchamianie obliczeń, bez
 przenoszenia wzorów z `tpof/core`.
 
+Następnego dnia dialog wyszukiwania otrzymał izolowaną obsługę klawiatury:
+na czas modalnego pola wyłączany jest tryb Kivy `below_target`, a po utracie
+fokusu przywracana jest wcześniejsza wartość. Zapobiega to przesuwaniu całej
+powierzchni aplikacji przez IME bez zmiany filtrowania katalogu.
+
 Aktualny kontrakt:
 
 ```python
