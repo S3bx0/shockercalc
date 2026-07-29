@@ -1,4 +1,5 @@
 from decimal import Decimal
+from pathlib import Path
 from types import SimpleNamespace
 
 from tpof.labor import default_rate_values
@@ -8,6 +9,26 @@ from tpof.mobile.tabs.labor import (
     LaborTabPresenter,
     LaborTabView,
 )
+
+ROOT = Path(__file__).parents[1]
+
+
+def test_labor_view_has_a_separate_composition_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor.py"
+    ).read_text(encoding="utf-8")
+    view_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor_view.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class LaborTabView" in view_source
+    assert "class LaborTabViewCompositionMixin" in view_source
+    assert "LaborTabViewCompositionMixin" in controller_source
+    assert "def build(self: Any) -> LaborTabView:" in view_source
+    assert "def build(self) -> LaborTabView:" not in controller_source
+    assert "class LaborTabView:" not in controller_source
+    assert "from tpof.mobile.tabs.labor import" not in view_source
+    assert len(controller_source.splitlines()) <= 820
 
 
 def _presenter(language="pl"):

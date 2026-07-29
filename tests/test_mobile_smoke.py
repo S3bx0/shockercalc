@@ -285,6 +285,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
+    view_source = _source("tpof/mobile/tabs/labor_view.py")
 
     assert "LaborTabController" in composition_source
     assert "labor_scroll = self._labor_tab_controller.build().scroll" in source
@@ -292,9 +293,11 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     assert "self._labor_tab_controller.apply_theme()" in composition_source
     assert "class LaborTabPresenter" in presenter_source
     assert "class LaborTabController" in presenter_source
-    assert "class LaborTabView" in presenter_source
+    assert "LaborTabViewCompositionMixin" in presenter_source
+    assert "class LaborTabView" in view_source
+    assert "class LaborTabViewCompositionMixin" in view_source
     assert "class LaborChartRow" in presenter_source
-    assert "_CHART_LABEL_KEYS" in presenter_source
+    assert "LABOR_RESULT_LABEL_KEYS" in view_source
     assert "def calculate(self) -> bool" in presenter_source
     assert "self._presenter.chart_rows(breakdown)" in presenter_source
     assert "self._presenter.travel_mode_text(breakdown.travel_mode)" in presenter_source
@@ -309,6 +312,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     interactions_source = _source("tpof/mobile/form_interactions.py")
     freezing_view_source = _source("tpof/mobile/tabs/freezing_view.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
@@ -332,7 +336,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
     assert "self.view.volume_input" in valves_tab_source
     assert "self.view.flow_input" in valves_tab_source
-    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_tab_source
+    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_view_source
     assert "self.view.people_input" in labor_tab_source
     assert "self.view.additional_input" in labor_tab_source
 
@@ -360,6 +364,7 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
 def test_robocizna_ma_wykres_kolowy_kosztow():
     source = _source("tpof/mobile/app.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     widgets_source = _source("tpof/mobile/widgets/__init__.py")
     chart_source = _source("tpof/mobile/widgets/charts.py")
 
@@ -368,8 +373,8 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "def on_touch_down" in chart_source
     assert "LaborPieChart" in widgets_source
     assert "chart_factory=LaborPieChart" in source
-    assert "chart = self._chart_factory(" in labor_tab_source
-    assert "on_release=lambda *_: self.open_chart_dialog()" in labor_tab_source
+    assert "chart = self._chart_factory(" in labor_view_source
+    assert "on_release=lambda *_: self.open_chart_dialog()" in labor_view_source
     assert "self._set_chart_data(" in labor_tab_source
     assert 'center_label=self._translate("labor_chart_total")' in labor_tab_source
     assert "Animation(progress=1.0, duration=0.75" in chart_source

@@ -40,6 +40,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
   `freezing_presentation.py`. `FreezingTabController` pozostaje koordynatorem
   inicjalizacji, stanu jednostki i lokalizacji, a jego rozmiar spadł z 289 do
   160 linii.
+- `LaborTabView` i budowę drzewa Kivy zakładki robocizny przeniesiono do
+  `labor_view.py`. Publiczne `LaborTabController.build()` pozostaje zgodne
+  przez mixin kompozycji, a kontroler zmniejszył się z 1112 do 798 linii.
 
 ### Testy
 
@@ -58,6 +61,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
   lokalizacji, motywu i renderowania wyników.
 - Dodano test granicy modułu prezentacji zakładki chłodniczej i test
   zastosowania responsywnych metryk do jej widoku.
+- Dodano test kontraktowy granicy `labor.py` → `labor_view.py` oraz
+  zaktualizowano testy smoke klawiatury i wykresu.
 
 ## [1.5.11] - 2026-07-20
 
