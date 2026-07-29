@@ -33,12 +33,17 @@ Wdrożone cięcia:
   w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
 - niezależny od Kivy i PyJNIus `ProMonetizationController`, który przejął
   lokalną cenę Google Play, stan przycisku PRO i harmonogram odświeżania zakupu
-  z `main.py`.
+  z `main.py`,
+- `FreezingTabController` rozłożony na osobne moduły budowy widoku, wyboru
+  produktów, obliczeń, wyników oraz prezentacji motywu i responsywnego układu;
+  koordynator ma 160 linii zamiast pierwotnych 1270.
 
-Następny naturalny krok to ustabilizowanie checkpointu zaworów na emulatorze
-i w AAB, a potem wydzielenie większej zakładki chłodniczej do
-`FreezingTabController`. Natywna bramka serwisów została zamknięta; kolejne
-integracje platformowe nie powinny ponownie rozbudowywać Activity.
+Następny naturalny krok to podział `tpof/mobile/tabs/labor.py`, największego
+pozostałego kontrolera mobilnego. Widok, workflow obliczeń i prezentacja
+wyników powinny otrzymać osobne granice przed dodawaniem kolejnych integracji
+platformowych. Natywna bramka serwisów została zamknięta; In-App Review,
+elastyczne In-App Updates i App Shortcuts nie powinny ponownie rozbudowywać
+Activity.
 
 ## Future: WebView chart engine
 
