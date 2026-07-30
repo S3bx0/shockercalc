@@ -78,7 +78,8 @@ tpof/mobile/
 │   ├── freezing_presentation.py # motyw i responsywny układ
 │   ├── valves.py            # zakładka zaworów
 │   ├── labor.py             # koordynator zakładki robocizny
-│   └── labor_view.py        # konstrukcja i granica widoku robocizny
+│   ├── labor_view.py        # konstrukcja i granica widoku robocizny
+│   └── labor_workflow.py    # walidacja i uruchamianie obliczeń
 └── services/
     ├── __init__.py
     ├── monetization.py      # status, cena i zakup PRO
@@ -547,8 +548,14 @@ wyłącznie jawne API kontrolera.
 Pierwszy etap podziału wykonano 2026-07-29. `LaborTabView`, klucze etykiet
 wyników i ciało `build()` zostały przeniesione 1:1 do `labor_view.py`.
 Publiczny import widoku z `labor.py` oraz `controller.build()` pozostają
-kompatybilne. Kontroler zmniejszył się z 1112 do 798 linii; następną granicą
-jest parsowanie, walidacja i workflow `calculate()`.
+kompatybilne. Kontroler zmniejszył się z 1112 do 798 linii.
+
+Drugi etap podziału wykonano 2026-07-30. Parsowanie liczb, walidacja formularza,
+konfiguracja stawek, przygotowanie `CalculationInput` i `calculate()` zostały
+przeniesione 1:1 do `labor_workflow.py`. Wzory pozostają w `tpof/labor`, a
+publiczne `controller.calculate()` jest zachowane przez mixin workflow.
+`labor.py` ma obecnie 604 linie; następną granicą jest prezentacja wyników
+i wykres.
 
 Klasa:
 

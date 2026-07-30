@@ -23,9 +23,10 @@ Wdrożone cięcia:
 - kontroler dialogu ustawień w `tpof/mobile/dialogs/settings.py`,
 - kontroler dialogu stawek w `tpof/mobile/dialogs/labor_rates.py`,
 - `LaborTabController` w `tpof/mobile/tabs/labor.py`, który posiada stan
-  przełączników, walutę kosztu dodatkowego, walidację, obliczenia, wyniki oraz
-  wykres; budowa drzewa Kivy i `LaborTabView` są już w `labor_view.py`, a
-  `main.py` nie przechowuje aliasów jego widgetów,
+  przełączników, walutę kosztu dodatkowego, wyniki oraz wykres; budowa drzewa
+  Kivy i `LaborTabView` są w `labor_view.py`, a parsowanie, walidacja i
+  orkiestracja `calculate()` w `labor_workflow.py`. `main.py` nie przechowuje
+  aliasów jego widgetów,
 - `ValvesTabController` w `tpof/mobile/tabs/valves.py`, który przejął budowę
   karty, tryb kubatura/wymiary, wybór typu, walidację, obliczenia i prezentację
   wyników; polityka PRO, zakup i reklama nagradzana pozostają w orkiestratorze,
@@ -39,11 +40,11 @@ Wdrożone cięcia:
   produktów, obliczeń, wyników oraz prezentacji motywu i responsywnego układu;
   koordynator ma 160 linii zamiast pierwotnych 1270.
 
-Następny naturalny krok to wydzielenie parsowania, walidacji i `calculate()`
-z `tpof/mobile/tabs/labor.py` do `labor_workflow.py`, bez przenoszenia wzorów
-z `tpof/labor`. Następnie osobną granicę powinny otrzymać wykres i prezentacja
-wyników. Natywna bramka serwisów została zamknięta; In-App Review, elastyczne
-In-App Updates i App Shortcuts nie powinny ponownie rozbudowywać Activity.
+Następny naturalny krok to wydzielenie prezentacji wyników i wykresu
+z `tpof/mobile/tabs/labor.py` do osobnego `labor_results.py`, bez przenoszenia
+obliczeń z `tpof/labor` ani workflow z `labor_workflow.py`. Natywna bramka
+serwisów została zamknięta; In-App Review, elastyczne In-App Updates i App
+Shortcuts nie powinny ponownie rozbudowywać Activity.
 
 ## Future: WebView chart engine
 

@@ -31,6 +31,28 @@ def test_labor_view_has_a_separate_composition_boundary():
     assert len(controller_source.splitlines()) <= 820
 
 
+def test_labor_workflow_has_a_separate_calculation_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor.py"
+    ).read_text(encoding="utf-8")
+    workflow_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor_workflow.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class LaborCalculationWorkflowMixin" in workflow_source
+    assert "LaborCalculationWorkflowMixin" in controller_source
+    assert "def clear_validation(self) -> None:" in workflow_source
+    assert "def _parse_int(" in workflow_source
+    assert "def _parse_decimal(" in workflow_source
+    assert "def _rate_config(self) -> RateConfig:" in workflow_source
+    assert "def calculate(self) -> bool:" in workflow_source
+    assert "def calculate(self) -> bool:" not in controller_source
+    assert "def _parse_int(" not in controller_source
+    assert "def _parse_decimal(" not in controller_source
+    assert "from tpof.mobile.tabs.labor import" not in workflow_source
+    assert len(controller_source.splitlines()) <= 620
+
+
 def _presenter(language="pl"):
     return LaborTabPresenter(
         translate=lambda key, **_kwargs: f"Label {key}:",

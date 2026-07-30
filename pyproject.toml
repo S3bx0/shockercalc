@@ -86,6 +86,7 @@ files = [
     "tpof/mobile/dialogs/privacy.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
+    "tpof/mobile/tabs/labor_workflow.py",
     "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
 ]

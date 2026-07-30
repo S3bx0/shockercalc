@@ -43,6 +43,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - `LaborTabView` i budowę drzewa Kivy zakładki robocizny przeniesiono do
   `labor_view.py`. Publiczne `LaborTabController.build()` pozostaje zgodne
   przez mixin kompozycji, a kontroler zmniejszył się z 1112 do 798 linii.
+- Parsowanie pól, walidację, konfigurację stawek i orkiestrację `calculate()`
+  zakładki robocizny przeniesiono do `labor_workflow.py`. Wzory nadal
+  pozostają w `tpof/labor`, publiczne API kontrolera jest zgodne, a
+  `labor.py` zmniejszył się z 798 do 604 linii.
 
 ### Testy
 
@@ -63,6 +67,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
   zastosowania responsywnych metryk do jej widoku.
 - Dodano test kontraktowy granicy `labor.py` → `labor_view.py` oraz
   zaktualizowano testy smoke klawiatury i wykresu.
+- Dodano test kontraktowy granicy `labor.py` → `labor_workflow.py` i objęto
+  nowy moduł kontrolą mypy.
 
 ## [1.5.11] - 2026-07-20
 

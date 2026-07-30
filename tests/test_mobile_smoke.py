@@ -227,6 +227,7 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     composition_source = _source("tpof/mobile/app_controllers.py")
     dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    workflow_source = _source("tpof/mobile/tabs/labor_workflow.py")
 
     assert (
         "open_rates_dialog=lambda: self._labor_rates_dialog_controller.open()"
@@ -237,8 +238,8 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     assert "LaborRatesDialogController" in composition_source
     assert "self._preferences.set_labor_rate_values" in composition_source
     assert "self._preferences.reset_labor_rate_values" in composition_source
-    assert "def _rate_config" in labor_tab_source
-    assert "rate_config_from_values(self._get_rate_values())" in labor_tab_source
+    assert "def _rate_config" in workflow_source
+    assert "rate_config_from_values(self._get_rate_values())" in workflow_source
     assert "class LaborRatesDialogController" in dialog_source
     assert "labor_rates_factory" in dialog_source
     assert "def save(" in dialog_source
@@ -286,6 +287,7 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     composition_source = _source("tpof/mobile/app_controllers.py")
     presenter_source = _source("tpof/mobile/tabs/labor.py")
     view_source = _source("tpof/mobile/tabs/labor_view.py")
+    workflow_source = _source("tpof/mobile/tabs/labor_workflow.py")
 
     assert "LaborTabController" in composition_source
     assert "labor_scroll = self._labor_tab_controller.build().scroll" in source
@@ -294,11 +296,14 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     assert "class LaborTabPresenter" in presenter_source
     assert "class LaborTabController" in presenter_source
     assert "LaborTabViewCompositionMixin" in presenter_source
+    assert "LaborCalculationWorkflowMixin" in presenter_source
     assert "class LaborTabView" in view_source
     assert "class LaborTabViewCompositionMixin" in view_source
+    assert "class LaborCalculationWorkflowMixin" in workflow_source
     assert "class LaborChartRow" in presenter_source
     assert "LABOR_RESULT_LABEL_KEYS" in view_source
-    assert "def calculate(self) -> bool" in presenter_source
+    assert "def calculate(self) -> bool" in workflow_source
+    assert "def calculate(self) -> bool" not in presenter_source
     assert "self._presenter.chart_rows(breakdown)" in presenter_source
     assert "self._presenter.travel_mode_text(breakdown.travel_mode)" in presenter_source
     assert "self.labor_in_people" not in source
