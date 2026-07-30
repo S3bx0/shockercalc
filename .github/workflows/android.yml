@@ -21,6 +21,11 @@ jobs:
   build-apk:
     name: Buildozer (debug APK)
     runs-on: ubuntu-24.04
+    env:
+      # Savannah intermittently returns HTTP 502. python-for-android supports
+      # recipe URL overrides, so use FreeType's official SourceForge mirror
+      # and verify the archive against the publisher-provided SHA-256.
+      URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
 
     steps:
       - name: Checkout repo

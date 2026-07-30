@@ -188,10 +188,17 @@ def test_build_config_supports_rotation_and_current_android_libraries():
 
 
 def test_workflows_pin_reproducible_build_tools():
+    freetype_mirror = (
+        "https://downloads.sourceforge.net/project/freetype/freetype2/"
+        "{version}/freetype-{version}.tar.gz"
+        "#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+    )
+
     for name in ("android.yml", "android-release.yml"):
         workflow = (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
         assert "buildozer==1.6.0" in workflow
         assert "legacy-cgi==2.6.4" in workflow
+        assert f'URL_freetype: "{freetype_mirror}"' in workflow
         assert "git+https://github.com/kivy/buildozer" not in workflow
         assert "actions/checkout@v4" not in workflow
         assert "actions/cache@v4" not in workflow

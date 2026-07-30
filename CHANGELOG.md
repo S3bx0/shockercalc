@@ -8,6 +8,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Naprawiono
 
+- Buildy APK i AAB korzystają z oficjalnego mirrora SourceForge dla FreeType,
+  gdy serwer Savannah zwraca błąd `502`. Archiwum jest dodatkowo sprawdzane
+  względem sumy SHA-256 opublikowanej przez projekt FreeType.
 - Przycisk PRO nie pokazuje już nieaktualnej ceny `4,99 zł`. Po połączeniu
   z Google Play wyświetla lokalną, sformatowaną cenę bieżącego planu
   subskrypcji; do czasu odpowiedzi Billing używa fallbacku `9,99 zł/mies.`.
