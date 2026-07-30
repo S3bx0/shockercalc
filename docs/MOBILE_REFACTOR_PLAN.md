@@ -16,6 +16,8 @@ obliczenia w `tabs/freezing_workflow.py`, wyniki w
 `tabs/freezing_results.py`, a motyw i responsywność w
 `tabs/freezing_presentation.py`. `tabs/freezing.py` zmniejszył się z 1270 do
 160 linii bez zmiany zachowania.
+Widok zakładki robocizny jest w `tabs/labor_view.py` (330 linii), a
+`tabs/labor.py` po pierwszym cięciu zmniejszył się z 1112 do 798 linii.
 W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
 orkiestracja usług aplikacji.
 
@@ -56,7 +58,8 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Polityka uprawnień, zakup i reklama nagradzana są w osobnym kontrolerze.
 
 8. `tpof/mobile/tabs/labor.py` — wykonane
-   - Budowa i obsługa zakładki robocizny, bez zmiany `tpof.labor`.
+   - Obsługa zakładki robocizny bez zmiany `tpof.labor`.
+   - Budowa widoku jest już w osobnym `tabs/labor_view.py`.
 
 9. `tpof/mobile/services/monetization.py`
    - Stan PRO, lokalna cena Google Play i asynchroniczne odświeżanie zakupu.
@@ -140,6 +143,13 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    - Lokalizacja oraz stan jednostki masy pozostają w koordynatorze.
    - `tabs/freezing.py` zmniejszył się z 289 do 160 linii.
 
+22. `tpof/mobile/tabs/labor_view.py` — wykonane
+   - Zawiera `LaborTabView`, klucze etykiet wyników i mechaniczne składanie
+     drzewa widgetów Kivy.
+   - `LaborTabController.build()` pozostaje kompatybilne przez mixin
+     kompozycji.
+   - `tabs/labor.py` zmniejszył się z 1112 do 798 linii.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -148,7 +158,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 384 testy.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 385 testów.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Wydzielić walidację pól i uruchamianie obliczeń z
@@ -159,8 +169,10 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
    — wykonane.
 10. Wydzielić responsywny układ i synchronizację motywu do osobnego modułu,
     pozostawiając kontrolerowi inicjalizację i lokalizację — wykonane.
-11. Następny krok: podzielić `tabs/labor.py` na granicę widoku, workflow
-    obliczeń i prezentację wyników, bez przenoszenia wzorów z `tpof/labor`.
+11. Wydzielić granicę widoku robocizny do `tabs/labor_view.py` bez zmiany
+    zachowania — wykonane.
+12. Następny krok: wydzielić parsowanie, walidację i `calculate()` do
+    `tabs/labor_workflow.py`, bez przenoszenia wzorów z `tpof/labor`.
 
 ## Zasady bezpieczeństwa
 
