@@ -6,9 +6,9 @@ from tpof.labor import default_rate_values
 from tpof.mobile.currency import default_exchange_rates
 from tpof.mobile.tabs.labor import (
     LaborTabController,
-    LaborTabPresenter,
     LaborTabView,
 )
+from tpof.mobile.tabs.labor_results import LaborTabPresenter
 
 ROOT = Path(__file__).parents[1]
 
@@ -51,6 +51,33 @@ def test_labor_workflow_has_a_separate_calculation_boundary():
     assert "def _parse_decimal(" not in controller_source
     assert "from tpof.mobile.tabs.labor import" not in workflow_source
     assert len(controller_source.splitlines()) <= 620
+
+
+def test_labor_results_have_a_separate_presentation_boundary():
+    controller_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor.py"
+    ).read_text(encoding="utf-8")
+    results_source = (
+        ROOT / "tpof" / "mobile" / "tabs" / "labor_results.py"
+    ).read_text(encoding="utf-8")
+
+    assert "class LaborResultsPresentationMixin" in results_source
+    assert "LaborResultsPresentationMixin," in controller_source
+    assert "class LaborTabPresenter" in results_source
+    assert "class LaborChartRow" in results_source
+    assert "def _set_chart_data(" in results_source
+    assert "def _render_chart_legend(" in results_source
+    assert "def open_chart_dialog(" in results_source
+    assert "def render_results(" in results_source
+    assert "def invalidate_results(" in results_source
+    assert "def _set_chart_data(" not in controller_source
+    assert "def _render_chart_legend(" not in controller_source
+    assert "def open_chart_dialog(" not in controller_source
+    assert "def render_results(" not in controller_source
+    assert "def calculate(" not in results_source
+    assert "calculate_cost_breakdown" not in results_source
+    assert "from tpof.mobile.tabs.labor import" not in results_source
+    assert len(controller_source.splitlines()) <= 280
 
 
 def _presenter(language="pl"):

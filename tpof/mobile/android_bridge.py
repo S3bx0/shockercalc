@@ -98,6 +98,22 @@ class AndroidActivityBridge:
             log.exception("Udostępnianie pliku Android")
             return False
 
+    def open_feedback_email(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+    ) -> bool:
+        """Open an editable feedback draft in a native Android email app."""
+        if not self._is_android:
+            return False
+        try:
+            self.activity().openFeedbackEmail(recipient, subject, body)
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.exception("Otwarcie wiadomości z opinią Android")
+            return False
+
 
 def _runtime_font_path() -> Path | None:
     """Używa fontu aplikacji albo kopii DejaVu dostarczanej przez Kivy."""

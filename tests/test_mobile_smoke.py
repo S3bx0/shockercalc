@@ -285,7 +285,8 @@ def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
-    presenter_source = _source("tpof/mobile/tabs/labor.py")
+    controller_source = _source("tpof/mobile/tabs/labor.py")
+    presenter_source = _source("tpof/mobile/tabs/labor_results.py")
     view_source = _source("tpof/mobile/tabs/labor_view.py")
     workflow_source = _source("tpof/mobile/tabs/labor_workflow.py")
 
@@ -294,15 +295,18 @@ def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     assert "self._labor_tab_controller.refresh_texts()" in composition_source
     assert "self._labor_tab_controller.apply_theme()" in composition_source
     assert "class LaborTabPresenter" in presenter_source
-    assert "class LaborTabController" in presenter_source
-    assert "LaborTabViewCompositionMixin" in presenter_source
-    assert "LaborCalculationWorkflowMixin" in presenter_source
+    assert "class LaborResultsPresentationMixin" in presenter_source
+    assert "class LaborTabController" in controller_source
+    assert "LaborTabViewCompositionMixin" in controller_source
+    assert "LaborCalculationWorkflowMixin" in controller_source
+    assert "LaborResultsPresentationMixin" in controller_source
     assert "class LaborTabView" in view_source
     assert "class LaborTabViewCompositionMixin" in view_source
     assert "class LaborCalculationWorkflowMixin" in workflow_source
     assert "class LaborChartRow" in presenter_source
     assert "LABOR_RESULT_LABEL_KEYS" in view_source
     assert "def calculate(self) -> bool" in workflow_source
+    assert "def calculate(self) -> bool" not in controller_source
     assert "def calculate(self) -> bool" not in presenter_source
     assert "self._presenter.chart_rows(breakdown)" in presenter_source
     assert "self._presenter.travel_mode_text(breakdown.travel_mode)" in presenter_source
@@ -368,7 +372,7 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
 
 def test_robocizna_ma_wykres_kolowy_kosztow():
     source = _source("tpof/mobile/app.py")
-    labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    labor_results_source = _source("tpof/mobile/tabs/labor_results.py")
     labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     widgets_source = _source("tpof/mobile/widgets/__init__.py")
     chart_source = _source("tpof/mobile/widgets/charts.py")
@@ -380,21 +384,24 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "chart_factory=LaborPieChart" in source
     assert "chart = self._chart_factory(" in labor_view_source
     assert "on_release=lambda *_: self.open_chart_dialog()" in labor_view_source
-    assert "self._set_chart_data(" in labor_tab_source
-    assert 'center_label=self._translate("labor_chart_total")' in labor_tab_source
+    assert "self._set_chart_data(" in labor_results_source
+    assert (
+        'center_label=self._translate("labor_chart_total")'
+        in labor_results_source
+    )
     assert "Animation(progress=1.0, duration=0.75" in chart_source
     assert "prepare_cost_segments" in chart_source
     assert "Mesh(vertices=vertices" in chart_source
     assert "gap = min(2.2, sweep * 0.18) if multiple_segments else 0.0" in chart_source
     assert "font_size * available_width / measurement.texture.size[0]" in chart_source
     assert "ring_width + dp(5)" not in chart_source
-    assert "self._chart_dialog.size_hint_x = 0.94" in labor_tab_source
-    assert "self.view.chart_legend" in labor_tab_source
-    assert "def _render_chart_legend" in labor_tab_source
-    assert "def open_chart_dialog" in labor_tab_source
-    assert "labor_chart_tap" in labor_tab_source
-    assert "from kivymd.uix.dialog import MDDialog" in labor_tab_source
-    assert "from kivymd.uix.button import MDFlatButton" in labor_tab_source
+    assert "self._chart_dialog.size_hint_x = 0.94" in labor_results_source
+    assert "self.view.chart_legend" in labor_results_source
+    assert "def _render_chart_legend" in labor_results_source
+    assert "def open_chart_dialog" in labor_results_source
+    assert "labor_chart_tap" in labor_results_source
+    assert "from kivymd.uix.dialog import MDDialog" in labor_results_source
+    assert "from kivymd.uix.button import MDFlatButton" in labor_results_source
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():

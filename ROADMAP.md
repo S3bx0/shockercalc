@@ -25,32 +25,44 @@ Wdrożone cięcia:
 - `LaborTabController` w `tpof/mobile/tabs/labor.py`, który posiada stan
   przełączników, walutę kosztu dodatkowego, wyniki oraz wykres; budowa drzewa
   Kivy i `LaborTabView` są w `labor_view.py`, a parsowanie, walidacja i
-  orkiestracja `calculate()` w `labor_workflow.py`. `main.py` nie przechowuje
-  aliasów jego widgetów,
+  orkiestracja `calculate()` w `labor_workflow.py`. Prezentacja wyników,
+  legendy i dialogu wykresu znajduje się w `labor_results.py`; koordynator ma
+  około 260 linii zamiast 604. `main.py` nie przechowuje aliasów jego widgetów,
 - `ValvesTabController` w `tpof/mobile/tabs/valves.py`, który przejął budowę
   karty, tryb kubatura/wymiary, wybór typu, walidację, obliczenia i prezentację
   wyników; polityka PRO, zakup i reklama nagradzana pozostają w orkiestratorze,
 - natywne serwisy `FirebaseTelemetryService`, `PrivacyConsentService`,
-  `AdvertisingService`, `BillingService` i `FileShareService`, pozostawiające
-  w Activity fasadę dla PyJNIus, składanie zależności i cykl życia.
+  `AdvertisingService`, `BillingService`, `FileShareService` i
+  `FeedbackService`, pozostawiające w Activity fasadę dla PyJNIus, składanie
+  zależności i cykl życia,
 - niezależny od Kivy i PyJNIus `ProMonetizationController`, który przejął
   lokalną cenę Google Play, stan przycisku PRO i harmonogram odświeżania zakupu
   z `main.py`,
+- niezależny od Kivy i PyJNIus `UserFeedbackController`, który tworzy
+  edytowalny, lokalizowany szkic wiadomości z wersją i językiem aplikacji.
+  Użytkownik sam decyduje o treści i wysłaniu; aplikacja nie zbiera
+  diagnostyki ani nie wysyła danych w tle,
 - `FreezingTabController` rozłożony na osobne moduły budowy widoku, wyboru
   produktów, obliczeń, wyników oraz prezentacji motywu i responsywnego układu;
   koordynator ma 160 linii zamiast pierwotnych 1270.
 
-Następny naturalny krok to wydzielenie prezentacji wyników i wykresu
-z `tpof/mobile/tabs/labor.py` do osobnego `labor_results.py`, bez przenoszenia
-obliczeń z `tpof/labor` ani workflow z `labor_workflow.py`. Natywna bramka
-serwisów została zamknięta; In-App Review, elastyczne In-App Updates i App
-Shortcuts nie powinny ponownie rozbudowywać Activity.
+Następny krok publikacyjny to zebrać rzeczywiste opinie przez wdrożoną akcję
+„Wyślij opinię / Zgłoś błąd” oraz prywatny kanał Google Play, zapisać decyzje w
+`docs/CLOSED_TEST_FEEDBACK_LOG.md` i wydać co najmniej jedną uzasadnioną
+aktualizację testową. Następny krok platformowy po ustabilizowaniu testu to
+In-App Review jako osobny kontroler Python i osobny serwis Java. Elastyczne
+In-App Updates i App Shortcuts również nie powinny ponownie rozbudowywać
+Activity.
 
 ## Priorytet publikacyjny: ponowny test zamknięty Google Play
 
 Google Play odrzucił pierwszy wniosek o dostęp do wersji produkcyjnej i wskazał
 jako możliwe przyczyny niewystarczające zaangażowanie testerów oraz brak
 udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem:
+
+- 30 lipca 2026 przesłano do sprawdzenia wersję 96 (1.5.11) w ścieżce
+  zamkniętej Alpha; po jej udostępnieniu należy potwierdzić w Konsoli Play
+  faktyczny początek kolejnego wymaganego okresu 14 dni,
 
 - utrzymać co najmniej 12 realnych testerów zapisanych do testu zamkniętego
   nieprzerwanie przez pełne 14 dni; zaprosić 15–20 osób, aby zachować bezpieczny
@@ -59,9 +71,9 @@ udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem
   zawory, robociznę, ustawienia, zmianę języka i motywu oraz eksport PDF,
 - upewnić się, że testerzy instalują i aktualizują aplikację przez link testu
   zamkniętego Google Play oraz faktycznie korzystają z jej funkcji,
-- dodać w ustawieniach prostą akcję „Wyślij opinię / Zgłoś błąd”, która tworzy
-  wiadomość z wersją aplikacji i opcjonalnymi danymi diagnostycznymi, bez
-  zbierania danych w tle,
+- wdrożono w ustawieniach akcję „Wyślij opinię / Zgłoś błąd”, która tworzy
+  edytowalną wiadomość z wersją i językiem aplikacji, bez zbierania danych w
+  tle; należy udostępnić ją testerom w kolejnej kompilacji,
 - równolegle zbierać prywatne opinie w Google Play i prowadzić rejestr:
   data, obszar aplikacji, zgłoszenie, decyzja i wersja zawierająca poprawkę,
 - opublikować w teście zamkniętym co najmniej jedną uzasadnioną aktualizację
@@ -71,10 +83,9 @@ udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem
 - ponownie wnioskować dopiero po zakończeniu okresu wskazanego w Konsoli Play
   i opisać wyłącznie rzeczywiste zaangażowanie, feedback oraz wdrożone zmiany.
 
-Funkcja opinii ma powstać jako osobny kontroler lub serwis z własnymi testami.
-`main.py` może jedynie składać zależności, a `RefrigerationCalcActivity.java`
-udostępnić cienki delegat do systemowego arkusza udostępniania lub klienta
-poczty.
+Funkcja opinii została wydzielona do `UserFeedbackController` z własnymi
+testami. `main.py` nie zawiera jej logiki, a `RefrigerationCalcActivity.java`
+udostępnia wyłącznie cienki delegat do `FeedbackService`.
 
 ## Future: WebView chart engine
 

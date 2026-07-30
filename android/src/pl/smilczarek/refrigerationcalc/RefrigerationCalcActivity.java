@@ -23,6 +23,7 @@ public class RefrigerationCalcActivity extends PythonActivity {
     private PrivacyConsentService privacyConsentService;
     private AdvertisingService advertisingService;
     private FileShareService fileShareService;
+    private FeedbackService feedbackService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -146,6 +147,13 @@ public class RefrigerationCalcActivity extends PythonActivity {
             fileShareService = new FileShareService(this);
         }
         return fileShareService;
+    }
+
+    private FeedbackService feedback() {
+        if (feedbackService == null) {
+            feedbackService = new FeedbackService(this);
+        }
+        return feedbackService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
@@ -281,6 +289,11 @@ public class RefrigerationCalcActivity extends PythonActivity {
     public void shareFile(final String path, final String mimeType,
                           final String subject, final String text) {
         fileShare().shareFile(path, mimeType, subject, text);
+    }
+
+    public void openFeedbackEmail(final String recipient, final String subject,
+                                  final String body) {
+        feedback().openEmail(recipient, subject, body);
     }
 
     private boolean isDebugBuild() {

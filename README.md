@@ -3,9 +3,9 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-**Aktualna wersja Android:** `1.5.11`
+**Aktualna wersja Android:** `1.5.12`
 
-**Stan jakości:** 386 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 396 testów automatycznych, statyczna kontrola Ruff i mypy,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
@@ -30,6 +30,7 @@ uruchamiania, kompilowania ani modyfikowania programu.
   do pracy bez połączenia,
 - wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
 - eksport i udostępnianie raportów PDF,
+- dobrowolne wysyłanie opinii i zgłoszeń błędów przez edytowalny szkic e-mail,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
   telefonu i tabletu,
 - model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
@@ -72,14 +73,15 @@ tpof/                  # pakiet źródłowy
     │   ├── freezing_results.py  # prezentacja i zerowanie wyników
     │   ├── freezing_presentation.py # motyw i responsywny układ
     │   ├── valves.py            # dobór zaworów dekompresyjnych
-    │   ├── labor.py             # koordynator robocizny, wyników i wykresu
+    │   ├── labor.py             # koordynator robocizny
     │   ├── labor_view.py        # konstrukcja widoku robocizny
-    │   └── labor_workflow.py    # parsowanie, walidacja i obliczenia
+    │   ├── labor_workflow.py    # parsowanie, walidacja i obliczenia
+    │   └── labor_results.py     # wyniki, wykres, legenda i dialog szczegółów
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
     ├── layout.py      # responsywny układ telefonu i tabletu
     ├── currency.py    # kursy NBP, cache i przeliczanie PLN/EUR/USD
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
-    ├── services/      # PRO, reklamy nagradzane i dostęp do modułów
+    ├── services/      # PRO, dostęp do modułów i dobrowolne opinie użytkownika
     ├── widgets/       # współdzielone widżety, w tym wykres kosztów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
@@ -91,7 +93,8 @@ android/src/.../       # natywna powłoka Android
 ├── PrivacyConsentService.java
 ├── AdvertisingService.java
 ├── BillingService.java
-└── FileShareService.java
+├── FileShareService.java
+└── FeedbackService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
