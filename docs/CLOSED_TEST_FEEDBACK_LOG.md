@@ -18,19 +18,23 @@ pozwalających zidentyfikować testera. Każdy wpis powinien mieć potwierdzone
 
 | Data | Kanał | Obszar | Opinia / problem | Decyzja i uzasadnienie | Wersja / dowód wdrożenia |
 | --- | --- | --- | --- | --- | --- |
+| 2026-06-24 | prywatna opinia Google Play | ogólna ocena; Samsung Galaxy M35 / Android 16 | Ocena 5/5, treść „Super”; wersja aplikacji niedostępna | Brak szczegółów umożliwiających zmianę; w 1.5.12 udostępniono formularz do zbierania bieżących, ustrukturyzowanych opinii | opinia widoczna w Konsoli Play; 1.5.12 (98) |
 | _rrrr-mm-dd_ | _e-mail / prywatna opinia Google Play_ | _np. Robocizna_ | _opis rzeczywistego zgłoszenia_ | _przyjęte / odłożone / odrzucone + powód_ | _np. 1.5.12 / commit / release_ |
 
 ## Podsumowanie przed kolejnym wnioskiem produkcyjnym
 
 - Decyzja Google rozpoczynająca kolejny okres: 2026-07-30, 16:25
 - Wersja 96 (1.5.11) dostępna na aktywnej ścieżce Alpha: 2026-07-30, 19:59
+- Wersja 98 (1.5.12) i formularz „Bezpieczeństwo danych” przesłane razem do
+  sprawdzenia: 2026-07-30
 - Najwcześniejszy bezpieczny dzień sprawdzenia przycisku ponownego wniosku:
   2026-08-14; wiążący jest stan przycisku w Konsoli Play
 - Liczba osób na wybranej liście testerów na początku okresu: 18
 - Minimalna liczba testerów nieprzerwanie zapisanych w całym okresie:
   _uzupełnić po zakończeniu_
 - Najważniejsze przetestowane scenariusze: _do uzupełnienia_
-- Liczba otrzymanych rzeczywistych opinii: _do uzupełnienia_
+- Liczba otrzymanych rzeczywistych opinii: 1 starsza ocena ogólna bez
+  szczegółów wdrożeniowych; liczbę nowych opinii z bieżącego okresu uzupełnić
 - Wersje opublikowane na podstawie opinii: _do uzupełnienia_
 - Stan Android Vitals, awarii i ANR: _do uzupełnienia_
 

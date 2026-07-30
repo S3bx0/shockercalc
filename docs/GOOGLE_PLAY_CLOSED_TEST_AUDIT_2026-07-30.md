@@ -13,7 +13,10 @@ podstawy do deklarowania fikcyjnej aktywności ani opinii.
 - wersja 96 (1.5.11) jest dostępna testerom od 30 lipca 2026, 19:59;
 - wybrana lista e-mail zawiera 18 testerów;
 - kanał opinii ścieżki to `MILCZAREK.SEBASTIAN1988@GMAIL.COM`;
-- sekcja „Opinie z testów” nie zawiera jeszcze żadnej opinii;
+- sekcja „Opinie z testów” zawiera jedną starszą, prywatną ocenę 5/5
+  „Super” z 24 czerwca 2026, przesłaną z Samsung Galaxy M35 / Android 16;
+  Konsola nie przypisuje jej do konkretnej wersji aplikacji, a sama treść nie
+  zawiera szczegółów przydatnych do wdrożenia;
 - „Stan zgodności z zasadami” pokazuje „Nie znaleziono problemów”;
 - wszystkie 10 deklaracji zawartości jest oznaczonych jako zrealizowane;
 - raport przed opublikowaniem nie został jeszcze wygenerowany;
@@ -44,8 +47,8 @@ czy nadal występuje.
    opinii. Nie przypisywać wcześniejszej poprawki opinii, której nie było.
 7. Po każdym AAB sprawdzić raport przed opublikowaniem, a przed wnioskiem także
    Android Vitals, awarie, ANR i ostrzeżenia zgodności.
-8. Zaktualizować formularz „Bezpieczeństwo danych” przed wysłaniem kolejnego
-   wydania do sprawdzenia.
+8. Utrzymywać formularz „Bezpieczeństwo danych” zgodny z faktyczną
+   konfiguracją SDK i każdorazowo sprawdzać go przed nowym wydaniem.
 9. W formularzu produkcyjnym podawać wyłącznie fakty: sposób rekrutacji,
    rzeczywiste użyte funkcje, otrzymane uwagi i wdrożone na ich podstawie
    zmiany.
@@ -81,9 +84,9 @@ prosić o dane obliczanych klientów, zdjęcia dokumentów ani inne dane osobowe
 
 ## Audyt formularza „Bezpieczeństwo danych”
 
-Aktualna deklaracja, ostatnio edytowana 4 czerwca 2026, ma zaznaczony tylko
-jeden typ: „Identyfikatory urządzenia i inne”. To nie odpowiada obecnej
-konfiguracji wydania:
+Deklaracja z 4 czerwca 2026 miała zaznaczony tylko jeden typ:
+„Identyfikatory urządzenia i inne”. Nie odpowiadało to obecnej konfiguracji
+wydania:
 
 - `play-services-ads:25.4.0`;
 - `firebase-analytics:23.2.0`;
@@ -91,7 +94,8 @@ konfiguracji wydania:
 - `firebase-config:23.1.0`;
 - aktywny sekret `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` w GitHub Actions.
 
-Przed zapisaniem formularza trzeba zweryfikować co najmniej poniższe pozycje:
+30 lipca 2026 formularz został poprawiony i zapisany. Zadeklarowano sześć
+typów danych:
 
 | Typ w Konsoli Play | Źródło | Charakter | Typowe cele |
 | --- | --- | --- | --- |
@@ -114,6 +118,34 @@ Telemetria Firebase jest w aplikacji domyślnie wyłączona i użytkownik może 
 włączyć lub wyłączyć, więc odpowiada warunkowi zbierania opcjonalnego. Ostateczne
 odpowiedzi muszą uwzględniać aktualne ustawienia AdMob, Analytics i Firebase
 Console.
+
+W formularzu zaznaczono również szyfrowanie danych podczas przesyłania, brak
+tworzenia kont użytkowników oraz możliwość żądania usunięcia danych przez:
+
+`https://s3bx0.github.io/privacy.html#data-deletion`
+
+Polityka prywatności zawiera teraz polskie i angielskie instrukcje przesłania
+żądania oraz termin realizacji do 30 dni.
+
+## Wydanie Alpha 1.5.12
+
+30 lipca 2026 przesłano do istniejącej ścieżki „Test zamknięty - Alpha”:
+
+- AAB `versionCode 98`, `versionName 1.5.12`;
+- docelowy pakiet SDK 36;
+- pełne wdrożenie na dotychczasowej ścieżce, bez zmiany listy testerów i
+  regionu;
+- informacje o wersji opisujące poprawki robocizny i wykresu, formularz opinii
+  i zgłaszania błędów oraz aktualizacje prywatności i stabilności.
+
+Konsola przyjęła pakiet i pokazała tylko dwa nieblokujące ostrzeżenia:
+
+- brak pliku mapowania deobfuskacji;
+- brak symboli debugowania kodu natywnego.
+
+Wersję 98 i zaktualizowany formularz „Bezpieczeństwo danych” przesłano razem
+do sprawdzenia. Bezpośrednio po wysłaniu Konsola pokazywała stan „Zmiany w
+trakcie sprawdzania” oraz wykonywanie szybkich testów.
 
 ## Raport przed opublikowaniem
 
