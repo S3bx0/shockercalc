@@ -60,13 +60,16 @@ Google Play odrzucił pierwszy wniosek o dostęp do wersji produkcyjnej i wskaza
 jako możliwe przyczyny niewystarczające zaangażowanie testerów oraz brak
 udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem:
 
-- 30 lipca 2026 przesłano do sprawdzenia wersję 96 (1.5.11) w ścieżce
-  zamkniętej Alpha; po jej udostępnieniu należy potwierdzić w Konsoli Play
-  faktyczny początek kolejnego wymaganego okresu 14 dni,
+- 30 lipca 2026 o 16:25 Google odrzucił pierwszy wniosek i w Konsoli Play
+  rozpoczął wymaganie kolejnych 14 dni liczonych od daty sprawdzenia; wersja
+  96 (1.5.11) jest dostępna w aktywnej ścieżce Alpha od 30 lipca, 19:59,
+- nie składać wniosku przed odblokowaniem przycisku przez Konsolę Play;
+  operacyjnie najbezpieczniej sprawdzić możliwość ponownego zgłoszenia
+  14 sierpnia 2026, zamiast zakładać samodzielnie wcześniejszą godzinę końca,
 
 - utrzymać co najmniej 12 realnych testerów zapisanych do testu zamkniętego
-  nieprzerwanie przez pełne 14 dni; zaprosić 15–20 osób, aby zachować bezpieczny
-  zapas,
+  nieprzerwanie przez pełne 14 dni; lista Alpha zawiera obecnie 18 testerów,
+  więc nie usuwać listy, nie wstrzymywać ścieżki i zachować zapas,
 - przekazać testerom krótkie scenariusze obejmujące kalkulator chłodniczy,
   zawory, robociznę, ustawienia, zmianę języka i motywu oraz eksport PDF,
 - upewnić się, że testerzy instalują i aktualizują aplikację przez link testu
@@ -76,10 +79,16 @@ udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem
   tle; należy udostępnić ją testerom w kolejnej kompilacji,
 - równolegle zbierać prywatne opinie w Google Play i prowadzić rejestr:
   data, obszar aplikacji, zgłoszenie, decyzja i wersja zawierająca poprawkę,
+- 30 lipca sekcja „Opinie z testów” nie zawierała jeszcze żadnego wpisu;
+  przed kolejnym wnioskiem zebrać rzeczywiste opinie i odpowiedzieć testerom,
 - opublikować w teście zamkniętym co najmniej jedną uzasadnioną aktualizację
   wynikającą z rzeczywistych opinii testerów i zachować jej informacje o wersji,
 - sprawdzić raport przed opublikowaniem, Android Vitals, awarie i ANR oraz
   naprawić istotne problemy przed kolejnym zgłoszeniem,
+- zaktualizować formularz „Bezpieczeństwo danych”: obecna deklaracja wskazuje
+  tylko identyfikatory urządzenia, choć wydanie zawiera aktywną konfigurację
+  AdMob oraz dobrowolne Analytics, Crashlytics i Remote Config; szczegóły
+  audytu są w `docs/GOOGLE_PLAY_CLOSED_TEST_AUDIT_2026-07-30.md`,
 - ponownie wnioskować dopiero po zakończeniu okresu wskazanego w Konsoli Play
   i opisać wyłącznie rzeczywiste zaangażowanie, feedback oraz wdrożone zmiany.
 

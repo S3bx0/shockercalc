@@ -22,10 +22,19 @@ pozwalających zidentyfikować testera. Każdy wpis powinien mieć potwierdzone
 
 ## Podsumowanie przed kolejnym wnioskiem produkcyjnym
 
-- Początek potwierdzonego okresu testu: _do uzupełnienia z Konsoli Play_
-- Koniec pełnych 14 dni: _do uzupełnienia_
-- Minimalna liczba aktywnych testerów w całym okresie: _do uzupełnienia_
+- Decyzja Google rozpoczynająca kolejny okres: 2026-07-30, 16:25
+- Wersja 96 (1.5.11) dostępna na aktywnej ścieżce Alpha: 2026-07-30, 19:59
+- Najwcześniejszy bezpieczny dzień sprawdzenia przycisku ponownego wniosku:
+  2026-08-14; wiążący jest stan przycisku w Konsoli Play
+- Liczba osób na wybranej liście testerów na początku okresu: 18
+- Minimalna liczba testerów nieprzerwanie zapisanych w całym okresie:
+  _uzupełnić po zakończeniu_
 - Najważniejsze przetestowane scenariusze: _do uzupełnienia_
 - Liczba otrzymanych rzeczywistych opinii: _do uzupełnienia_
 - Wersje opublikowane na podstawie opinii: _do uzupełnienia_
 - Stan Android Vitals, awarii i ANR: _do uzupełnienia_
+
+Nie uznawaj samego zaproszenia lub instalacji za opinię. W podsumowaniu podaj
+rzeczywiste kanały, powtarzające się uwagi i konkretne decyzje. Nie wpisuj
+minimalnej liczby testerów jako 18, dopóki Konsola nie potwierdzi, że co najmniej
+12 osób pozostało zapisanych nieprzerwanie przez cały wymagany okres.
