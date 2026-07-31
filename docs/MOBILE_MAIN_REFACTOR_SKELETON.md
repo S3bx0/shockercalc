@@ -78,6 +78,7 @@ tpof/mobile/
 │   ├── freezing_presentation.py # motyw i responsywny układ
 │   ├── valves.py            # koordynator zakładki zaworów
 │   ├── valves_view.py       # konstrukcja i granica widoku zaworów
+│   ├── valves_workflow.py   # walidacja i uruchamianie obliczeń zaworów
 │   ├── labor.py             # koordynator zakładki robocizny
 │   ├── labor_view.py        # konstrukcja i granica widoku robocizny
 │   ├── labor_workflow.py    # walidacja i uruchamianie obliczeń
@@ -526,8 +527,14 @@ Pierwszy etap dalszego podziału wykonano 2026-07-31. `ValvesTabView`, ciało
 `build()` i komplet importów Kivy potrzebnych do utworzenia drzewa widgetów
 zostały przeniesione 1:1 do `valves_view.py`. Publiczny import widoku z
 `valves.py` i `controller.build()` pozostają kompatybilne. Kontroler zmniejszył
-się z 638 do 349 linii, a następną naturalną granicą jest walidacja i
-uruchamianie obliczeń bez przenoszenia wzorów z `tpof/core`.
+się z 638 do 349 linii.
+
+Drugi etap dalszego podziału wykonano 2026-07-31. Czyszczenie walidacji,
+parsowanie wymaganych pól oraz kompletna orkiestracja `calculate()` zostały
+przeniesione 1:1 do `valves_workflow.py`. Wzory i katalog zaworów nadal należą
+do `tpof/core`, a publiczne `controller.calculate()` pozostaje zachowane przez
+mixin workflow. `valves.py` ma obecnie 241 linii i odpowiada za stan, wybór
+typu zaworu, prezentację wyniku, lokalizację oraz motyw.
 
 Klasa:
 

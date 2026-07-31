@@ -356,6 +356,7 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
     composition_source = _source("tpof/mobile/app_controllers.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
     valves_view_source = _source("tpof/mobile/tabs/valves_view.py")
+    valves_workflow_source = _source("tpof/mobile/tabs/valves_workflow.py")
 
     assert "ValvesTabController" in composition_source
     assert "valve_scroll = self._valves_tab_controller.build().scroll" in source
@@ -363,12 +364,16 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
     assert "self._valves_tab_controller.apply_theme()" in composition_source
     assert "class ValvesTabController" in valves_tab_source
     assert "ValvesTabViewCompositionMixin" in valves_tab_source
+    assert "ValvesCalculationWorkflowMixin" in valves_tab_source
     assert "class ValvesTabView" in valves_view_source
     assert "class ValvesTabViewCompositionMixin" in valves_view_source
     assert "def build(self: Any) -> ValvesTabView:" in valves_view_source
     assert "def build(self) -> ValvesTabView:" not in valves_tab_source
-    assert "def calculate(self) -> bool" in valves_tab_source
-    assert "calculate_decompression_valves(" in valves_tab_source
+    assert "class ValvesCalculationWorkflowMixin" in valves_workflow_source
+    assert "def calculate(self) -> bool" in valves_workflow_source
+    assert "calculate_decompression_valves(" in valves_workflow_source
+    assert "def calculate(self) -> bool" not in valves_tab_source
+    assert "calculate_decompression_valves(" not in valves_tab_source
     assert "self.valve_in_V" not in source
     assert "self._last_valve_results" not in source
     assert "self._valve_input_mode" not in source
