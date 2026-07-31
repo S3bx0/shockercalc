@@ -76,10 +76,12 @@ tpof/mobile/
 │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
 │   ├── freezing_results.py  # prezentacja i zerowanie wyników
 │   ├── freezing_presentation.py # motyw i responsywny układ
-│   ├── valves.py            # zakładka zaworów
+│   ├── valves.py            # koordynator zakładki zaworów
+│   ├── valves_view.py       # konstrukcja i granica widoku zaworów
 │   ├── labor.py             # koordynator zakładki robocizny
 │   ├── labor_view.py        # konstrukcja i granica widoku robocizny
-│   └── labor_workflow.py    # walidacja i uruchamianie obliczeń
+│   ├── labor_workflow.py    # walidacja i uruchamianie obliczeń
+│   └── labor_results.py     # prezentacja wyników i wykres robocizny
 └── services/
     ├── __init__.py
     ├── monetization.py      # status, cena i zakup PRO
@@ -520,6 +522,13 @@ Etap wykonany 2026-07-26. `ValvesTabController` buduje kompletną zakładkę,
 przechowuje jej stan, waliduje dane, wykonuje obliczenia i prezentuje wynik.
 Polityka zakupu/tokenów pozostaje callbackiem composition root.
 
+Pierwszy etap dalszego podziału wykonano 2026-07-31. `ValvesTabView`, ciało
+`build()` i komplet importów Kivy potrzebnych do utworzenia drzewa widgetów
+zostały przeniesione 1:1 do `valves_view.py`. Publiczny import widoku z
+`valves.py` i `controller.build()` pozostają kompatybilne. Kontroler zmniejszył
+się z 638 do 349 linii, a następną naturalną granicą jest walidacja i
+uruchamianie obliczeń bez przenoszenia wzorów z `tpof/core`.
+
 Klasa:
 
 ```python
@@ -554,8 +563,13 @@ Drugi etap podziału wykonano 2026-07-30. Parsowanie liczb, walidacja formularza
 konfiguracja stawek, przygotowanie `CalculationInput` i `calculate()` zostały
 przeniesione 1:1 do `labor_workflow.py`. Wzory pozostają w `tpof/labor`, a
 publiczne `controller.calculate()` jest zachowane przez mixin workflow.
-`labor.py` ma obecnie 604 linie; następną granicą jest prezentacja wyników
-i wykres.
+`labor.py` miał po tym etapie 604 linie.
+
+Trzeci etap podziału przeniósł prezentację wyniku, przygotowanie segmentów
+kosztów, legendę, wykres oraz dialog jego powiększenia do `labor_results.py`.
+`LaborTabPresenter` przygotowuje dane niezależnie od Kivy, a mixin prezentacji
+posiada wyłącznie granicę UI. `labor.py` ma obecnie 257 linii i pozostaje małym
+koordynatorem stanu, waluty, lokalizacji i motywu.
 
 Klasa:
 

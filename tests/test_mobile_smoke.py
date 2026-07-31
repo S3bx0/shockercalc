@@ -323,6 +323,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
+    valves_view_source = _source("tpof/mobile/tabs/valves_view.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
     assert "def _configure_text_field" in freezing_view_source
@@ -342,7 +343,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
         "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
         in freezing_view_source
     )
-    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
+    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_view_source
     assert "self.view.volume_input" in valves_tab_source
     assert "self.view.flow_input" in valves_tab_source
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_view_source
@@ -354,13 +355,18 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
+    valves_view_source = _source("tpof/mobile/tabs/valves_view.py")
 
     assert "ValvesTabController" in composition_source
     assert "valve_scroll = self._valves_tab_controller.build().scroll" in source
     assert "self._valves_tab_controller.refresh_texts()" in composition_source
     assert "self._valves_tab_controller.apply_theme()" in composition_source
     assert "class ValvesTabController" in valves_tab_source
-    assert "class ValvesTabView" in valves_tab_source
+    assert "ValvesTabViewCompositionMixin" in valves_tab_source
+    assert "class ValvesTabView" in valves_view_source
+    assert "class ValvesTabViewCompositionMixin" in valves_view_source
+    assert "def build(self: Any) -> ValvesTabView:" in valves_view_source
+    assert "def build(self) -> ValvesTabView:" not in valves_tab_source
     assert "def calculate(self) -> bool" in valves_tab_source
     assert "calculate_decompression_valves(" in valves_tab_source
     assert "self.valve_in_V" not in source
