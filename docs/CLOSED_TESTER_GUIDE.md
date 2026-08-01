@@ -38,11 +38,38 @@ Test powinien obejmować więcej niż jedno uruchomienie, jeśli odpowiada to
 normalnemu użyciu testera. Bezcelowe klikanie lub sztuczne sesje nie stanowią
 wartościowego testu.
 
+## Plan operacyjny na 14 dni
+
+To harmonogram pokrycia grupy, a nie nakaz codziennego, sztucznego uruchamiania
+aplikacji przez każdą osobę:
+
+- przed startem: zachować zapas ponad 12 osób, potwierdzić opt-in, instalację z
+  Google Play, właściwą wersję i działający kanał kontaktu;
+- dni 1–3: instalacja, pierwsze uruchomienie, chłodzenie/zamrażanie i ustawienia;
+- dni 4–6: zawory, robocizna, waluty, obrót ekranu oraz ponowne uruchomienie;
+- dzień 7: zebrać i sklasyfikować pierwszą turę prawdziwych opinii, odpowiedzieć
+  testerom i wybrać możliwą do zweryfikowania poprawkę;
+- dni 8–10: opublikować poprawkę na tej samej ścieżce, opisać ją w informacjach
+  o wersji i poprosić o aktualizację przez Google Play;
+- dni 11–13: ponowny test poprawki, PDF, reklamy/PRO i scenariusze pominięte w
+  pierwszej turze;
+- dzień 14 lub później: uzupełnić rejestr, sprawdzić Vitals, ANR, raport przed
+  opublikowaniem i ciągłość opt-in; wiążący pozostaje stan Konsoli Play.
+
+Nie obiecuj konkretnej poprawki przed otrzymaniem opinii. Aktualizacja musi
+wynikać z rzeczywistego zgłoszenia, a harmonogram można przesunąć, jeśli jego
+odtworzenie lub bezpieczna naprawa wymaga więcej czasu.
+
 ## Kanały opinii
 
 - prywatna opinia na stronie testu w Google Play,
 - ustrukturyzowany raport e-mail otwierany z Ustawień aplikacji,
 - bezpośrednia rozmowa z testerem, następnie zanonimizowany wpis w rejestrze.
+
+In-App Review można wdrożyć w trakcie testu jako dodatkowe wejście do prywatnej
+opinii Google Play. Nie wolno jednak traktować samego wywołania API jako dowodu
+feedbacku: Google może nie pokazać okna, a dowodem jest dopiero rzeczywista
+opinia widoczna w Play Console i udokumentowana reakcja na jej treść.
 
 W konfiguracji ścieżki testu zamkniętego należy pozostawić adres feedbacku:
 `MILCZAREK.SEBASTIAN1988@GMAIL.COM`. Testerzy powinni wiedzieć o obu kanałach,
@@ -79,3 +106,4 @@ wiadomości testerów lub historia wydań.
 
 - [Wymagania dotyczące testowania aplikacji dla nowych kont osobistych](https://support.google.com/googleplay/android-developer/answer/14151465)
 - [Konfigurowanie testu otwartego, zamkniętego lub wewnętrznego](https://support.google.com/googleplay/android-developer/answer/9845334)
+- [Testowanie In-App Review](https://developer.android.com/guide/playcore/in-app-review/test)

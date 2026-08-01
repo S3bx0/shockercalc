@@ -30,7 +30,13 @@ env/
 
 # Backup archives
 *.zip
+*.apks
 archive/
+
+# Local audit and downloaded GitHub Actions artifacts
+.audit-*/
+.gh-artifacts-*/
+.codex_inspect.txt
 
 # Buildozer / Kivy (mobilna kompilacja)
 .buildozer/

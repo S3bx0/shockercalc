@@ -197,7 +197,8 @@ def _encrypt(pdf_bytes: bytes, owner_password: str) -> bytes:
     except TypeError:
         # Legacy pypdf fallback (older positional API); the modern keyword form
         # above is used with the pinned version, so this branch is not reached.
-        writer.encrypt(owner_password, user_password="")  # type: ignore[misc]
+        # Positional order is always user password first, then owner password.
+        writer.encrypt("", owner_password)
     out = BytesIO()
     writer.write(out)
     return out.getvalue()

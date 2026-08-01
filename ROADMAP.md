@@ -1,11 +1,41 @@
 # Refrigeration Calc roadmap
 
+## Ścieżka krytyczna: ponowny test zamknięty Google Play
+
+Odrzucenie dostępu produkcyjnego jest obecnie problemem procesu testowego, nie
+brakiem kolejnej funkcji. Prace P1 i dalsza dekompozycja mogą być wykonywane w
+tle, ale nie mogą opóźniać ani zastępować rzeczywistego zaangażowania testerów,
+zbierania opinii i wydania poprawki wynikającej z opinii.
+
+Kolejność release train:
+
+1. zabezpieczyć higienę repozytorium, uzyskać zielone checki i scalić PR #13 do
+   `main`;
+2. utworzyć checkpoint/tag na `main`, zbudować podpisany AAB z tego commita i
+   wykonać krótki smoke na fizycznym ARM oraz API 35/36;
+3. opublikować ten sam AAB na aktywnej ścieżce testu zamkniętego i potwierdzić,
+   że testerzy widzą właściwy numer wersji;
+4. utrzymać co najmniej 12 realnych testerów zapisanych nieprzerwanie przez 14
+   dni i rozłożyć rzeczywiste scenariusze użycia na cały okres;
+5. zbierać konkretne opinie w Google Play i przez formularz aplikacji,
+   odpowiadać na nie oraz prowadzić zanonimizowany rejestr decyzji;
+6. w trakcie testu wydać co najmniej jedną widoczną poprawkę wynikającą z
+   prawdziwej opinii i uzyskać jej ponowny test;
+7. dopiero po potwierdzeniu Vitals, raportu przed opublikowaniem i dowodów
+   procesu ponownie złożyć wniosek o dostęp produkcyjny.
+
+In-App Review może zostać dodany w trakcie testu jako dodatkowy kanał prywatnej
+opinii, ale wyświetlenie okna podlega decyzji i limitom Google Play. Nie
+zastępuje więc istniejącego feedbacku testowego w Play Console ani raportu
+e-mail i nie jest warunkiem rozpoczęcia testu.
+
 ## Bramka jakości po superaudycie 2026-08-01
 
 Pełny raport znajduje się w
 [`docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md`](docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md).
-Decyzja dla obecnego stanu to **NO-GO dla kolejnego AAB**, dopóki nie zostaną
-zamknięte poniższe zadania P0:
+Techniczny kandydat AAB jest gotowy do ścieżki testowej, ale produkcja pozostaje
+**NO-GO procesowym** do czasu ukończenia rzeczywistego testu zamkniętego.
+Historyczna bramka P0 obejmowała:
 
 1. usunąć z AAB niekompletne ABI `armeabi-v7a`, `x86` i `x86_64` albo
    dostarczyć dla nich pełny runtime; wygenerowany przez Bundletool pakiet
@@ -25,11 +55,11 @@ zamknięte poniższe zadania P0:
 
 Stan realizacji 2026-08-01:
 
-- **P0.1 ABI — APK potwierdzony, AAB oczekuje:** przebieg `30693177259`
-  zbudował APK zawierający wyłącznie `arm64-v8a` i komplet 15 bibliotek;
+- **P0.1 ABI — AAB potwierdzony:** przebieg `30699855081` zbudował AAB
+  zawierający wyłącznie `arm64-v8a` i komplet 15 bibliotek;
   hook p4a dodaje filtr Gradle, a osobny walidator blokuje APK/AAB zawierające
   nieobsługiwane ABI lub pozbawione bibliotek Python/SDL;
-- **P0.2 Auto Backup — manifest APK potwierdzony:** ustawiono
+- **P0.2 Auto Backup — manifest AAB potwierdzony:** ustawiono
   `android.allow_backup = False`, zachowując odtwarzanie PRO przez Play Billing;
   przebieg `30693969034` oraz niezależny odczyt binarnego manifestu potwierdziły
   `android:allowBackup=false`;
@@ -47,7 +77,7 @@ Stan realizacji 2026-08-01:
   `30693177259` przeszedł po usunięciu projektowego cache `.buildozer`
   (~1,9 GB skompresowane); cache globalny działa wyłącznie w trybie restore,
   a workflow raportuje miejsce przed i po jego przywróceniu;
-- **P0.5 bramka AAB — wdrażana:** kontrola wyrównania bibliotek została
+- **P0.5 bramka AAB — potwierdzona:** kontrola wyrównania bibliotek została
   wydzielona do testowanego narzędzia i zmieniona z ostrzeżenia na twardy błąd;
   workflow sprawdza też podpis AAB i wykonuje `bundletool validate` narzędziem
   przypiętym wersją oraz SHA-256. Odczyt finalnego AAB ujawnił techniczne
@@ -55,8 +85,13 @@ Stan realizacji 2026-08-01:
   każde nowe uprawnienie do czasu audytu. Następna bramka wymusza jawną blokadę
   cleartext traffic i pilnuje, aby nie pojawił się niezaudytowany Network
   Security Config;
-- stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
-  oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
+- do pełnego zamknięcia technicznego pozostaje krótki test fizycznego ARM oraz
+  API 35/36 na kandydacie odtworzonym z `main`.
+
+Podpisany AAB z commita `f57ed4b` i przebiegu `30699855081` przeszedł podpis,
+`bundletool validate`, legal bundle, wyłącznie `arm64-v8a`, wyrównanie 16 KB,
+backup, allowlistę uprawnień, blokadę cleartext traffic oraz bramkę providerów
+Firebase/AdMob. Pozostaje odtworzyć go z `main` po scaleniu release train.
 
 Następna warstwa P1 to: dostępność TalkBack, cele dotykowe 48 dp, kontrast,
 skalowanie czcionek, landscape/duże ekrany, audyt zależności w CI, progi
@@ -65,6 +100,11 @@ wydzielane do osobnych modułów i narzędzi; nie wolno ponownie rozbudować
 `app.py` ani `RefrigerationCalcActivity.java`.
 
 ## Nadrzędny kierunek: dekompozycja monolitu
+
+Cel zasadniczy został osiągnięty: `main.py` jest cienkim launcherem, a główne
+integracje, zakładki i dialogi mają osobne kontrolery lub serwisy. Dalsza
+dekompozycja ma charakter utrzymaniowy: wykonujemy ją przy zmianie danego
+obszaru, ale nie jest już samodzielnym priorytetem przed testem zamkniętym.
 
 Każda kolejna funkcja powinna zmniejszać odpowiedzialność tymczasowych powłok
 `tpof/mobile/main.py` i `RefrigerationCalcActivity.java`, zamiast dopisywać do
