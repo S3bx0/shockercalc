@@ -23,12 +23,19 @@ def test_legal_and_privacy_documents_use_current_contact():
         assert OUTDATED_EMAIL not in text, path
 
 
-def test_privacy_policy_discloses_nbp_and_optional_firebase():
+def test_privacy_policy_discloses_external_and_optional_data_flows():
     text = (ROOT / "docs" / "privacy.html").read_text(encoding="utf-8")
+    normalized = " ".join(text.split())
 
     assert "Kursy walut (API NBP)" in text
     assert "Exchange rates (NBP API)" in text
     assert "Firebase Crashlytics" in text
     assert "Firebase Remote Config" in text
-    assert "Ostatnia aktualizacja: 21 lipca 2026 r." in text
-    assert "Last updated: 21 July 2026." in text
+    assert "Dobrowolne opinie i zgłoszenia błędów" in text
+    assert "Voluntary feedback and bug reports" in text
+    assert "Żadna wiadomość nie jest wysyłana" in text
+    assert "No message is sent until the user" in text
+    assert "Automatyczna kopia danych Aplikacji w systemie Android jest wyłączona" in normalized
+    assert "Android automatic backup is disabled for the App" in normalized
+    assert "Ostatnia aktualizacja: 1 sierpnia 2026 r." in text
+    assert "Last updated: 1 August 2026." in text

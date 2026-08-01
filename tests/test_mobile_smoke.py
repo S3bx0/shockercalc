@@ -227,6 +227,7 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     composition_source = _source("tpof/mobile/app_controllers.py")
     dialog_source = _source("tpof/mobile/dialogs/labor_rates.py")
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    workflow_source = _source("tpof/mobile/tabs/labor_workflow.py")
 
     assert (
         "open_rates_dialog=lambda: self._labor_rates_dialog_controller.open()"
@@ -237,8 +238,8 @@ def test_mobilny_edytor_stawek_robocizny_jest_w_pro_i_uzywa_zapisanych_stawek():
     assert "LaborRatesDialogController" in composition_source
     assert "self._preferences.set_labor_rate_values" in composition_source
     assert "self._preferences.reset_labor_rate_values" in composition_source
-    assert "def _rate_config" in labor_tab_source
-    assert "rate_config_from_values(self._get_rate_values())" in labor_tab_source
+    assert "def _rate_config" in workflow_source
+    assert "rate_config_from_values(self._get_rate_values())" in workflow_source
     assert "class LaborRatesDialogController" in dialog_source
     assert "labor_rates_factory" in dialog_source
     assert "def save(" in dialog_source
@@ -284,21 +285,29 @@ def test_mobilna_prywatnosc_i_telemetria_maja_osobny_kontroler():
 def test_mobilna_robocizna_deleguje_prezentacje_wykresu_do_osobnego_modulu():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
-    presenter_source = _source("tpof/mobile/tabs/labor.py")
+    controller_source = _source("tpof/mobile/tabs/labor.py")
+    presenter_source = _source("tpof/mobile/tabs/labor_results.py")
     view_source = _source("tpof/mobile/tabs/labor_view.py")
+    workflow_source = _source("tpof/mobile/tabs/labor_workflow.py")
 
     assert "LaborTabController" in composition_source
     assert "labor_scroll = self._labor_tab_controller.build().scroll" in source
     assert "self._labor_tab_controller.refresh_texts()" in composition_source
     assert "self._labor_tab_controller.apply_theme()" in composition_source
     assert "class LaborTabPresenter" in presenter_source
-    assert "class LaborTabController" in presenter_source
-    assert "LaborTabViewCompositionMixin" in presenter_source
+    assert "class LaborResultsPresentationMixin" in presenter_source
+    assert "class LaborTabController" in controller_source
+    assert "LaborTabViewCompositionMixin" in controller_source
+    assert "LaborCalculationWorkflowMixin" in controller_source
+    assert "LaborResultsPresentationMixin" in controller_source
     assert "class LaborTabView" in view_source
     assert "class LaborTabViewCompositionMixin" in view_source
+    assert "class LaborCalculationWorkflowMixin" in workflow_source
     assert "class LaborChartRow" in presenter_source
     assert "LABOR_RESULT_LABEL_KEYS" in view_source
-    assert "def calculate(self) -> bool" in presenter_source
+    assert "def calculate(self) -> bool" in workflow_source
+    assert "def calculate(self) -> bool" not in controller_source
+    assert "def calculate(self) -> bool" not in presenter_source
     assert "self._presenter.chart_rows(breakdown)" in presenter_source
     assert "self._presenter.travel_mode_text(breakdown.travel_mode)" in presenter_source
     assert "self.labor_in_people" not in source
@@ -314,6 +323,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
     labor_tab_source = _source("tpof/mobile/tabs/labor.py")
     labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
+    valves_view_source = _source("tpof/mobile/tabs/valves_view.py")
 
     assert 'Window.softinput_mode = "below_target"' in source
     assert "def _configure_text_field" in freezing_view_source
@@ -333,7 +343,7 @@ def test_mobilne_pola_przewijaja_sie_nad_klawiature():
         "self._bind_keyboard_scroll(self.view.input_fields, scroll)"
         in freezing_view_source
     )
-    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_tab_source
+    assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in valves_view_source
     assert "self.view.volume_input" in valves_tab_source
     assert "self.view.flow_input" in valves_tab_source
     assert "self._bind_keyboard_scroll(view.input_fields, scroll)" in labor_view_source
@@ -345,15 +355,25 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
     source = _source("tpof/mobile/app.py")
     composition_source = _source("tpof/mobile/app_controllers.py")
     valves_tab_source = _source("tpof/mobile/tabs/valves.py")
+    valves_view_source = _source("tpof/mobile/tabs/valves_view.py")
+    valves_workflow_source = _source("tpof/mobile/tabs/valves_workflow.py")
 
     assert "ValvesTabController" in composition_source
     assert "valve_scroll = self._valves_tab_controller.build().scroll" in source
     assert "self._valves_tab_controller.refresh_texts()" in composition_source
     assert "self._valves_tab_controller.apply_theme()" in composition_source
     assert "class ValvesTabController" in valves_tab_source
-    assert "class ValvesTabView" in valves_tab_source
-    assert "def calculate(self) -> bool" in valves_tab_source
-    assert "calculate_decompression_valves(" in valves_tab_source
+    assert "ValvesTabViewCompositionMixin" in valves_tab_source
+    assert "ValvesCalculationWorkflowMixin" in valves_tab_source
+    assert "class ValvesTabView" in valves_view_source
+    assert "class ValvesTabViewCompositionMixin" in valves_view_source
+    assert "def build(self: Any) -> ValvesTabView:" in valves_view_source
+    assert "def build(self) -> ValvesTabView:" not in valves_tab_source
+    assert "class ValvesCalculationWorkflowMixin" in valves_workflow_source
+    assert "def calculate(self) -> bool" in valves_workflow_source
+    assert "calculate_decompression_valves(" in valves_workflow_source
+    assert "def calculate(self) -> bool" not in valves_tab_source
+    assert "calculate_decompression_valves(" not in valves_tab_source
     assert "self.valve_in_V" not in source
     assert "self._last_valve_results" not in source
     assert "self._valve_input_mode" not in source
@@ -363,7 +383,7 @@ def test_mobilne_zawory_maja_wlasny_kontroler_i_granice_widoku():
 
 def test_robocizna_ma_wykres_kolowy_kosztow():
     source = _source("tpof/mobile/app.py")
-    labor_tab_source = _source("tpof/mobile/tabs/labor.py")
+    labor_results_source = _source("tpof/mobile/tabs/labor_results.py")
     labor_view_source = _source("tpof/mobile/tabs/labor_view.py")
     widgets_source = _source("tpof/mobile/widgets/__init__.py")
     chart_source = _source("tpof/mobile/widgets/charts.py")
@@ -375,21 +395,24 @@ def test_robocizna_ma_wykres_kolowy_kosztow():
     assert "chart_factory=LaborPieChart" in source
     assert "chart = self._chart_factory(" in labor_view_source
     assert "on_release=lambda *_: self.open_chart_dialog()" in labor_view_source
-    assert "self._set_chart_data(" in labor_tab_source
-    assert 'center_label=self._translate("labor_chart_total")' in labor_tab_source
+    assert "self._set_chart_data(" in labor_results_source
+    assert (
+        'center_label=self._translate("labor_chart_total")'
+        in labor_results_source
+    )
     assert "Animation(progress=1.0, duration=0.75" in chart_source
     assert "prepare_cost_segments" in chart_source
     assert "Mesh(vertices=vertices" in chart_source
     assert "gap = min(2.2, sweep * 0.18) if multiple_segments else 0.0" in chart_source
     assert "font_size * available_width / measurement.texture.size[0]" in chart_source
     assert "ring_width + dp(5)" not in chart_source
-    assert "self._chart_dialog.size_hint_x = 0.94" in labor_tab_source
-    assert "self.view.chart_legend" in labor_tab_source
-    assert "def _render_chart_legend" in labor_tab_source
-    assert "def open_chart_dialog" in labor_tab_source
-    assert "labor_chart_tap" in labor_tab_source
-    assert "from kivymd.uix.dialog import MDDialog" in labor_tab_source
-    assert "from kivymd.uix.button import MDFlatButton" in labor_tab_source
+    assert "self._chart_dialog.size_hint_x = 0.94" in labor_results_source
+    assert "self.view.chart_legend" in labor_results_source
+    assert "def _render_chart_legend" in labor_results_source
+    assert "def open_chart_dialog" in labor_results_source
+    assert "labor_chart_tap" in labor_results_source
+    assert "from kivymd.uix.dialog import MDDialog" in labor_results_source
+    assert "from kivymd.uix.button import MDFlatButton" in labor_results_source
 
 
 def test_mobilne_komunikaty_walidacji_sa_centralne_i_zanikaja():

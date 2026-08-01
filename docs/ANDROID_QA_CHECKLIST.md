@@ -20,6 +20,15 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 
 - Aplikacja nie wymaga szerokich uprawnień do plików użytkownika.
 - `buildozer.spec` powinien zawierać tylko `INTERNET` i `ACCESS_NETWORK_STATE`.
+- Finalny manifest zawiera również zwykłe uprawnienia dodane przez AdMob,
+  Google Play Billing, Firebase/DataTransport i WorkManager. Ich jawna allowlista
+  jest sprawdzana w CI; każde nowe uprawnienie zatrzymuje build do audytu.
+- Aplikacja nie może żądać dostępu do aparatu, mikrofonu, kontaktów, dokładnej
+  lokalizacji ani współdzielonych plików i zdjęć użytkownika.
+- Końcowy manifest musi jawnie ustawiać `android:usesCleartextTraffic="false"`
+  i nie może odwoływać się do niezaudytowanego Network Security Config.
+- Własne endpointy aplikacji muszą używać HTTPS; obecnie jedynym takim
+  endpointem jest API kursów NBP.
 - Eksport PDF na Androidzie tworzy roboczy plik w prywatnym katalogu aplikacji,
   a finalny zapis/udostępnienie przechodzi przez natywny most MediaStore/Share.
 - Do Play Console przesyłać wyłącznie plik `.aab`; raporty diagnostyczne z CI nie
@@ -31,6 +40,18 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 - `tests/test_android_build_config.py` sprawdza, że stała, gate, overlay i tekst
   wygasania nie wróciły do kodu.
 - Każdy build wysyłany do Google Play nadal musi mieć rosnący `versionCode`.
+
+## Bramka podpisanego AAB
+
+- Workflow musi potwierdzić podpis JAR pakietu przez `jarsigner`.
+- Pobrany z oficjalnego wydania, przypięty sumą SHA-256 Bundletool musi wykonać
+  `validate` na dokładnie tym AAB, który trafia do artefaktów.
+- AAB może zawierać wyłącznie kompletny runtime `arm64-v8a`.
+- Każdy segment `PT_LOAD` każdej biblioteki `.so` musi mieć wyrównanie co
+  najmniej 16 KB. Wykrycie 4 KB jest błędem workflow, nie ostrzeżeniem.
+- Wynikowy manifest musi mieć `allowBackup=false`, wyłączone domyślne kolekcje
+  Firebase oraz nie może zawierać `FirebaseInitProvider` ani
+  `MobileAdsInitProvider`.
 
 ## TODO techniczne
 

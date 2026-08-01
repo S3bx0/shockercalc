@@ -76,11 +76,16 @@ tpof/mobile/
 │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
 │   ├── freezing_results.py  # prezentacja i zerowanie wyników
 │   ├── freezing_presentation.py # motyw i responsywny układ
-│   ├── valves.py            # zakładka zaworów
+│   ├── valves.py            # koordynator zakładki zaworów
+│   ├── valves_view.py       # konstrukcja i granica widoku zaworów
+│   ├── valves_workflow.py   # walidacja i uruchamianie obliczeń zaworów
 │   ├── labor.py             # koordynator zakładki robocizny
-│   └── labor_view.py        # konstrukcja i granica widoku robocizny
+│   ├── labor_view.py        # konstrukcja i granica widoku robocizny
+│   ├── labor_workflow.py    # walidacja i uruchamianie obliczeń
+│   └── labor_results.py     # prezentacja wyników i wykres robocizny
 └── services/
     ├── __init__.py
+    ├── app_shortcuts.py     # walidacja celu skrótu i routing nawigacji
     ├── monetization.py      # status, cena i zakup PRO
     ├── rewarded_access.py   # rewarded, tokeny, zakup i blokada zaworów
     ├── entitlements_ui.py   # odświeżanie blokad i statusów UI
@@ -519,6 +524,19 @@ Etap wykonany 2026-07-26. `ValvesTabController` buduje kompletną zakładkę,
 przechowuje jej stan, waliduje dane, wykonuje obliczenia i prezentuje wynik.
 Polityka zakupu/tokenów pozostaje callbackiem composition root.
 
+Pierwszy etap dalszego podziału wykonano 2026-07-31. `ValvesTabView`, ciało
+`build()` i komplet importów Kivy potrzebnych do utworzenia drzewa widgetów
+zostały przeniesione 1:1 do `valves_view.py`. Publiczny import widoku z
+`valves.py` i `controller.build()` pozostają kompatybilne. Kontroler zmniejszył
+się z 638 do 349 linii.
+
+Drugi etap dalszego podziału wykonano 2026-07-31. Czyszczenie walidacji,
+parsowanie wymaganych pól oraz kompletna orkiestracja `calculate()` zostały
+przeniesione 1:1 do `valves_workflow.py`. Wzory i katalog zaworów nadal należą
+do `tpof/core`, a publiczne `controller.calculate()` pozostaje zachowane przez
+mixin workflow. `valves.py` ma obecnie 241 linii i odpowiada za stan, wybór
+typu zaworu, prezentację wyniku, lokalizację oraz motyw.
+
 Klasa:
 
 ```python
@@ -547,8 +565,19 @@ wyłącznie jawne API kontrolera.
 Pierwszy etap podziału wykonano 2026-07-29. `LaborTabView`, klucze etykiet
 wyników i ciało `build()` zostały przeniesione 1:1 do `labor_view.py`.
 Publiczny import widoku z `labor.py` oraz `controller.build()` pozostają
-kompatybilne. Kontroler zmniejszył się z 1112 do 798 linii; następną granicą
-jest parsowanie, walidacja i workflow `calculate()`.
+kompatybilne. Kontroler zmniejszył się z 1112 do 798 linii.
+
+Drugi etap podziału wykonano 2026-07-30. Parsowanie liczb, walidacja formularza,
+konfiguracja stawek, przygotowanie `CalculationInput` i `calculate()` zostały
+przeniesione 1:1 do `labor_workflow.py`. Wzory pozostają w `tpof/labor`, a
+publiczne `controller.calculate()` jest zachowane przez mixin workflow.
+`labor.py` miał po tym etapie 604 linie.
+
+Trzeci etap podziału przeniósł prezentację wyniku, przygotowanie segmentów
+kosztów, legendę, wykres oraz dialog jego powiększenia do `labor_results.py`.
+`LaborTabPresenter` przygotowuje dane niezależnie od Kivy, a mixin prezentacji
+posiada wyłącznie granicę UI. `labor.py` ma obecnie 257 linii i pozostaje małym
+koordynatorem stanu, waluty, lokalizacji i motywu.
 
 Klasa:
 

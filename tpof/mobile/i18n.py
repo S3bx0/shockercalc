@@ -99,6 +99,47 @@ I18N = {
         "settings_currency_status": "Ostatnia aktualizacja: {date}\nŹródło: {source}",
         "settings_currency_status_cached": "Kurs zapisany lokalnie z dnia: {date}\nŹródło: {source}",
         "settings_currency_status_missing": "Brak zapisanego kursu. Połącz się z internetem, aby pobrać dane NBP.",
+        "settings_feedback_title": "Opinia i zgłoszenie błędu",
+        "settings_feedback_hint": "Otwórz ustrukturyzowany, edytowalny raport testowy. Możesz wskazać obszar, wynik, częstotliwość i wpływ problemu. Aplikacja nie wysyła danych w tle.",
+        "settings_feedback_button": "Otwórz raport testowy / opinię",
+        "feedback_email_subject": "Refrigeration Calc {version} — raport testowy / opinia",
+        "feedback_email_body": (
+            "Dziękujemy za rzeczywiste przetestowanie aplikacji. Usuń niepasujące "
+            "opcje i uzupełnij pola, które dotyczą Twojej opinii.\n\n"
+            "RODZAJ ZGŁOSZENIA\n"
+            "[ ] Błąd lub awaria\n"
+            "[ ] Problem z użytecznością / czytelnością\n"
+            "[ ] Pomysł na ulepszenie\n"
+            "[ ] Potwierdzenie poprawnego działania\n\n"
+            "TESTOWANY OBSZAR\n"
+            "[ ] Chłodnicze / zamrażanie\n"
+            "[ ] Zawory\n"
+            "[ ] Robocizna i wykres kosztów\n"
+            "[ ] PDF\n"
+            "[ ] Ustawienia, język, motyw lub waluty\n"
+            "[ ] Reklamy albo PRO\n\n"
+            "CO ZOSTAŁO WYKONANE\n\n\n"
+            "RZECZYWISTY REZULTAT\n\n\n"
+            "OCZEKIWANY REZULTAT\n\n\n"
+            "CZĘSTOTLIWOŚĆ\n"
+            "[ ] Jeden raz  [ ] Czasami  [ ] Za każdym razem\n\n"
+            "WPŁYW\n"
+            "[ ] Kosmetyczny  [ ] Utrudnia pracę  [ ] Blokuje wykonanie zadania\n\n"
+            "INSTALACJA I URZĄDZENIE (opcjonalnie)\n"
+            "[ ] Instalacja lub aktualizacja z testu zamkniętego Google Play\n"
+            "Model urządzenia:\n"
+            "Wersja Androida:\n\n"
+            "DODATKOWE UWAGI\n\n\n"
+            "---\n"
+            "Aplikacja: {app_name}\n"
+            "Wersja: {version}\n"
+            "Język aplikacji: {language_code}\n"
+            "Szablon raportu: 2\n\n"
+            "Nie dołączaj danych wrażliwych ani rzeczywistych danych klienta. "
+            "Wiadomość zostanie wysłana dopiero po użyciu przycisku wysyłania "
+            "w aplikacji pocztowej."
+        ),
+        "feedback_unavailable": "Nie udało się otworzyć aplikacji pocztowej. Napisz na: milczarek.sebastian1988@gmail.com",
         "settings_legal_title": "Licencje i informacje prawne",
         "settings_legal_hint": "Warunki korzystania z aplikacji, licencja kodu, zastrzeżenie AI/TDM i licencje komponentów zewnętrznych są dostępne offline.",
         "settings_legal_button": "Otwórz informacje prawne",
@@ -336,6 +377,46 @@ I18N = {
         "settings_currency_status": "Last update: {date}\nSource: {source}",
         "settings_currency_status_cached": "Locally saved rate from: {date}\nSource: {source}",
         "settings_currency_status_missing": "No saved rate. Connect to the internet to download NBP data.",
+        "settings_feedback_title": "Feedback and bug reports",
+        "settings_feedback_hint": "Open a structured, editable test report. You can identify the area, outcome, frequency and impact. The app sends nothing in the background.",
+        "settings_feedback_button": "Open test report / feedback",
+        "feedback_email_subject": "Refrigeration Calc {version} — test report / feedback",
+        "feedback_email_body": (
+            "Thank you for genuinely testing the app. Remove options that do not "
+            "apply and complete the fields relevant to your feedback.\n\n"
+            "REPORT TYPE\n"
+            "[ ] Bug or crash\n"
+            "[ ] Usability or readability issue\n"
+            "[ ] Improvement idea\n"
+            "[ ] Confirmation that the feature worked correctly\n\n"
+            "AREA TESTED\n"
+            "[ ] Cooling / freezing\n"
+            "[ ] Valves\n"
+            "[ ] Labor and cost chart\n"
+            "[ ] PDF\n"
+            "[ ] Settings, language, theme or currencies\n"
+            "[ ] Ads or PRO\n\n"
+            "WHAT I DID\n\n\n"
+            "ACTUAL RESULT\n\n\n"
+            "EXPECTED RESULT\n\n\n"
+            "FREQUENCY\n"
+            "[ ] Once  [ ] Sometimes  [ ] Every time\n\n"
+            "IMPACT\n"
+            "[ ] Cosmetic  [ ] Makes work harder  [ ] Blocks the task\n\n"
+            "INSTALLATION AND DEVICE (optional)\n"
+            "[ ] Installed or updated through the Google Play closed test\n"
+            "Device model:\n"
+            "Android version:\n\n"
+            "ADDITIONAL NOTES\n\n\n"
+            "---\n"
+            "App: {app_name}\n"
+            "Version: {version}\n"
+            "App language: {language_code}\n"
+            "Report template: 2\n\n"
+            "Do not include sensitive data or real customer data. The message is "
+            "sent only after you use the send button in your email app."
+        ),
+        "feedback_unavailable": "The email app could not be opened. Contact: milczarek.sebastian1988@gmail.com",
         "settings_legal_title": "Licenses and legal information",
         "settings_legal_hint": "The app terms, source license, AI/TDM reservation and third-party component licenses are available offline.",
         "settings_legal_button": "Open legal information",

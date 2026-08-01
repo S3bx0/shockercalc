@@ -1,5 +1,6 @@
 package pl.smilczarek.refrigerationcalc;
 
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -23,6 +24,8 @@ public class RefrigerationCalcActivity extends PythonActivity {
     private PrivacyConsentService privacyConsentService;
     private AdvertisingService advertisingService;
     private FileShareService fileShareService;
+    private FeedbackService feedbackService;
+    private AppShortcutsService appShortcutsService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -30,9 +33,10 @@ public class RefrigerationCalcActivity extends PythonActivity {
     protected void onCreate(Bundle savedInstanceState) {
         getWindow().setBackgroundDrawableResource(android.R.color.white);
         super.onCreate(savedInstanceState);
+        appShortcuts().initialize(getIntent());
         configureEdgeToEdge();
         showAnimatedIntro();
-        telemetry().initialize();
+        telemetry().initializeIfConsented();
         billing().initialize();
         initializeAds();
     }
@@ -146,6 +150,20 @@ public class RefrigerationCalcActivity extends PythonActivity {
             fileShareService = new FileShareService(this);
         }
         return fileShareService;
+    }
+
+    private FeedbackService feedback() {
+        if (feedbackService == null) {
+            feedbackService = new FeedbackService(this);
+        }
+        return feedbackService;
+    }
+
+    private AppShortcutsService appShortcuts() {
+        if (appShortcutsService == null) {
+            appShortcutsService = new AppShortcutsService(this);
+        }
+        return appShortcutsService;
     }
 
     public boolean isFirebaseTelemetryAvailable() {
@@ -283,6 +301,15 @@ public class RefrigerationCalcActivity extends PythonActivity {
         fileShare().shareFile(path, mimeType, subject, text);
     }
 
+    public void openFeedbackEmail(final String recipient, final String subject,
+                                  final String body) {
+        feedback().openEmail(recipient, subject, body);
+    }
+
+    public String consumePendingShortcutTab() {
+        return appShortcuts().consumePendingTargetTab();
+    }
+
     private boolean isDebugBuild() {
         return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
@@ -311,6 +338,13 @@ public class RefrigerationCalcActivity extends PythonActivity {
     /** Uruchamia zakup modułu zaworów (jednorazowy produkt ``module_valves``). */
     public void launchModulePurchase() {
         billing().launchModulePurchase();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        appShortcuts().onNewIntent(intent);
     }
 
     @Override

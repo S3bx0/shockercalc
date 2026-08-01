@@ -6,8 +6,32 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Dodano
+
+- Formularz opinii tworzy teraz ustrukturyzowany raport testowy z rodzajem
+  zgłoszenia, testowanym obszarem, rzeczywistym i oczekiwanym rezultatem,
+  częstotliwością oraz wpływem problemu. Dane urządzenia pozostają pustymi,
+  opcjonalnymi polami wpisywanymi przez użytkownika.
+- Dodano przewodnik testera, macierz scenariuszy oraz proces potwierdzania,
+  odtwarzania, odpowiadania i ponownego testowania rzeczywistych zgłoszeń.
+- Dodano trzy skróty launchera prowadzące bezpośrednio do kart Chłodnicze,
+  Zawory i Robocizna.
+
+## [1.5.12] - 2026-07-30
+
+### Dodano
+
+- W ustawieniach dodano akcję „Wyślij opinię / Zgłoś błąd”, która otwiera
+  edytowalny szkic e-mail z wersją i językiem aplikacji. Wiadomość nie jest
+  wysyłana bez działania użytkownika i nie zawiera automatycznej diagnostyki.
+- Dodano szablon rejestru rzeczywistych opinii z testu zamkniętego, decyzji
+  projektowych i wersji zawierających wdrożone poprawki.
+
 ### Naprawiono
 
+- Buildy APK i AAB korzystają z oficjalnego mirrora SourceForge dla FreeType,
+  gdy serwer Savannah zwraca błąd `502`. Archiwum jest dodatkowo sprawdzane
+  względem sumy SHA-256 opublikowanej przez projekt FreeType.
 - Przycisk PRO nie pokazuje już nieaktualnej ceny `4,99 zł`. Po połączeniu
   z Google Play wyświetla lokalną, sformatowaną cenę bieżącego planu
   subskrypcji; do czasu odpowiedzi Billing używa fallbacku `9,99 zł/mies.`.
@@ -43,6 +67,18 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - `LaborTabView` i budowę drzewa Kivy zakładki robocizny przeniesiono do
   `labor_view.py`. Publiczne `LaborTabController.build()` pozostaje zgodne
   przez mixin kompozycji, a kontroler zmniejszył się z 1112 do 798 linii.
+- Parsowanie pól, walidację, konfigurację stawek i orkiestrację `calculate()`
+  zakładki robocizny przeniesiono do `labor_workflow.py`. Wzory nadal
+  pozostają w `tpof/labor`, publiczne API kontrolera jest zgodne, a
+  `labor.py` zmniejszył się z 798 do 604 linii.
+- Prezentację wyników, legendę oraz dialog wykresu robocizny przeniesiono do
+  `labor_results.py`; koordynator `labor.py` zmniejszył się z 604 do około
+  260 linii.
+- Funkcja opinii korzysta z niezależnego od Kivy i PyJNIus
+  `UserFeedbackController` oraz osobnego natywnego `FeedbackService`.
+  `RefrigerationCalcActivity` udostępnia jedynie cienki delegat.
+- Politykę prywatności uzupełniono o dobrowolny przepływ treści wiadomości
+  przez wybraną aplikację pocztową.
 
 ### Testy
 
@@ -63,6 +99,11 @@ wersjonowanie wg [SemVer](https://semver.org/).
   zastosowania responsywnych metryk do jej widoku.
 - Dodano test kontraktowy granicy `labor.py` → `labor_view.py` oraz
   zaktualizowano testy smoke klawiatury i wykresu.
+- Dodano test kontraktowy granicy `labor.py` → `labor_workflow.py` i objęto
+  nowy moduł kontrolą mypy.
+- Dodano testy lokalizowanego szkicu opinii, nieautomatycznej wysyłki, mostka
+  PyJNIus, natywnego fallbacku pocztowego oraz granicy
+  `labor.py` → `labor_results.py`.
 
 ## [1.5.11] - 2026-07-20
 

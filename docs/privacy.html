@@ -19,7 +19,7 @@
 <body>
 
   <h1>Polityka prywatności — Refrigeration Calc</h1>
-  <p class="lang">Ostatnia aktualizacja: 21 lipca 2026 r.</p>
+  <p class="lang">Ostatnia aktualizacja: 1 sierpnia 2026 r.</p>
 
   <p>
     Aplikacja <strong>Refrigeration Calc</strong> („Aplikacja") jest technicznym
@@ -45,15 +45,24 @@
     <strong>Google Analytics for Firebase</strong>,
     <strong>Firebase Crashlytics</strong> i <strong>Firebase Remote Config</strong>.
     Zbieranie jest domyślnie wyłączone. Zgodę można włączyć lub wyłączyć w
-    ustawieniach prywatności Aplikacji.
+    ustawieniach prywatności Aplikacji. Przed zgodą Aplikacja nie inicjalizuje
+    Firebase ani nie tworzy identyfikatora instalacji Firebase. Identyfikator
+    reklamowy jest trwale wyłączony dla Google Analytics.
   </p>
   <p>
-    Google może wtedy przetwarzać identyfikator instalacji, model urządzenia,
-    wersję systemu i Aplikacji, informacje o użytych ekranach i funkcjach oraz
-    dane diagnostyczne, takie jak stos błędu. Nie wysyłamy wartości obliczeń,
-    temperatur, mas, nazw wybranych lub własnych produktów ani zawartości PDF.
-    Remote Config pobiera wyłącznie bezpieczne ustawienia funkcji, np. limity i
-    włączniki funkcji testowych.
+    Google może wtedy przetwarzać identyfikator instalacji, model
+    urządzenia, wersję systemu i Aplikacji, przybliżony kraj ustalony na
+    podstawie adresu IP, informacje o użytych ekranach i funkcjach, zdarzenia
+    zakupów i subskrypcji oraz dane diagnostyczne, takie jak stos błędu.
+    Nie wysyłamy wartości obliczeń, temperatur, mas, nazw wybranych lub własnych
+    produktów ani zawartości PDF. Remote Config pobiera wyłącznie bezpieczne
+    ustawienia funkcji, np. limity i włączniki funkcji testowych.
+  </p>
+  <p>
+    Po cofnięciu zgody Aplikacja wyłącza dalsze zbieranie, usuwa lokalne dane
+    Analytics i niewysłane raporty Crashlytics oraz zleca Firebase usunięcie
+    identyfikatora instalacji. Usunięcie danych znajdujących się w systemach
+    Google odbywa się zgodnie z okresami retencji i procedurami Google.
   </p>
   <p>
     Informacje o przetwarzaniu danych przez Google znajdują się w
@@ -79,13 +88,33 @@
       polityka prywatności NBP</a>.
   </p>
 
-  <h2>4. Reklamy (Google AdMob)</h2>
+  <h2>4. Dobrowolne opinie i zgłoszenia błędów</h2>
+  <p>
+    Akcja „Wyślij opinię / Zgłoś błąd” otwiera wybraną przez użytkownika
+    aplikację pocztową z edytowalnym szkicem. Aplikacja wpisuje do szkicu
+    wyłącznie nazwę, wersję i wybrany język Aplikacji oraz puste,
+    ustrukturyzowane pola raportu. Model urządzenia i wersję Androida
+    użytkownik może wpisać opcjonalnie; Aplikacja nie odczytuje ich do raportu.
+    Żadna wiadomość nie jest wysyłana, dopóki użytkownik sam nie użyje
+    przycisku wysyłania w aplikacji pocztowej.
+  </p>
+  <p>
+    Po dobrowolnym wysłaniu treść wiadomości i adres nadawcy są przetwarzane
+    przez wybranego dostawcę poczty oraz trafiają do dewelopera w celu obsługi
+    zgłoszenia i ulepszania Aplikacji. Nie należy dołączać danych wrażliwych.
+    Usunięcia przesłanej wiadomości można zażądać, korzystając z adresu
+    podanego w sekcji Kontakt.
+  </p>
+
+  <h2>5. Reklamy (Google AdMob)</h2>
   <p>
     Aplikacja w wersji bezpłatnej wyświetla reklamy dostarczane przez
-    <strong>Google AdMob</strong>. W celu wyświetlania reklam Google oraz jego
-    partnerzy mogą wykorzystywać identyfikatory urządzenia (np. identyfikator
-    reklamowy Android) oraz inne dane techniczne, zgodnie z polityką prywatności
-    Google.
+    <strong>Google AdMob</strong>. SDK Google Mobile Ads automatycznie zbiera
+    i udostępnia Google oraz partnerom reklamowym adres IP (z którego może być
+    określana przybliżona lokalizacja), interakcje z Aplikacją i reklamami,
+    dane diagnostyczne oraz identyfikatory urządzenia lub konta, w tym
+    identyfikator reklamowy Android. Dane służą do wyświetlania reklam,
+    analityki oraz zapobiegania oszustwom i nadużyciom.
   </p>
   <p>
     Więcej informacji o tym, jak Google wykorzystuje dane:
@@ -93,45 +122,85 @@
       policies.google.com/technologies/partner-sites</a>.
   </p>
 
-  <h2>5. Zgoda reklamowa (RODO / EOG)</h2>
+  <h2>6. Zgoda reklamowa (RODO / EOG)</h2>
   <p>
     Dla użytkowników z Europejskiego Obszaru Gospodarczego, Wielkiej Brytanii i
     Szwajcarii Aplikacja wyświetla, przed załadowaniem reklam, formularz zgody
     Google (User Messaging Platform). Użytkownik może wyrazić zgodę lub jej
     odmówić. W przypadku odmowy reklamy spersonalizowane nie są wyświetlane.
+    UMP kontaktuje się z Google, aby ustalić wymagany stan zgody; właściwy SDK
+    Google Mobile Ads jest inicjalizowany dopiero, gdy UMP zezwoli na żądanie
+    reklam.
     Zgodę można w każdej chwili zmienić, korzystając z przycisku prywatności
     dostępnego w pasku górnym Aplikacji.
   </p>
 
-  <h2>6. Zakupy w aplikacji</h2>
+  <h2>7. Zakupy w aplikacji</h2>
   <p>
     Aplikacja oferuje opcjonalne zakupy (np. wersja bez reklam) obsługiwane przez
     <strong>Google Play Billing</strong>. Transakcje są przetwarzane przez Google;
     nie otrzymujemy ani nie przechowujemy danych Twojej karty płatniczej.
+    Biblioteka Google Play Billing może przesyłać Google techniczne informacje
+    o działaniu płatności, takie jak wersja Aplikacji, model urządzenia i systemu,
+    ustawienia regionalne oraz typ połączenia. Służą one obsłudze płatności,
+    diagnostyce, bezpieczeństwu i zapobieganiu oszustwom. Jest to niezależne od
+    dobrowolnej telemetrii Firebase.
   </p>
 
-  <h2>7. Uprawnienia</h2>
+  <h2>8. Uprawnienia</h2>
   <p>
     Aplikacja korzysta z dostępu do internetu do pobierania kursów NBP, reklam,
-    płatności oraz, po zgodzie, usług Firebase. Nie żąda dostępu do kontaktów,
-    aparatu ani lokalizacji. Zapis PDF i własnych produktów odbywa się w
-    prywatnej przestrzeni Aplikacji lub przez systemowy mechanizm
-    udostępniania.
+    płatności oraz, po zgodzie, usług Firebase. Biblioteki reklam, płatności i
+    zadań w tle dodają zwykłe uprawnienia techniczne, m.in. do identyfikatora
+    reklamowego, usług reklamowych Androida, blokady uśpienia i zadań w tle.
+    Nie wymagają one przyznania dostępu w oknie systemowym. Aplikacja nie żąda
+    dostępu do kontaktów, aparatu, mikrofonu, dokładnej lokalizacji ani
+    współdzielonych zdjęć i plików. Zapis PDF i własnych produktów odbywa się w
+    prywatnej przestrzeni Aplikacji lub przez systemowy mechanizm udostępniania.
   </p>
 
-  <h2>8. Dzieci</h2>
+  <h2>9. Dzieci</h2>
   <p>
     Aplikacja jest narzędziem technicznym i nie jest kierowana do dzieci poniżej
     13. roku życia. Nie zbieramy świadomie danych takich osób.
   </p>
 
-  <h2>9. Zmiany polityki</h2>
+  <h2 id="data-deletion">10. Usuwanie danych</h2>
+  <p>
+    Użytkownik może poprosić o usunięcie danych przekazanych deweloperowi,
+    wysyłając wiadomość na
+    <a href="mailto:milczarek.sebastian1988@gmail.com?subject=Refrigeration%20Calc%20%E2%80%94%20usuni%C4%99cie%20danych">milczarek.sebastian1988@gmail.com</a>
+    z tematem „Refrigeration Calc — usunięcie danych”. W zgłoszeniu należy
+    wskazać adres e-mail użyty do wcześniejszego kontaktu oraz, jeśli to
+    możliwe, datę i temat wiadomości, którą mamy usunąć. Nie należy przesyłać
+    haseł ani innych danych wrażliwych.
+  </p>
+  <p>
+    Po zweryfikowaniu zgłoszenia usuniemy w ciągu 30 dni wiadomości z opiniami
+    lub zgłoszeniami błędów oraz powiązane dane osobowe znajdujące się pod naszą
+    kontrolą. Dane kalkulatorów, własne produkty, ustawienia i pliki PDF są
+    przechowywane lokalnie; można je usunąć w Aplikacji, czyszcząc jej dane w
+    ustawieniach Androida albo odinstalowując Aplikację. Automatyczna kopia
+    danych Aplikacji w systemie Android jest wyłączona. Uprawnienie PRO nie jest
+    przywracane z kopii danych; po ponownej instalacji jest weryfikowane i
+    odtwarzane za pośrednictwem Google Play.
+  </p>
+  <p>
+    Dane techniczne przetwarzane niezależnie przez Google w usługach AdMob,
+    Firebase i Google Play podlegają zasadom oraz okresom przechowywania Google.
+    Na żądanie pomożemy wskazać właściwy mechanizm Google, jeśli danych nie
+    możemy usunąć samodzielnie. Możemy zachować minimalny zakres informacji
+    wymagany przez prawo, rozliczenia, bezpieczeństwo lub zapobieganie
+    nadużyciom; o takim wyjątku poinformujemy w odpowiedzi na zgłoszenie.
+  </p>
+
+  <h2>11. Zmiany polityki</h2>
   <p>
     Niniejsza polityka może być okresowo aktualizowana. Data ostatniej zmiany
     jest podana na górze strony.
   </p>
 
-  <h2>10. Kontakt</h2>
+  <h2>12. Kontakt</h2>
   <p>
     W sprawach dotyczących prywatności prosimy o kontakt:
     <a href="mailto:milczarek.sebastian1988@gmail.com">milczarek.sebastian1988@gmail.com</a>.
@@ -140,7 +209,7 @@
   <hr />
 
   <h1>Privacy Policy — Refrigeration Calc</h1>
-  <p class="lang">Last updated: 21 July 2026.</p>
+  <p class="lang">Last updated: 1 August 2026.</p>
 
   <p>
     <strong>Refrigeration Calc</strong> (the "App") is a technical tool for the
@@ -164,15 +233,24 @@
     <strong>Google Analytics for Firebase</strong>,
     <strong>Firebase Crashlytics</strong>, and <strong>Firebase Remote Config</strong>.
     Collection is disabled by default and can be enabled or disabled in the
-    App's privacy settings.
+    App's privacy settings. Before consent, the App does not initialize
+    Firebase or create a Firebase installation identifier. Advertising ID
+    collection is permanently disabled for Google Analytics.
   </p>
   <p>
     Google may then process an installation identifier, device model, operating
-    system and App version, information about screens and features used, and
-    diagnostics such as error stack traces. We do not send calculation values,
-    temperatures, masses, selected or custom product names, or PDF contents.
-    Remote Config only downloads safe feature settings, such as limits and beta
-    feature switches.
+    system and App version, an approximate country derived from the IP address,
+    information about screens and features used, purchase and subscription
+    events, and diagnostics such as error stack traces. We do not send
+    calculation values, temperatures, masses, selected or custom product names,
+    or PDF contents. Remote Config only downloads safe feature settings, such
+    as limits and beta feature switches.
+  </p>
+  <p>
+    When consent is withdrawn, the App disables further collection, clears
+    local Analytics data and unsent Crashlytics reports, and asks Firebase to
+    delete the installation identifier. Deletion of data held in Google's
+    systems follows Google's retention periods and procedures.
   </p>
   <p>
     Learn more in the
@@ -197,54 +275,110 @@
       NBP privacy policy</a>.
   </p>
 
-  <h2>4. Advertising (Google AdMob)</h2>
+  <h2>4. Voluntary feedback and bug reports</h2>
+  <p>
+    The “Send feedback / Report a bug” action opens the user's chosen email app
+    with an editable draft. The App adds only its name, version, selected
+    language, and blank structured report fields. The user may optionally type
+    a device model and Android version; the App does not read them into the
+    report. No message is sent until the user uses the send button in the email
+    app.
+  </p>
+  <p>
+    If the user voluntarily sends the message, its content and sender address
+    are processed by the chosen email provider and received by the developer
+    to handle the report and improve the App. Sensitive data should not be
+    included. You may request deletion of a submitted message using the address
+    in the Contact section.
+  </p>
+
+  <h2>5. Advertising (Google AdMob)</h2>
   <p>
     The free version of the App shows ads provided by <strong>Google AdMob</strong>.
-    To serve ads, Google and its partners may use device identifiers (e.g. the
-    Android advertising ID) and other technical data, in accordance with Google's
-    privacy policy. Learn more:
+    The Google Mobile Ads SDK automatically collects and shares with Google and
+    advertising partners the IP address (which may be used to estimate general
+    location), App and ad interactions, diagnostic data, and device or account
+    identifiers including the Android advertising ID. These data are used for
+    advertising, analytics, and fraud and abuse prevention. Learn more:
     <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
       policies.google.com/technologies/partner-sites</a>.
   </p>
 
-  <h2>5. Advertising consent (GDPR / EEA)</h2>
+  <h2>6. Advertising consent (GDPR / EEA)</h2>
   <p>
     For users in the European Economic Area, the United Kingdom and Switzerland,
     the App displays a Google consent form (User Messaging Platform) before
     loading ads. You may grant or decline consent; if declined, personalised ads
-    are not shown. You can change your choice at any time via the privacy button
-    in the App's top bar.
+    are not shown. UMP contacts Google to determine the required consent status;
+    the Google Mobile Ads SDK is initialized only after UMP permits ad requests.
+    You can change your choice at any time via the privacy button in the App's
+    top bar.
   </p>
 
-  <h2>6. In-app purchases</h2>
+  <h2>7. In-app purchases</h2>
   <p>
     The App offers optional purchases (e.g. an ad-free version) handled by
     <strong>Google Play Billing</strong>. Transactions are processed by Google;
     we do not receive or store your payment card details.
+    The Google Play Billing Library may send Google technical information about
+    payment operation, such as the App version, device and OS model, regional
+    settings, and connection type. It is used for payment functionality,
+    diagnostics, security, and fraud prevention. This is independent of the
+    optional Firebase telemetry.
   </p>
 
-  <h2>7. Permissions</h2>
+  <h2>8. Permissions</h2>
   <p>
     The App uses internet access to download NBP exchange rates, for
-    advertising, payments, and, after consent, Firebase services. It does not
-    request access to contacts, camera, or location. PDFs and custom products
-    are stored in the App's private storage or shared through the Android
-    system share mechanism.
+    advertising, payments, and, after consent, Firebase services. Advertising,
+    billing, and background-task libraries add ordinary technical permissions,
+    including access to the advertising identifier, Android ad services, wake
+    locks, and background tasks. They do not require approval in a system
+    permission dialog. The App does not request access to contacts, camera,
+    microphone, precise location, or shared photos and files. PDFs and custom
+    products are stored in the App's private storage or shared through the
+    Android system share mechanism.
   </p>
 
-  <h2>8. Children</h2>
+  <h2>9. Children</h2>
   <p>
     The App is a technical tool and is not directed to children under 13. We do
     not knowingly collect data from such users.
   </p>
 
-  <h2>9. Changes</h2>
+  <h2 id="data-deletion-en">10. Data deletion</h2>
+  <p>
+    You may request deletion of data submitted to the developer by emailing
+    <a href="mailto:milczarek.sebastian1988@gmail.com?subject=Refrigeration%20Calc%20%E2%80%94%20data%20deletion">milczarek.sebastian1988@gmail.com</a>
+    with the subject “Refrigeration Calc — data deletion”. Include the email
+    address used for your earlier contact and, if possible, the date and subject
+    of the message to be deleted. Do not send passwords or other sensitive data.
+  </p>
+  <p>
+    After verifying the request, within 30 days we will delete feedback or bug
+    report messages and related personal data under our control. Calculator
+    data, custom products, settings, and PDF files are stored locally and can
+    be removed in the App, by clearing the App's data in Android settings, or
+    by uninstalling the App. Android automatic backup is disabled for the App.
+    PRO entitlement is not restored from an app-data backup; after reinstalling,
+    it is verified and restored through Google Play.
+  </p>
+  <p>
+    Technical data independently processed by Google through AdMob, Firebase,
+    and Google Play is subject to Google's policies and retention periods. On
+    request, we will help identify the relevant Google mechanism where we
+    cannot delete the data ourselves. We may retain the minimum information
+    required for legal compliance, billing, security, or abuse prevention and
+    will explain any such exception in our response.
+  </p>
+
+  <h2>11. Changes</h2>
   <p>
     This policy may be updated periodically. The date of the latest change is
     shown at the top of the page.
   </p>
 
-  <h2>10. Contact</h2>
+  <h2>12. Contact</h2>
   <p>
     For privacy enquiries, contact:
     <a href="mailto:milczarek.sebastian1988@gmail.com">milczarek.sebastian1988@gmail.com</a>.

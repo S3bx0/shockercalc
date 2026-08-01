@@ -21,6 +21,7 @@ import shutil
 import tarfile
 
 FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
+SUPPORTED_ANDROID_ABIS = ("arm64-v8a",)
 DEFAULT_FIREBASE_CONFIG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     ".firebase",
@@ -191,6 +192,105 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
+def _patch_cleartext_policy(*roots):
+    """Jawnie blokuje nieszyfrowany ruch w glownym manifeście aplikacji."""
+    patched = 0
+    for path in _iter_files("AndroidManifest.xml", *roots):
+        normalized = path.replace("\\", "/").lower()
+        if "/src/main/androidmanifest.xml" not in normalized:
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if "<application" not in text:
+            continue
+
+        if re.search(r'android:usesCleartextTraffic="[^"]*"', text):
+            updated = re.sub(
+                r'android:usesCleartextTraffic="[^"]*"',
+                'android:usesCleartextTraffic="false"',
+                text,
+                count=1,
+            )
+        else:
+            updated = re.sub(
+                r"(<application\b)",
+                r'\1 android:usesCleartextTraffic="false"',
+                text,
+                count=1,
+            )
+        if updated == text:
+            continue
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(updated)
+        patched += 1
+        print("[p4a hook] zablokowano cleartext traffic:", path)
+    print("[p4a hook] manifestow z blokada cleartext:", patched)
+    return patched
+
+
+def _patch_firebase_init_provider(*roots):
+    """Usuwa automatyczny start Firebase i Mobile Ads z manifestu aplikacji.
+
+    Firebase i Mobile Ads maja byc inicjalizowane recznie dopiero po zgodzie.
+    Dyrektywa ``tools:node=remove`` jest dodawana do glownego manifestu przed
+    scaleniem manifestow zaleznosci przez Gradle.
+    """
+    providers = (
+        "com.google.firebase.provider.FirebaseInitProvider",
+        "com.google.android.gms.ads.MobileAdsInitProvider",
+    )
+    patched = 0
+    for path in _iter_files("AndroidManifest.xml", *roots):
+        normalized = path.replace("\\", "/").lower()
+        if "/src/main/androidmanifest.xml" not in normalized:
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if "<application" not in text or "</application>" not in text:
+            continue
+
+        updated = text
+        if "xmlns:tools=" not in updated:
+            updated, count = re.subn(
+                r"(<manifest\b)",
+                r'\1 xmlns:tools="http://schemas.android.com/tools"',
+                updated,
+                count=1,
+            )
+            if not count:
+                continue
+        removals = []
+        for provider in providers:
+            marker = f"Refrigeration Calc remove auto-init provider: {provider}"
+            if marker in updated:
+                continue
+            removals.append(
+                f"""
+        <!-- {marker}; explicit consent-controlled startup. -->
+        <provider
+            android:name="{provider}"
+            tools:node="remove" />
+"""
+            )
+        if not removals:
+            continue
+        updated = updated.replace(
+            "</application>", "".join(removals) + "    </application>", 1
+        )
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(updated)
+        patched += 1
+        print("[p4a hook] usunieto automatyczne providery SDK:", path)
+    print("[p4a hook] manifestow SDK opt-in:", patched)
+    return patched
+
+
 def _patch_python_activity_orientation(*roots):
     """Usuwa odziedziczona blokade orientacji z launchera p4a.
 
@@ -274,6 +374,54 @@ android {{
         patched += 1
         print("[p4a hook] zaktualizowano build.gradle diagnostics:", path)
     print("[p4a hook] zaktualizowanych build.gradle diagnostics:", patched)
+
+
+def _patch_android_abi_filters(*roots):
+    """Ogranicza natywne biblioteki zaleznosci do ABI budowanego przez p4a.
+
+    ``android.archs`` steruje kompilacja runtime p4a, ale AAR-y zaleznosci moga
+    nadal wniesc biblioteki dla innych ABI. App Bundle uznalby wtedy te ABI za
+    obslugiwane, mimo braku Pythona i SDL. Filtr Gradle musi wiec odpowiadac
+    architekturom z ``buildozer.spec``.
+    """
+    marker = "Refrigeration Calc supported ABIs"
+    quoted_abis = ", ".join(repr(abi) for abi in SUPPORTED_ANDROID_ABIS)
+    snippet = f"""
+
+// {marker} (patched by p4a_hooks.py).
+android {{
+    defaultConfig {{
+        ndk {{
+            // Drop native libraries contributed by AARs for unsupported ABIs.
+            abiFilters.clear()
+            abiFilters {quoted_abis}
+        }}
+    }}
+}}
+"""
+    patched = 0
+    for path in _iter_files("build.gradle", *roots):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        if marker in text:
+            continue
+        if (
+            "com.android.application" not in text
+            or "com.android.tools.build:gradle" not in text
+            or "android {" not in text
+        ):
+            continue
+
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text.rstrip() + snippet + "\n")
+        patched += 1
+        print("[p4a hook] ograniczono ABI w build.gradle:", path)
+    print("[p4a hook] zaktualizowanych filtrow ABI:", patched)
+    return patched
 
 
 def _firebase_config_matches_package(path):
@@ -394,8 +542,11 @@ def before_apk_assemble(toolchain):
     roots = _candidate_roots(toolchain)
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
+    _patch_cleartext_policy(*roots)
+    _patch_firebase_init_provider(*roots)
     _patch_python_activity_orientation(*roots)
     _patch_firebase_gradle(*roots)
+    _patch_android_abi_filters(*roots)
     _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)
     _strip_python_bundle_payload(*roots)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shocker-calc"
-version = "1.5.11"
+version = "1.5.12"
 description = "Refrigeration Calc — kalkulator zapotrzebowania chłodu dla procesu zamrażania (desktop + mobile)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -80,14 +80,22 @@ files = [
     "tpof/mobile/pdf_export.py",
     "tpof/mobile/services/monetization.py",
     "tpof/mobile/services/rewarded_access.py",
+    "tpof/mobile/services/user_feedback.py",
     "tpof/mobile/dialogs/labor_rates.py",
     "tpof/mobile/dialogs/custom_product.py",
     "tpof/mobile/dialogs/legal.py",
     "tpof/mobile/dialogs/privacy.py",
     "tpof/mobile/dialogs/settings.py",
     "tpof/mobile/tabs/labor.py",
+    "tpof/mobile/tabs/labor_results.py",
+    "tpof/mobile/tabs/labor_workflow.py",
     "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
+    "tools/verify_android_abi_bundle.py",
+    "tools/verify_android_16kb_alignment.py",
+    "tools/verify_android_firebase_manifest.py",
+    "tools/verify_android_permissions.py",
+    "tools/verify_android_network_security.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

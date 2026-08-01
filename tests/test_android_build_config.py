@@ -24,9 +24,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.11" in spec
-    assert '__version__ = "1.5.11"' in package_init
-    assert 'version = "1.5.11"' in pyproject
+    assert "version = 1.5.12" in spec
+    assert '__version__ = "1.5.12"' in package_init
+    assert 'version = "1.5.12"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -170,6 +170,7 @@ def test_build_config_supports_rotation_and_current_android_libraries():
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "android.permissions = INTERNET, ACCESS_NETWORK_STATE" in spec
+    assert "android.allow_backup = False" in spec
     assert "WRITE_EXTERNAL_STORAGE" not in spec
     assert "READ_EXTERNAL_STORAGE" not in spec
     assert "/sdcard/Download" not in mobile_app
@@ -181,24 +182,46 @@ def test_build_config_supports_rotation_and_current_android_libraries():
     assert "com.google.firebase:firebase-analytics:23.2.0" in spec
     assert "com.google.firebase:firebase-crashlytics:20.0.6" in spec
     assert "com.google.firebase:firebase-config:23.1.0" in spec
+    assert "com.google.firebase:firebase-installations:19.1.2" in spec
+    assert "firebase_data_collection_default_enabled=false" in spec
     assert "firebase_analytics_collection_enabled=false" in spec
     assert "firebase_crashlytics_collection_enabled=false" in spec
+    assert "google_analytics_adid_collection_enabled=false" in spec
     assert "p4a.branch = master" in spec
     assert "p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831" in spec
 
 
 def test_workflows_pin_reproducible_build_tools():
+    freetype_mirror = (
+        "https://downloads.sourceforge.net/project/freetype/freetype2/"
+        "{version}/freetype-{version}.tar.gz"
+        "#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+    )
+
     for name in ("android.yml", "android-release.yml"):
         workflow = (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
         assert "buildozer==1.6.0" in workflow
         assert "legacy-cgi==2.6.4" in workflow
+        assert f'URL_freetype: "{freetype_mirror}"' in workflow
         assert "git+https://github.com/kivy/buildozer" not in workflow
         assert "actions/checkout@v4" not in workflow
         assert "actions/cache@v4" not in workflow
+        assert "uses: actions/cache/restore@27d5ce7f" in workflow
+        assert "uses: actions/cache@27d5ce7f" not in workflow
         assert "actions/upload-artifact@v4" not in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON_BASE64" in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE" in workflow
         assert "tools/android_size_report.py" in workflow
+        assert "Cache Buildozer build dir" not in workflow
+        assert "Report runner storage after cache restore" in workflow
+        assert "Verify Android backup policy" in workflow
+        assert "android:allowBackup=\"[Ff]alse\"" in workflow
+        assert "Verify final Android permission allowlist" in workflow
+        assert "tools/verify_android_permissions.py" in workflow
+        assert "Verify Android network security policy" in workflow
+        assert "tools/verify_android_network_security.py" in workflow
+        assert "Verify Firebase opt-in manifest" in workflow
+        assert "tools/verify_android_firebase_manifest.py" in workflow
 
     debug_workflow = (ROOT / ".github/workflows/android.yml").read_text(
         encoding="utf-8"
@@ -214,6 +237,27 @@ def test_release_workflow_verifies_offline_legal_bundle():
 
     assert "Verify packaged legal notices" in workflow
     assert "tools/verify_android_legal_bundle.py" in workflow
+
+
+def test_release_workflow_has_blocking_aab_integrity_gates():
+    workflow = (ROOT / ".github/workflows/android-release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Verify AAB signature" in workflow
+    assert "jarsigner -verify -verbose -certs" in workflow
+    assert 'grep -Fq "jar verified."' in workflow
+    assert "Validate AAB with bundletool" in workflow
+    assert "bundletool-all-1.18.3.jar" in workflow
+    assert "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29" in workflow
+    assert 'validate --bundle="$AAB_PATH"' in workflow
+    assert "Verify native libraries 16 KB alignment" in workflow
+    assert "tools/verify_android_16kb_alignment.py" in workflow
+    alignment_step = workflow.split(
+        "- name: Verify native libraries 16 KB alignment", maxsplit=1
+    )[1].split("- name:", maxsplit=1)[0]
+    assert "if: always()" not in alignment_step
+    assert "::warning::" not in alignment_step
 
 
 def test_lint_workflow_runs_full_mypy_baseline():
@@ -311,6 +355,92 @@ android {}
     assert p4a_hooks._patch_firebase_gradle(project, config_path=config) == 1
     assert "com.google.gms.google-services" in main_gradle.read_text(encoding="utf-8")
     assert "com.google.gms.google-services" not in auxiliary.read_text(encoding="utf-8")
+
+
+def test_p4a_hook_filters_packaged_native_dependencies_to_arm64(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    gradle = project / "build.gradle"
+    gradle.write_text(
+        """buildscript {
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.0'
+    }
+}
+apply plugin: 'com.android.application'
+android {}
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_android_abi_filters(project) == 1
+    assert p4a_hooks._patch_android_abi_filters(project) == 0
+    patched = gradle.read_text(encoding="utf-8")
+
+    assert patched.count("Refrigeration Calc supported ABIs") == 1
+    assert "abiFilters.clear()" in patched
+    assert "abiFilters 'arm64-v8a'" in patched
+
+
+def test_p4a_hook_removes_automatic_sdk_providers_from_main_manifest(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Refrigeration Calc">
+    </application>
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_firebase_init_provider(tmp_path) == 1
+    assert p4a_hooks._patch_firebase_init_provider(tmp_path) == 0
+    patched = manifest.read_text(encoding="utf-8")
+
+    assert patched.count("Refrigeration Calc remove auto-init provider:") == 2
+    assert 'xmlns:tools="http://schemas.android.com/tools"' in patched
+    assert "com.google.firebase.provider.FirebaseInitProvider" in patched
+    assert "com.google.android.gms.ads.MobileAdsInitProvider" in patched
+    assert patched.count('tools:node="remove"') == 2
+
+
+def test_p4a_hook_explicitly_blocks_cleartext_traffic(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 1
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 0
+    patched = manifest.read_text(encoding="utf-8")
+
+    assert patched.count('android:usesCleartextTraffic="false"') == 1
+    assert 'android:usesCleartextTraffic="true"' not in patched
+
+
+def test_p4a_hook_adds_missing_cleartext_policy(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Refrigeration Calc" />
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 1
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 0
+
+    assert 'android:usesCleartextTraffic="false"' in manifest.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

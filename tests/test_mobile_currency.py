@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from tpof.mobile.currency import (
+    NBP_RATE_URL,
     ExchangeRates,
     convert_display_amount,
     convert_display_amount_to_pln,
@@ -11,6 +12,11 @@ from tpof.mobile.currency import (
     load_cached_rates,
     save_cached_rates,
 )
+
+
+def test_nbp_endpoint_requires_https():
+    assert NBP_RATE_URL.startswith("https://")
+    assert not NBP_RATE_URL.startswith("http://")
 
 
 def test_fetch_nbp_exchange_rates_uses_injected_fetcher():

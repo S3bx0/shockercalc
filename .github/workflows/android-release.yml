@@ -18,6 +18,13 @@ jobs:
   build-release:
     name: Buildozer (signed release AAB)
     runs-on: ubuntu-24.04
+    env:
+      # Savannah intermittently returns HTTP 502. python-for-android supports
+      # recipe URL overrides, so use FreeType's official SourceForge mirror
+      # and verify the archive against the publisher-provided SHA-256.
+      URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+      BUNDLETOOL_URL: "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar"
+      BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
 
     steps:
       - name: Checkout repo
@@ -62,8 +69,16 @@ jobs:
           curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain 1.96.0
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
-      - name: Cache Buildozer global dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      - name: Report runner storage before cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
+
+      # Restore only: saving the full SDK/NDK/Gradle tree after a build can
+      # consume the last gigabytes of runner storage. The existing cache is a
+      # reusable toolchain seed; a miss simply makes this build slower.
+      - name: Restore Buildozer global cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.buildozer
@@ -72,13 +87,13 @@ jobs:
           restore-keys: |
             buildozer-${{ runner.os }}-
 
-      - name: Cache Buildozer build dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: .buildozer
-          key: buildozer-build-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            buildozer-build-${{ runner.os }}-
+      # Do not cache the project-local .buildozer directory. Its compressed
+      # cache was ~1.9 GB and, together with the global cache, repeatedly
+      # exhausted the GitHub-hosted runner while being restored.
+      - name: Report runner storage after cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
 
       - name: Install Python build tools
         run: |
@@ -145,12 +160,72 @@ jobs:
           echo "CXXFLAGS=$CXXFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
 
+      - name: Verify AAB signature
+        run: |
+          set -eo pipefail
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          LANG=C.UTF-8 jarsigner -verify -verbose -certs "$AAB_PATH" | tee jarsigner-report.txt
+          grep -Fq "jar verified." jarsigner-report.txt
+          if grep -Fiq "jar is unsigned" jarsigner-report.txt; then
+            echo "::error::The release AAB is not signed."
+            exit 1
+          fi
+
+      - name: Validate AAB with bundletool
+        run: |
+          set -eo pipefail
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          curl --fail --location --retry 5 "$BUNDLETOOL_URL" --output "$RUNNER_TEMP/bundletool.jar"
+          echo "$BUNDLETOOL_SHA256  $RUNNER_TEMP/bundletool.jar" | sha256sum --check --strict
+          java -jar "$RUNNER_TEMP/bundletool.jar" validate --bundle="$AAB_PATH"
+
       - name: Verify packaged legal notices
         run: |
           set -eo pipefail
           AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
           test -n "$AAB_PATH"
           python tools/verify_android_legal_bundle.py "$AAB_PATH"
+
+      - name: Verify packaged ABI runtime
+        run: |
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          python tools/verify_android_abi_bundle.py "$AAB_PATH"
+
+      - name: Verify Android backup policy
+        run: |
+          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
+          test -n "$MANIFEST_PATH"
+          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
+
+      - name: Verify final Android permission allowlist
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_permissions.py "$MERGED_MANIFEST"
+
+      - name: Verify Android network security policy
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_network_security.py "$MERGED_MANIFEST"
+
+      - name: Verify Firebase opt-in manifest
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_firebase_manifest.py "$MERGED_MANIFEST"
 
       - name: Collect Play Console diagnostic files
         if: always()
@@ -283,84 +358,14 @@ jobs:
           print("\n".join(notes))
           PY
 
-      - name: Check native libraries 16 KB alignment
-        if: always()
+      - name: Verify native libraries 16 KB alignment
         run: |
           set -eo pipefail
-          python - <<'PY'
-          import struct
-          import zipfile
-          from pathlib import Path
-
-          report = Path("native-libs-16kb-report.txt")
-          aabs = sorted(Path("bin").glob("*.aab"))
-          lines = [
-              "16 KB native library alignment report",
-              "====================================",
-              f"AAB: {aabs[0] if aabs else 'not found'}",
-              "",
-          ]
-          if not aabs:
-              lines.append("No AAB produced; skipping native library inspection.")
-              report.write_text("\n".join(lines) + "\n", encoding="utf-8")
-              raise SystemExit(0)
-
-          def load_alignments(data):
-              if data[:4] != b"\x7fELF":
-                  return []
-              elf_class = data[4]
-              endian = data[5]
-              prefix = "<" if endian == 1 else ">"
-              if elf_class == 2:
-                  e_phoff = struct.unpack_from(prefix + "Q", data, 32)[0]
-                  e_phentsize = struct.unpack_from(prefix + "H", data, 54)[0]
-                  e_phnum = struct.unpack_from(prefix + "H", data, 56)[0]
-                  fmt = prefix + "IIQQQQQQ"
-              else:
-                  e_phoff = struct.unpack_from(prefix + "I", data, 28)[0]
-                  e_phentsize = struct.unpack_from(prefix + "H", data, 42)[0]
-                  e_phnum = struct.unpack_from(prefix + "H", data, 44)[0]
-                  fmt = prefix + "IIIIIIII"
-              aligns = []
-              for i in range(e_phnum):
-                  off = e_phoff + i * e_phentsize
-                  ph = struct.unpack_from(fmt, data, off)
-                  if ph[0] == 1:
-                      aligns.append(ph[-1])
-              return aligns
-
-          bad = []
-          count = 0
-          native_debug_entries = []
-          with zipfile.ZipFile(aabs[0]) as bundle:
-              native_debug_entries = sorted(
-                  name for name in bundle.namelist()
-                  if "debugsymbols" in name.lower()
-                  or "native-debug-symbols" in name.lower()
-              )
-              for name in sorted(n for n in bundle.namelist() if n.endswith(".so")):
-                  count += 1
-                  aligns = sorted(set(load_alignments(bundle.read(name))))
-                  align_text = " ".join(hex(a) for a in aligns) or "none"
-                  lines.append(f"{name}: {align_text}")
-                  if any(a == 0x1000 or a == 4096 for a in aligns):
-                      bad.append((name, align_text))
-
-          lines.append("")
-          lines.append(f"Native libraries inspected: {count}")
-          if bad:
-              lines.append("WARNING: 4 KB LOAD alignment detected:")
-              for name, align_text in bad:
-                  lines.append(f"- {name}: {align_text}")
-              print("::warning::Some native libraries still have 4 KB LOAD alignment. See native-libs-16kb-report.txt.")
-          else:
-              lines.append("No 4 KB LOAD alignment found in inspected native libraries.")
-          lines.append("")
-          lines.append(f"Native debug metadata entries in AAB: {len(native_debug_entries)}")
-          for name in native_debug_entries[:20]:
-              lines.append(f"- {name}")
-          report.write_text("\n".join(lines) + "\n", encoding="utf-8")
-          PY
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          python tools/verify_android_16kb_alignment.py \
+            "$AAB_PATH" \
+            --report native-libs-16kb-report.txt
 
       - name: Sanitize buildozer log (on failure)
         if: failure()

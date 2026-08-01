@@ -21,6 +21,11 @@ jobs:
   build-apk:
     name: Buildozer (debug APK)
     runs-on: ubuntu-24.04
+    env:
+      # Savannah intermittently returns HTTP 502. python-for-android supports
+      # recipe URL overrides, so use FreeType's official SourceForge mirror
+      # and verify the archive against the publisher-provided SHA-256.
+      URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
 
     steps:
       - name: Checkout repo
@@ -65,8 +70,16 @@ jobs:
           curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain 1.96.0
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
-      - name: Cache Buildozer global dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      - name: Report runner storage before cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
+
+      # Restore only: saving the full SDK/NDK/Gradle tree after a build can
+      # consume the last gigabytes of runner storage. The existing cache is a
+      # reusable toolchain seed; a miss simply makes this build slower.
+      - name: Restore Buildozer global cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.buildozer
@@ -75,13 +88,13 @@ jobs:
           restore-keys: |
             buildozer-${{ runner.os }}-
 
-      - name: Cache Buildozer build dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: .buildozer
-          key: buildozer-build-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            buildozer-build-${{ runner.os }}-
+      # Do not cache the project-local .buildozer directory. Its compressed
+      # cache was ~1.9 GB and, together with the global cache, repeatedly
+      # exhausted the GitHub-hosted runner while being restored.
+      - name: Report runner storage after cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
 
       - name: Install Python build tools
         run: |
@@ -150,6 +163,42 @@ jobs:
             mkdir -p bin
             cp "$APK_PATH" bin/refrigerationcalc-debug.apk
           fi
+
+      - name: Verify packaged ABI runtime
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          python tools/verify_android_abi_bundle.py "$APK_PATH"
+
+      - name: Verify Android backup policy
+        run: |
+          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
+          test -n "$MANIFEST_PATH"
+          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
+
+      - name: Verify final Android permission allowlist
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_permissions.py "$MERGED_MANIFEST"
+
+      - name: Verify Android network security policy
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_network_security.py "$MERGED_MANIFEST"
+
+      - name: Verify Firebase opt-in manifest
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          python tools/verify_android_firebase_manifest.py "$APK_PATH"
 
       - name: Upload buildozer log (on failure)
         if: failure()

@@ -3,9 +3,9 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-**Aktualna wersja Android:** `1.5.11`
+**Aktualna wersja Android:** `1.5.12`
 
-**Stan jakości:** 385 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 403 testy automatyczne, statyczna kontrola Ruff i mypy,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
@@ -30,6 +30,10 @@ uruchamiania, kompilowania ani modyfikowania programu.
   do pracy bez połączenia,
 - wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
 - eksport i udostępnianie raportów PDF,
+- dobrowolny, ustrukturyzowany raport testowy przez edytowalny szkic e-mail:
+  obszar, rezultat, częstotliwość i wpływ problemu bez wysyłania w tle,
+- skróty launchera otwierające bezpośrednio karty Chłodnicze, Zawory lub
+  Robocizna po przytrzymaniu ikony aplikacji,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
   telefonu i tabletu,
 - model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
@@ -61,7 +65,7 @@ tpof/                  # pakiet źródłowy
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
-    ├── android_bridge.py # fasada PyJNIus: reklamy, prywatność i udostępnianie
+    ├── android_bridge.py # fasada PyJNIus: platforma, skróty i udostępnianie
     ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
@@ -71,14 +75,18 @@ tpof/                  # pakiet źródłowy
     │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
     │   ├── freezing_results.py  # prezentacja i zerowanie wyników
     │   ├── freezing_presentation.py # motyw i responsywny układ
-    │   ├── valves.py            # dobór zaworów dekompresyjnych
-    │   ├── labor.py             # koordynator robocizny, walut i wykresu
-    │   └── labor_view.py        # konstrukcja widoku robocizny
+    │   ├── valves.py            # koordynator doboru zaworów
+    │   ├── valves_view.py       # konstrukcja widoku zaworów
+    │   ├── valves_workflow.py   # walidacja i obliczenia zaworów
+    │   ├── labor.py             # koordynator robocizny
+    │   ├── labor_view.py        # konstrukcja widoku robocizny
+    │   ├── labor_workflow.py    # parsowanie, walidacja i obliczenia
+    │   └── labor_results.py     # wyniki, wykres, legenda i dialog szczegółów
     ├── theme.py       # synchronizacja jasnego i ciemnego motywu
     ├── layout.py      # responsywny układ telefonu i tabletu
     ├── currency.py    # kursy NBP, cache i przeliczanie PLN/EUR/USD
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
-    ├── services/      # PRO, reklamy nagradzane i dostęp do modułów
+    ├── services/      # skróty, PRO, dostęp do modułów i opinie użytkownika
     ├── widgets/       # współdzielone widżety, w tym wykres kosztów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
@@ -90,7 +98,9 @@ android/src/.../       # natywna powłoka Android
 ├── PrivacyConsentService.java
 ├── AdvertisingService.java
 ├── BillingService.java
-└── FileShareService.java
+├── FileShareService.java
+├── FeedbackService.java
+└── AppShortcutsService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
@@ -98,7 +108,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 385 testów logiki, UI i kontraktów natywnych
+tests/                 # 403 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 
@@ -194,6 +204,8 @@ Druga zakładka (dobór zaworów) jest **płatnym modułem jednorazowym**:
 Przed inicjalizacją SDK reklam aplikacja uruchamia przepływ zgody **Google
 User Messaging Platform**. Dla użytkowników z EOG/UK pokazywany jest formularz
 zgody, a SDK reklam startuje dopiero gdy `canRequestAds()` zwróci `true`.
+Wynikowy manifest usuwa również automatyczny `MobileAdsInitProvider`, dlatego
+SDK reklam nie może ominąć tej bramki podczas startu procesu aplikacji.
 Przycisk „tarcza" w pasku górnym pozwala później zmienić zgodę
 (`showPrivacyOptionsForm`). Komunikat o zgodzie trzeba jeszcze skonfigurować
 w panelu **AdMob → Prywatność i komunikaty** oraz uzupełnić deklaracje danych
@@ -204,8 +216,11 @@ w Play Console.
 Build obsługuje Google Analytics for Firebase, Crashlytics i Remote Config.
 Integracja jest aktywowana tylko wtedy, gdy CI otrzyma poprawny
 `google-services.json`, a samo zbieranie danych jest domyślnie wyłączone do
-czasu zgody użytkownika. Zdarzenia opisują użycie funkcji; nie zawierają
-wartości obliczeń, nazw własnych produktów ani treści PDF.
+czasu zgody użytkownika. Wynikowy manifest usuwa `FirebaseInitProvider`, więc
+przed zgodą nie powstaje `FirebaseApp` ani identyfikator instalacji. Cofnięcie
+zgody wyłącza kolekcję, czyści dane lokalne i zleca usunięcie FID. Zdarzenia
+opisują użycie funkcji; nie zawierają wartości obliczeń, nazw własnych
+produktów ani treści PDF. Identyfikator reklamowy jest wyłączony dla Analytics.
 
 Workflow debug może opcjonalnie przekazać APK testerom przez Firebase App
 Distribution. Pełna konfiguracja sekretów, Remote Config i zmian wymaganych w
