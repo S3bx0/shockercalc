@@ -437,8 +437,10 @@ werdykt, ale uzasadnia bazę wydajnościową:
    repo pokazuje `main` z 1.5.11. Merge jest częścią procesu wydania.
 3. Ocenić aktualizację Crashlytics 20.0.6 → 20.1.0 oraz AndroidX Core 1.18.0 →
    1.19.0 w osobnym checkpointcie kompatybilności, bez łączenia z P0.
-4. Dodać jawne `usesCleartextTraffic=false` lub politykę Network Security
-   Config i test, że wszystkie własne endpointy używają HTTPS.
+4. **Wdrożone w kodzie, oczekuje na potwierdzenie nowym AAB:** hook ustawia
+   `usesCleartextTraffic=false`, osobna bramka CI odrzuca brak tej wartości,
+   wartość `true` oraz niezaudytowany Network Security Config, a test endpointu
+   NBP wymaga HTTPS.
 5. Wprowadzić checklistę ręcznego testu Billing przez licencjonowanego testera
    Play: cena z Console, zakup oczekujący, anulowanie, acknowledge, odtworzenie,
    wygaśnięcie subskrypcji i brak przywrócenia PRO z backupu.

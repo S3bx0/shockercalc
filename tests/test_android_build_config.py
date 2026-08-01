@@ -218,6 +218,8 @@ def test_workflows_pin_reproducible_build_tools():
         assert "android:allowBackup=\"[Ff]alse\"" in workflow
         assert "Verify final Android permission allowlist" in workflow
         assert "tools/verify_android_permissions.py" in workflow
+        assert "Verify Android network security policy" in workflow
+        assert "tools/verify_android_network_security.py" in workflow
         assert "Verify Firebase opt-in manifest" in workflow
         assert "tools/verify_android_firebase_manifest.py" in workflow
 
@@ -401,6 +403,44 @@ def test_p4a_hook_removes_automatic_sdk_providers_from_main_manifest(tmp_path):
     assert "com.google.firebase.provider.FirebaseInitProvider" in patched
     assert "com.google.android.gms.ads.MobileAdsInitProvider" in patched
     assert patched.count('tools:node="remove"') == 2
+
+
+def test_p4a_hook_explicitly_blocks_cleartext_traffic(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 1
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 0
+    patched = manifest.read_text(encoding="utf-8")
+
+    assert patched.count('android:usesCleartextTraffic="false"') == 1
+    assert 'android:usesCleartextTraffic="true"' not in patched
+
+
+def test_p4a_hook_adds_missing_cleartext_policy(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Refrigeration Calc" />
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 1
+    assert p4a_hooks._patch_cleartext_policy(tmp_path) == 0
+
+    assert 'android:usesCleartextTraffic="false"' in manifest.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

@@ -95,6 +95,7 @@ files = [
     "tools/verify_android_16kb_alignment.py",
     "tools/verify_android_firebase_manifest.py",
     "tools/verify_android_permissions.py",
+    "tools/verify_android_network_security.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

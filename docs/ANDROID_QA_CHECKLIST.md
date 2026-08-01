@@ -25,6 +25,10 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
   jest sprawdzana w CI; każde nowe uprawnienie zatrzymuje build do audytu.
 - Aplikacja nie może żądać dostępu do aparatu, mikrofonu, kontaktów, dokładnej
   lokalizacji ani współdzielonych plików i zdjęć użytkownika.
+- Końcowy manifest musi jawnie ustawiać `android:usesCleartextTraffic="false"`
+  i nie może odwoływać się do niezaudytowanego Network Security Config.
+- Własne endpointy aplikacji muszą używać HTTPS; obecnie jedynym takim
+  endpointem jest API kursów NBP.
 - Eksport PDF na Androidzie tworzy roboczy plik w prywatnym katalogu aplikacji,
   a finalny zapis/udostępnienie przechodzi przez natywny most MediaStore/Share.
 - Do Play Console przesyłać wyłącznie plik `.aab`; raporty diagnostyczne z CI nie

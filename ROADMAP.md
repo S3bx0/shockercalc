@@ -52,7 +52,9 @@ Stan realizacji 2026-08-01:
   workflow sprawdza też podpis AAB i wykonuje `bundletool validate` narzędziem
   przypiętym wersją oraz SHA-256. Odczyt finalnego AAB ujawnił techniczne
   uprawnienia zależności, dlatego CI otrzymuje jawną allowlistę i ma blokować
-  każde nowe uprawnienie do czasu audytu;
+  każde nowe uprawnienie do czasu audytu. Następna bramka wymusza jawną blokadę
+  cleartext traffic i pilnuje, aby nie pojawił się niezaudytowany Network
+  Security Config;
 - stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
   oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
 

@@ -192,6 +192,45 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
+def _patch_cleartext_policy(*roots):
+    """Jawnie blokuje nieszyfrowany ruch w glownym manifeście aplikacji."""
+    patched = 0
+    for path in _iter_files("AndroidManifest.xml", *roots):
+        normalized = path.replace("\\", "/").lower()
+        if "/src/main/androidmanifest.xml" not in normalized:
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if "<application" not in text:
+            continue
+
+        if re.search(r'android:usesCleartextTraffic="[^"]*"', text):
+            updated = re.sub(
+                r'android:usesCleartextTraffic="[^"]*"',
+                'android:usesCleartextTraffic="false"',
+                text,
+                count=1,
+            )
+        else:
+            updated = re.sub(
+                r"(<application\b)",
+                r'\1 android:usesCleartextTraffic="false"',
+                text,
+                count=1,
+            )
+        if updated == text:
+            continue
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(updated)
+        patched += 1
+        print("[p4a hook] zablokowano cleartext traffic:", path)
+    print("[p4a hook] manifestow z blokada cleartext:", patched)
+    return patched
+
+
 def _patch_firebase_init_provider(*roots):
     """Usuwa automatyczny start Firebase i Mobile Ads z manifestu aplikacji.
 
@@ -503,6 +542,7 @@ def before_apk_assemble(toolchain):
     roots = _candidate_roots(toolchain)
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
+    _patch_cleartext_policy(*roots)
     _patch_firebase_init_provider(*roots)
     _patch_python_activity_orientation(*roots)
     _patch_firebase_gradle(*roots)
