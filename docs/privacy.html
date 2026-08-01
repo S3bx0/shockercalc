@@ -128,6 +128,9 @@
     Szwajcarii Aplikacja wyświetla, przed załadowaniem reklam, formularz zgody
     Google (User Messaging Platform). Użytkownik może wyrazić zgodę lub jej
     odmówić. W przypadku odmowy reklamy spersonalizowane nie są wyświetlane.
+    UMP kontaktuje się z Google, aby ustalić wymagany stan zgody; właściwy SDK
+    Google Mobile Ads jest inicjalizowany dopiero, gdy UMP zezwoli na żądanie
+    reklam.
     Zgodę można w każdej chwili zmienić, korzystając z przycisku prywatności
     dostępnego w pasku górnym Aplikacji.
   </p>
@@ -298,8 +301,10 @@
     For users in the European Economic Area, the United Kingdom and Switzerland,
     the App displays a Google consent form (User Messaging Platform) before
     loading ads. You may grant or decline consent; if declined, personalised ads
-    are not shown. You can change your choice at any time via the privacy button
-    in the App's top bar.
+    are not shown. UMP contacts Google to determine the required consent status;
+    the Google Mobile Ads SDK is initialized only after UMP permits ad requests.
+    You can change your choice at any time via the privacy button in the App's
+    top bar.
   </p>
 
   <h2>7. In-app purchases</h2>

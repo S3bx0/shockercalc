@@ -11,6 +11,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 FIREBASE_INIT_PROVIDER = "com.google.firebase.provider.FirebaseInitProvider"
+MOBILE_ADS_INIT_PROVIDER = "com.google.android.gms.ads.MobileAdsInitProvider"
+FORBIDDEN_AUTO_INIT_PROVIDERS = (
+    FIREBASE_INIT_PROVIDER,
+    MOBILE_ADS_INIT_PROVIDER,
+)
 REQUIRED_FALSE_METADATA = (
     "firebase_data_collection_default_enabled",
     "firebase_analytics_collection_enabled",
@@ -72,10 +77,11 @@ def _metadata_from_xml(text: str) -> tuple[set[str], set[str]]:
 def verify_manifest_state(
     providers: set[str], disabled_metadata: set[str], source: str
 ) -> None:
-    if FIREBASE_INIT_PROVIDER in providers:
+    forbidden = sorted(set(FORBIDDEN_AUTO_INIT_PROVIDERS) & providers)
+    if forbidden:
         raise FirebaseManifestError(
-            f"{source}: FirebaseInitProvider is present and can initialize Firebase "
-            "before consent"
+            f"{source}: automatic SDK provider is present and can initialize before "
+            f"consent: {', '.join(forbidden)}"
         )
     missing = sorted(set(REQUIRED_FALSE_METADATA) - disabled_metadata)
     if missing:
@@ -157,7 +163,7 @@ def main() -> int:
             raise FirebaseManifestError("expected an APK or AndroidManifest.xml")
     except (OSError, FirebaseManifestError) as exc:
         parser.error(str(exc))
-    print(f"Firebase opt-in manifest verified: {args.artifact}")
+    print(f"Firebase and Mobile Ads opt-in manifest verified: {args.artifact}")
     return 0
 
 

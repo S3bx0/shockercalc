@@ -193,14 +193,16 @@ def _patch_android_manifest(*roots):
 
 
 def _patch_firebase_init_provider(*roots):
-    """Usuwa automatyczny start Firebase z manifestu aplikacji.
+    """Usuwa automatyczny start Firebase i Mobile Ads z manifestu aplikacji.
 
-    Firebase ma byc inicjalizowany recznie dopiero po zapisanej zgodzie.
+    Firebase i Mobile Ads maja byc inicjalizowane recznie dopiero po zgodzie.
     Dyrektywa ``tools:node=remove`` jest dodawana do glownego manifestu przed
     scaleniem manifestow zaleznosci przez Gradle.
     """
-    marker = "Refrigeration Calc manual Firebase initialization"
-    provider = "com.google.firebase.provider.FirebaseInitProvider"
+    providers = (
+        "com.google.firebase.provider.FirebaseInitProvider",
+        "com.google.android.gms.ads.MobileAdsInitProvider",
+    )
     patched = 0
     for path in _iter_files("AndroidManifest.xml", *roots):
         normalized = path.replace("\\", "/").lower()
@@ -210,8 +212,6 @@ def _patch_firebase_init_provider(*roots):
             with open(path, encoding="utf-8") as fh:
                 text = fh.read()
         except OSError:
-            continue
-        if marker in text:
             continue
         if "<application" not in text or "</application>" not in text:
             continue
@@ -226,18 +226,29 @@ def _patch_firebase_init_provider(*roots):
             )
             if not count:
                 continue
-        removal = f"""
-        <!-- {marker}: opt-in before SDK startup. -->
+        removals = []
+        for provider in providers:
+            marker = f"Refrigeration Calc remove auto-init provider: {provider}"
+            if marker in updated:
+                continue
+            removals.append(
+                f"""
+        <!-- {marker}; explicit consent-controlled startup. -->
         <provider
             android:name="{provider}"
             tools:node="remove" />
 """
-        updated = updated.replace("</application>", removal + "    </application>", 1)
+            )
+        if not removals:
+            continue
+        updated = updated.replace(
+            "</application>", "".join(removals) + "    </application>", 1
+        )
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(updated)
         patched += 1
-        print("[p4a hook] usunieto FirebaseInitProvider:", path)
-    print("[p4a hook] manifestow Firebase opt-in:", patched)
+        print("[p4a hook] usunieto automatyczne providery SDK:", path)
+    print("[p4a hook] manifestow SDK opt-in:", patched)
     return patched
 
 

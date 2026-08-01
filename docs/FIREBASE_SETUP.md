@@ -9,6 +9,8 @@ Wynikowy manifest usuwa automatyczny `FirebaseInitProvider`. Obecnosc
 konfiguracji jest wykrywana pasywnie przez zasob `google_app_id`, a
 `FirebaseApp` jest tworzony recznie dopiero po zgodzie. Nie przywracaj
 automatycznego providera ani bezwarunkowego wywolania `initializeApp()`.
+Ten sam hook usuwa `MobileAdsInitProvider`; reklamy sa inicjalizowane osobno
+dopiero po zakonczeniu przeplywu UMP i pozytywnym `canRequestAds()`.
 
 ## 1. Projekt i aplikacja Android
 

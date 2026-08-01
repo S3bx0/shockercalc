@@ -204,6 +204,8 @@ Druga zakładka (dobór zaworów) jest **płatnym modułem jednorazowym**:
 Przed inicjalizacją SDK reklam aplikacja uruchamia przepływ zgody **Google
 User Messaging Platform**. Dla użytkowników z EOG/UK pokazywany jest formularz
 zgody, a SDK reklam startuje dopiero gdy `canRequestAds()` zwróci `true`.
+Wynikowy manifest usuwa również automatyczny `MobileAdsInitProvider`, dlatego
+SDK reklam nie może ominąć tej bramki podczas startu procesu aplikacji.
 Przycisk „tarcza" w pasku górnym pozwala później zmienić zgodę
 (`showPrivacyOptionsForm`). Komunikat o zgodzie trzeba jeszcze skonfigurować
 w panelu **AdMob → Prywatność i komunikaty** oraz uzupełnić deklaracje danych

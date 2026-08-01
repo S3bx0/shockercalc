@@ -33,11 +33,14 @@ Stan realizacji 2026-08-01:
   `android.allow_backup = False`, zachowując odtwarzanie PRO przez Play Billing;
   przebieg `30693969034` oraz niezależny odczyt binarnego manifestu potwierdziły
   `android:allowBackup=false`;
-- **P0.3 Firebase lazy opt-in — wdrożenie oczekuje na dowód urządzeniowy:**
+- **P0.3 Firebase lazy opt-in — wdrożenie oczekuje na ponowny pomiar:**
   usunięto `FirebaseInitProvider`, konfiguracja jest wykrywana bez SDK,
   `FirebaseApp` startuje dopiero po zgodzie, a cofnięcie zgody czyści dane
-  lokalne i zleca usunięcie FID; CI ma blokować provider w wynikowym manifeście,
-  ale punkt pozostaje otwarty do pomiaru sieci i plików na świeżej instalacji;
+  lokalne i zleca usunięcie FID. Pierwszy test świeżej instalacji potwierdził
+  brak plików Firebase i brak `FirebaseApp`, ale ujawnił żądanie wspólnego
+  transportu Google do `firebaselogging.googleapis.com`. Dlatego usunięto też
+  automatyczny `MobileAdsInitProvider`; CI blokuje oba providery, a punkt
+  pozostaje otwarty do ponownego pomiaru na APK z tą zmianą;
 - **P0.4 miejsce na runnerze — potwierdzone dla PR/APK:** przebieg
   `30693177259` przeszedł po usunięciu projektowego cache `.buildozer`
   (~1,9 GB skompresowane); cache globalny działa wyłącznie w trybie restore,

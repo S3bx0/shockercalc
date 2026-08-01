@@ -357,7 +357,7 @@ android {}
     assert "abiFilters 'arm64-v8a'" in patched
 
 
-def test_p4a_hook_removes_automatic_firebase_provider_from_main_manifest(tmp_path):
+def test_p4a_hook_removes_automatic_sdk_providers_from_main_manifest(tmp_path):
     manifest = tmp_path / "project/src/main/AndroidManifest.xml"
     manifest.parent.mkdir(parents=True)
     manifest.write_text(
@@ -373,10 +373,11 @@ def test_p4a_hook_removes_automatic_firebase_provider_from_main_manifest(tmp_pat
     assert p4a_hooks._patch_firebase_init_provider(tmp_path) == 0
     patched = manifest.read_text(encoding="utf-8")
 
-    assert patched.count("Refrigeration Calc manual Firebase initialization") == 1
+    assert patched.count("Refrigeration Calc remove auto-init provider:") == 2
     assert 'xmlns:tools="http://schemas.android.com/tools"' in patched
     assert "com.google.firebase.provider.FirebaseInitProvider" in patched
-    assert 'tools:node="remove"' in patched
+    assert "com.google.android.gms.ads.MobileAdsInitProvider" in patched
+    assert patched.count('tools:node="remove"') == 2
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

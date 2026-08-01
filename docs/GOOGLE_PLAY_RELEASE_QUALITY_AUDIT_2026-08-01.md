@@ -28,8 +28,11 @@ następnym pakietem dla testerów:
 Stan naprawy: problemy 1 i 2 mają już automatyczne bramki oraz potwierdzony
 debug APK. Dla problemu 3 wdrożono ręczny start Firebase po zgodzie, usunięcie
 `FirebaseInitProvider`, czyszczenie po cofnięciu zgody i walidator wynikowego
-manifestu. NO-GO pozostaje do zielonego APK z tej zmiany, pomiaru „zero
-Firebase przed zgodą” oraz pełnej weryfikacji nowego podpisanego AAB.
+manifestu. Pierwszy pomiar wykazał jednak żądanie wspólnego transportu Google
+do `firebaselogging.googleapis.com`, mimo braku lokalnych artefaktów Firebase.
+W odpowiedzi usunięto również `MobileAdsInitProvider` i rozszerzono bramkę CI.
+NO-GO pozostaje do ponownego pomiaru oraz pełnej weryfikacji nowego podpisanego
+AAB.
 
 Po usunięciu tych blokad należy zbudować nowy AAB z aktualnego `HEAD`, wykonać
 testy pakietów wygenerowanych przez Bundletool, przesłać go do Alpha i dopiero
@@ -209,8 +212,14 @@ Stan wdrożenia 2026-08-01: punkty 1–4 zostały zaimplementowane.
 SDK, `Activity` uruchamia usługę tylko dla wcześniej zapisanej aktywnej zgody,
 manifest usuwa `FirebaseInitProvider`, a rezygnacja wyłącza kolekcję, resetuje
 lokalne dane Analytics, usuwa niewysłane raporty Crashlytics i zleca usunięcie
-FID. Punkt 5 pozostaje obowiązkowym testem akceptacyjnym na świeżej instalacji;
-sam test źródłowy ani odczyt manifestu nie dowodzi braku ruchu sieciowego.
+FID. Pierwszy test świeżej instalacji potwierdził brak `FirebaseApp`, plików
+Installations, Crashlytics i Sessions przed zgodą, lecz log systemowy pokazał
+żądanie DataTransport do `firebaselogging.googleapis.com`. Najbardziej
+prawdopodobnym źródłem był automatyczny `MobileAdsInitProvider`, uruchamiany
+przed ręcznym `MobileAds.initialize()`. Provider reklam również został usunięty,
+a walidator APK/manifestu odrzuca teraz obecność któregokolwiek z obu providerów.
+Punkt 5 pozostaje otwarty do powtórzenia testu na nowym APK; sam odczyt
+manifestu nie dowodzi braku ruchu sieciowego.
 
 Kryterium akceptacji: powtarzalny raport sieciowy „zero Firebase przed zgodą”,
 brak plików/identyfikatorów utworzonych przez te usługi przed zgodą oraz test
@@ -425,7 +434,8 @@ werdykt, ale uzasadnia bazę wydajnościową:
 - release nie jest debuggowalny, a kod własny używa HTTPS i waliduje odpowiedź
   NBP z timeoutem oraz atomowym cache;
 - UMP jest uruchamiany przed inicjalizacją reklam, a reklamy czekają na
-  `canRequestAds()`;
+  `canRequestAds()`; manifest usuwa automatyczny `MobileAdsInitProvider`, więc
+  SDK reklam nie omija tej bramki przy starcie procesu;
 - build debug używa testowych jednostek AdMob, release właściwych;
 - Billing używa aktualnego klienta 9.1.0, obsługuje pending purchases, pobiera
   cenę z Play, odtwarza zakupy i potwierdza transakcje;

@@ -4,6 +4,7 @@ import pytest
 
 from tools.verify_android_firebase_manifest import (
     FIREBASE_INIT_PROVIDER,
+    MOBILE_ADS_INIT_PROVIDER,
     REQUIRED_FALSE_METADATA,
     FirebaseManifestError,
     verify_xml_manifest,
@@ -11,7 +12,7 @@ from tools.verify_android_firebase_manifest import (
 )
 
 
-def _xmltree(*, provider: bool = False, missing: str | None = None) -> str:
+def _xmltree(*, provider: str | None = None, missing: str | None = None) -> str:
     lines = ["E: manifest", "  E: application"]
     for name in REQUIRED_FALSE_METADATA:
         if name == missing:
@@ -27,7 +28,7 @@ def _xmltree(*, provider: bool = False, missing: str | None = None) -> str:
         lines.extend(
             [
                 "    E: provider",
-                f'      A: android:name(0x01010003)="{FIREBASE_INIT_PROVIDER}"',
+                f'      A: android:name(0x01010003)="{provider}"',
             ]
         )
     return "\n".join(lines)
@@ -39,7 +40,12 @@ def test_final_apk_manifest_dump_passes_without_auto_init_provider():
 
 def test_final_apk_manifest_dump_rejects_firebase_init_provider():
     with pytest.raises(FirebaseManifestError, match="FirebaseInitProvider"):
-        verify_xmltree(_xmltree(provider=True), "test.apk")
+        verify_xmltree(_xmltree(provider=FIREBASE_INIT_PROVIDER), "test.apk")
+
+
+def test_final_apk_manifest_dump_rejects_mobile_ads_init_provider():
+    with pytest.raises(FirebaseManifestError, match="MobileAdsInitProvider"):
+        verify_xmltree(_xmltree(provider=MOBILE_ADS_INIT_PROVIDER), "test.apk")
 
 
 def test_final_apk_manifest_dump_requires_all_defensive_flags():
