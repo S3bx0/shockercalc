@@ -6,8 +6,13 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.13] - 2026-08-01
+
 ### Dodano
 
+- Rozpoczęto wymianę ilustracji produktów na spójne grafiki pixel-art z
+  przezroczystym tłem i neutralnym cieniem kontaktowym. Zaktualizowano wiśnie,
+  arbuza, bakłażana, bataty i cytryny.
 - Formularz opinii tworzy teraz ustrukturyzowany raport testowy z rodzajem
   zgłoszenia, testowanym obszarem, rzeczywistym i oczekiwanym rezultatem,
   częstotliwością oraz wpływem problemu. Dane urządzenia pozostają pustymi,
