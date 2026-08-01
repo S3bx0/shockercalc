@@ -47,6 +47,10 @@ Stan realizacji 2026-08-01:
   `30693177259` przeszedł po usunięciu projektowego cache `.buildozer`
   (~1,9 GB skompresowane); cache globalny działa wyłącznie w trybie restore,
   a workflow raportuje miejsce przed i po jego przywróceniu;
+- **P0.5 bramka AAB — wdrażana:** kontrola wyrównania bibliotek została
+  wydzielona do testowanego narzędzia i zmieniona z ostrzeżenia na twardy błąd;
+  workflow sprawdza też podpis AAB i wykonuje `bundletool validate` narzędziem
+  przypiętym wersją oraz SHA-256;
 - stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
   oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
 

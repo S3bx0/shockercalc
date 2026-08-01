@@ -244,16 +244,25 @@ utworzenia danych i ich wyczyszczenia po wycofaniu zgody.
 
 ### P0.4. Zamknąć PR i odtworzyć wydanie z aktualnego kodu
 
-Sprawdzony AAB pochodzi z `80c42da`, podczas gdy aktualny kod to `6539a82`.
-Nie zawiera więc pełnego obecnego checkpointu feedbacku i App Shortcuts.
-Domyślna gałąź GitHub nadal pokazuje 1.5.11.
+Sprawdzony AAB pochodzi z `80c42da`, podczas gdy gałąź PR zawiera już późniejsze
+checkpointy feedbacku, App Shortcuts, polityki backupu, ABI i zgód SDK. Stary
+AAB nie może być podstawą kolejnego testu. Domyślna gałąź GitHub nadal pokazuje
+1.5.11.
+
+Stan bramki wydania po audycie: kontrola ABI jest twarda, a kontrola wyrównania
+16 KB została wydzielona z workflow do testowanego narzędzia. Wykrycie segmentu
+`PT_LOAD` poniżej 16 KB kończy build błędem zamiast ostrzeżeniem. Workflow
+sprawdza również podpis AAB przez `jarsigner` i uruchamia `bundletool validate`
+wersją 1.18.3 przypiętą sumą SHA-256. Te zabezpieczenia muszą jeszcze przejść na
+nowym podpisanym AAB z aktualnej gałęzi.
 
 Wymagane działanie po P0.1–P0.3:
 
 1. usunąć przyczynę przepełnienia dysku runnera i ponowić wymagany check;
 2. uruchomić testy, Ruff, mypy, audyt zależności i bramkę ABI;
 3. zbudować podpisany AAB z aktualnego commitu;
-4. sprawdzić jego wersję, podpis, ABI, 16 KB, uprawnienia i split APK;
+4. sprawdzić jego wersję, podpis, ABI, 16 KB, uprawnienia i split APK; podpis,
+   struktura Bundletool, ABI i 16 KB mają być twardymi krokami workflow;
 5. zmergować PR #13 do `main` dopiero przy zielonych checkach;
 6. zaktualizować opis repozytorium z 1.5.11 na aktualną wersję;
 7. zsynchronizować publiczną politykę prywatności;

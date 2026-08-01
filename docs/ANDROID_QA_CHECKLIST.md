@@ -32,6 +32,18 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
   wygasania nie wróciły do kodu.
 - Każdy build wysyłany do Google Play nadal musi mieć rosnący `versionCode`.
 
+## Bramka podpisanego AAB
+
+- Workflow musi potwierdzić podpis JAR pakietu przez `jarsigner`.
+- Pobrany z oficjalnego wydania, przypięty sumą SHA-256 Bundletool musi wykonać
+  `validate` na dokładnie tym AAB, który trafia do artefaktów.
+- AAB może zawierać wyłącznie kompletny runtime `arm64-v8a`.
+- Każdy segment `PT_LOAD` każdej biblioteki `.so` musi mieć wyrównanie co
+  najmniej 16 KB. Wykrycie 4 KB jest błędem workflow, nie ostrzeżeniem.
+- Wynikowy manifest musi mieć `allowBackup=false`, wyłączone domyślne kolekcje
+  Firebase oraz nie może zawierać `FirebaseInitProvider` ani
+  `MobileAdsInitProvider`.
+
 ## TODO techniczne
 
 - Docelowo przekazywać insety z Androida do warstwy Kivy zamiast nakładać padding

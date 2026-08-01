@@ -92,6 +92,7 @@ files = [
     "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
     "tools/verify_android_abi_bundle.py",
+    "tools/verify_android_16kb_alignment.py",
     "tools/verify_android_firebase_manifest.py",
 ]
 ignore_missing_imports = true

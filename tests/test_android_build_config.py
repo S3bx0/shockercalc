@@ -235,6 +235,27 @@ def test_release_workflow_verifies_offline_legal_bundle():
     assert "tools/verify_android_legal_bundle.py" in workflow
 
 
+def test_release_workflow_has_blocking_aab_integrity_gates():
+    workflow = (ROOT / ".github/workflows/android-release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Verify AAB signature" in workflow
+    assert "jarsigner -verify -verbose -certs" in workflow
+    assert 'grep -Fq "jar verified."' in workflow
+    assert "Validate AAB with bundletool" in workflow
+    assert "bundletool-all-1.18.3.jar" in workflow
+    assert "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29" in workflow
+    assert 'validate --bundle="$AAB_PATH"' in workflow
+    assert "Verify native libraries 16 KB alignment" in workflow
+    assert "tools/verify_android_16kb_alignment.py" in workflow
+    alignment_step = workflow.split(
+        "- name: Verify native libraries 16 KB alignment", maxsplit=1
+    )[1].split("- name:", maxsplit=1)[0]
+    assert "if: always()" not in alignment_step
+    assert "::warning::" not in alignment_step
+
+
 def test_lint_workflow_runs_full_mypy_baseline():
     workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
 
