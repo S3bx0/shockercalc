@@ -33,7 +33,7 @@ def build_feedback_draft(
     language: str,
     app_version: str = __version__,
 ) -> FeedbackDraft:
-    """Build a localized draft containing only non-sensitive app metadata."""
+    """Build a localized, structured draft with non-sensitive app metadata."""
 
     return FeedbackDraft(
         recipient=CONTACT_EMAIL,
@@ -79,7 +79,10 @@ class UserFeedbackController:
                 app_version=self._app_version,
             )
             if self._open_email(draft.recipient, draft.subject, draft.body):
-                self._log_event("feedback_opened", {"channel": "email"})
+                self._log_event(
+                    "feedback_opened",
+                    {"channel": "email", "template_version": 2},
+                )
                 return True
         except Exception as exc:  # pragma: no cover - platform boundary
             self._record_exception(exc, "open_feedback")

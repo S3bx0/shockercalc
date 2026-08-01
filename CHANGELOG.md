@@ -6,6 +6,17 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Dodano
+
+- Formularz opinii tworzy teraz ustrukturyzowany raport testowy z rodzajem
+  zgłoszenia, testowanym obszarem, rzeczywistym i oczekiwanym rezultatem,
+  częstotliwością oraz wpływem problemu. Dane urządzenia pozostają pustymi,
+  opcjonalnymi polami wpisywanymi przez użytkownika.
+- Dodano przewodnik testera, macierz scenariuszy oraz proces potwierdzania,
+  odtwarzania, odpowiadania i ponownego testowania rzeczywistych zgłoszeń.
+- Dodano trzy skróty launchera prowadzące bezpośrednio do kart Chłodnicze,
+  Zawory i Robocizna.
+
 ## [1.5.12] - 2026-07-30
 
 ### Dodano

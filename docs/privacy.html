@@ -84,7 +84,9 @@
   <p>
     Akcja „Wyślij opinię / Zgłoś błąd” otwiera wybraną przez użytkownika
     aplikację pocztową z edytowalnym szkicem. Aplikacja wpisuje do szkicu
-    wyłącznie nazwę, wersję i wybrany język Aplikacji oraz puste pola opisu.
+    wyłącznie nazwę, wersję i wybrany język Aplikacji oraz puste,
+    ustrukturyzowane pola raportu. Model urządzenia i wersję Androida
+    użytkownik może wpisać opcjonalnie; Aplikacja nie odczytuje ich do raportu.
     Żadna wiadomość nie jest wysyłana, dopóki użytkownik sam nie użyje
     przycisku wysyłania w aplikacji pocztowej.
   </p>
@@ -247,8 +249,10 @@
   <p>
     The “Send feedback / Report a bug” action opens the user's chosen email app
     with an editable draft. The App adds only its name, version, selected
-    language, and blank description fields. No message is sent until the user
-    uses the send button in the email app.
+    language, and blank structured report fields. The user may optionally type
+    a device model and Android version; the App does not read them into the
+    report. No message is sent until the user uses the send button in the email
+    app.
   </p>
   <p>
     If the user voluntarily sends the message, its content and sender address

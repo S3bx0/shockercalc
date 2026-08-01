@@ -14,12 +14,23 @@ pozwalających zidentyfikować testera. Każdy wpis powinien mieć potwierdzone
 5. Nie twórz wpisów pozornych. Google Play należy przekazywać wyłącznie
    prawdziwe informacje o testach i wprowadzonych zmianach.
 
+Każdemu nowemu zgłoszeniu nadaj anonimowy identyfikator `CT-rrrr-nnn` i zapisz
+także wynik próby odtworzenia, priorytet, datę odpowiedzi oraz wynik ponownego
+testu poprawki. Szczegółowy proces i wiadomość dla testerów znajdują się w
+[`CLOSED_TESTER_GUIDE.md`](CLOSED_TESTER_GUIDE.md).
+
 ## Zgłoszenia
 
 | Data | Kanał | Obszar | Opinia / problem | Decyzja i uzasadnienie | Wersja / dowód wdrożenia |
 | --- | --- | --- | --- | --- | --- |
 | 2026-06-24 | prywatna opinia Google Play | ogólna ocena; Samsung Galaxy M35 / Android 16 | Ocena 5/5, treść „Super”; wersja aplikacji niedostępna | Brak szczegółów umożliwiających zmianę; w 1.5.12 udostępniono formularz do zbierania bieżących, ustrukturyzowanych opinii | opinia widoczna w Konsoli Play; 1.5.12 (98) |
 | _rrrr-mm-dd_ | _e-mail / prywatna opinia Google Play_ | _np. Robocizna_ | _opis rzeczywistego zgłoszenia_ | _przyjęte / odłożone / odrzucone + powód_ | _np. 1.5.12 / commit / release_ |
+
+## Weryfikacja i odpowiedzi
+
+| ID | Odtworzenie | Priorytet | Data odpowiedzi | Ponowny test | Wynik |
+| --- | --- | --- | --- | --- | --- |
+| _CT-rrrr-nnn_ | _tak / nie + środowisko_ | _niski / średni / wysoki / blokujący_ | _rrrr-mm-dd_ | _wersja + data_ | _potwierdzone / nadal występuje_ |
 
 ## Podsumowanie przed kolejnym wnioskiem produkcyjnym
 

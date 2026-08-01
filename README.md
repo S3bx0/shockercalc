@@ -30,7 +30,8 @@ uruchamiania, kompilowania ani modyfikowania programu.
   do pracy bez połączenia,
 - wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
 - eksport i udostępnianie raportów PDF,
-- dobrowolne wysyłanie opinii i zgłoszeń błędów przez edytowalny szkic e-mail,
+- dobrowolny, ustrukturyzowany raport testowy przez edytowalny szkic e-mail:
+  obszar, rezultat, częstotliwość i wpływ problemu bez wysyłania w tle,
 - skróty launchera otwierające bezpośrednio karty Chłodnicze, Zawory lub
   Robocizna po przytrzymaniu ikony aplikacji,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ

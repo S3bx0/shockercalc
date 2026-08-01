@@ -51,8 +51,14 @@ Następny krok publikacyjny to zebrać rzeczywiste opinie przez wdrożoną akcj�
 `docs/CLOSED_TEST_FEEDBACK_LOG.md` i wydać co najmniej jedną uzasadnioną
 aktualizację testową. Następny krok platformowy po ustabilizowaniu testu to
 In-App Review jako osobny kontroler Python i osobny serwis Java. Elastyczne
-In-App Updates i App Shortcuts również nie powinny ponownie rozbudowywać
-Activity.
+In-App Updates również nie powinny ponownie rozbudowywać Activity. App
+Shortcuts zrealizowano przez osobny serwis Java, mostek i kontroler Python.
+
+Raport testowy został rozszerzony o wersjonowany, ustrukturyzowany szablon 2.
+Proces operacyjny, scenariusze i wiadomość dla testerów znajdują się w
+`docs/CLOSED_TESTER_GUIDE.md`. Sam formularz nie zastępuje prawdziwego użycia:
+przed ponownym wnioskiem trzeba zebrać zgłoszenia, odpowiedzieć na nie,
+opublikować uzasadnioną poprawkę i potwierdzić ją w ponownym teście.
 
 ## Priorytet publikacyjny: ponowny test zamknięty Google Play
 

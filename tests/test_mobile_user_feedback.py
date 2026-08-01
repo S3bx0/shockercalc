@@ -8,7 +8,7 @@ from tpof.mobile.services.user_feedback import (
 )
 
 
-def test_feedback_draft_contains_only_editable_template_and_app_metadata():
+def test_feedback_draft_contains_structured_template_and_app_metadata():
     draft = build_feedback_draft(
         translate=lambda key, **kwargs: translate("pl", key, **kwargs),
         language="pl",
@@ -17,12 +17,18 @@ def test_feedback_draft_contains_only_editable_template_and_app_metadata():
 
     assert draft.recipient == CONTACT_EMAIL
     assert "1.5.12" in draft.subject
-    assert "Opisz swoją opinię lub problem" in draft.body
+    assert "RODZAJ ZGŁOSZENIA" in draft.body
+    assert "TESTOWANY OBSZAR" in draft.body
+    assert "RZECZYWISTY REZULTAT" in draft.body
+    assert "CZĘSTOTLIWOŚĆ" in draft.body
+    assert "WPŁYW" in draft.body
+    assert "Szablon raportu: 2" in draft.body
     assert "Aplikacja: Refrigeration Calc" in draft.body
     assert "Wersja: 1.5.12" in draft.body
-    assert "Język: pl" in draft.body
-    assert "urządzen" not in draft.body.casefold()
+    assert "Język aplikacji: pl" in draft.body
+    assert "Model urządzenia:" in draft.body
     assert "android id" not in draft.body.casefold()
+    assert "numer seryjny" not in draft.body.casefold()
 
 
 def test_feedback_draft_is_localized_to_english():
@@ -32,9 +38,10 @@ def test_feedback_draft_is_localized_to_english():
         app_version="2.0.0",
     )
 
-    assert draft.subject == "Refrigeration Calc 2.0.0 — feedback or bug"
-    assert "Steps to reproduce:" in draft.body
-    assert "Language: en" in draft.body
+    assert draft.subject == "Refrigeration Calc 2.0.0 — test report / feedback"
+    assert "REPORT TYPE" in draft.body
+    assert "ACTUAL RESULT" in draft.body
+    assert "App language: en" in draft.body
 
 
 def test_feedback_controller_opens_native_draft_and_logs_action():
@@ -56,7 +63,9 @@ def test_feedback_controller_opens_native_draft_and_logs_action():
 
     assert controller.open() is True
     assert opened[0][0] == CONTACT_EMAIL
-    assert events == [("feedback_opened", {"channel": "email"})]
+    assert events == [
+        ("feedback_opened", {"channel": "email", "template_version": 2})
+    ]
     assert messages == []
     assert errors == []
 
