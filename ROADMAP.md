@@ -25,12 +25,17 @@ zamknięte poniższe zadania P0:
 
 Stan realizacji 2026-08-01:
 
-- **P0.1 ABI — wdrożenie gotowe, oczekuje na artefakt CI:** hook p4a dodaje
-  filtr Gradle `arm64-v8a`, a osobny walidator blokuje APK/AAB zawierające
+- **P0.1 ABI — APK potwierdzony, AAB oczekuje:** przebieg `30693177259`
+  zbudował APK zawierający wyłącznie `arm64-v8a` i komplet 15 bibliotek;
+  hook p4a dodaje filtr Gradle, a osobny walidator blokuje APK/AAB zawierające
   nieobsługiwane ABI lub pozbawione bibliotek Python/SDL;
-- **P0.4 miejsce na runnerze — wdrożenie gotowe, oczekuje na CI:** usunięto
-  przywracanie projektowego cache `.buildozer` (~1,9 GB skompresowane) i dodano
-  pomiar miejsca przed oraz po przywróceniu cache globalnego;
+- **P0.2 Auto Backup — wdrożenie gotowe, oczekuje na manifest CI:** ustawiono
+  `android.allow_backup = False`, zachowując odtwarzanie PRO przez Play Billing,
+  i uzupełniono lokalną politykę prywatności;
+- **P0.4 miejsce na runnerze — potwierdzone dla PR/APK:** przebieg
+  `30693177259` przeszedł po usunięciu projektowego cache `.buildozer`
+  (~1,9 GB skompresowane); cache globalny działa wyłącznie w trybie restore,
+  a workflow raportuje miejsce przed i po jego przywróceniu;
 - stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
   oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
 

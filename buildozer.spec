@@ -53,6 +53,9 @@ android.minapi = 24
 android.ndk = 29
 android.ndk_api = 24
 android.archs = arm64-v8a
+# Nie przywracamy z chmury lokalnych flag PRO, ustawien ani identyfikatorow SDK.
+# Zakupy sa weryfikowane i odtwarzane bezposrednio przez Google Play Billing.
+android.allow_backup = False
 android.extra_cflags = -Dban_ALooper_pollAll=ALooper_pollOnce -Wno-error -Wno-cast-function-type-strict -Wno-cast-function-type
 android.extra_ldflags = -Wl,-z,max-page-size=16384
 

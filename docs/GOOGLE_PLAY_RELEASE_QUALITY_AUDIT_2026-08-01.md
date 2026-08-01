@@ -70,6 +70,7 @@ Ograniczenia audytu:
 | Podpisany AAB 1.5.12 | PASS techniczny | przebieg 30569531604, Bundletool `validate` bez błędu |
 | Wyrównanie 16 KB | PASS | `PAGE_ALIGNMENT_16K`, brak wykrytych bibliotek 4 KB |
 | Check PR #13 „Buildozer” | FAIL infrastrukturalny, powtarzalny | przebiegi `30690032852` i `30692299604` zakończyły się na `No space left on device` podczas odtwarzania cache; drugi runner nie mógł już zapisać własnego logu diagnostycznego |
+| Check po naprawie cache i ABI | PASS dla debug APK | przebieg `30693177259`; bez lokalnego cache `.buildozer`, APK ma wyłącznie `arm64-v8a` i 15 bibliotek |
 | PR #13 | NIEGOTOWY | draft, `mergeable`, lecz `mergeStateStatus=UNSTABLE` |
 | Domyślna gałąź `main` | NIEAKTUALNA | 12 commitów za gałęzią audytowaną; README/buildozer nadal 1.5.11 |
 | Opis repozytorium GitHub | NIEAKTUALNY | nadal zaczyna się od „Refrigeration Calc 1.5.11” |
@@ -125,8 +126,10 @@ generuje niekompletnego zestawu, a testowe uruchomienie nie zawiera
 
 Stan naprawy 2026-08-01: na gałęzi roboczej dodano filtr ABI do generowanego
 `build.gradle` oraz niezależny walidator APK/AAB. Walidator odrzuca oba stare
-artefakty 1.5.12 z powodu `armeabi-v7a`, `x86` i `x86_64`. Naprawa pozostaje
-otwarta do czasu zbudowania i sprawdzenia nowego artefaktu ARM64 w CI.
+artefakty 1.5.12 z powodu `armeabi-v7a`, `x86` i `x86_64`. Przebieg
+`30693177259` zbudował i zweryfikował nowy APK zawierający wyłącznie
+`arm64-v8a` oraz 15 bibliotek. Punkt pozostaje otwarty tylko dla podpisanego
+AAB i testu Bundletool/ARM.
 
 Źródło: [format Android App Bundle](https://developer.android.com/guide/app-bundle/app-bundle-format).
 
@@ -157,6 +160,11 @@ UMP, reklamy, Firebase, identyfikatory urządzenia i pliki tymczasowe.
 Kryterium akceptacji: manifest ma jawną politykę backupu, test backup/restore
 nie przywraca lokalnego PRO ani tokenów, a polityka prywatności dokładnie
 opisuje wybrane zachowanie.
+
+Stan naprawy 2026-08-01: na gałęzi roboczej ustawiono
+`android.allow_backup = False`, dopisano test konfiguracji i zaktualizowano
+lokalną politykę prywatności. Punkt pozostaje otwarty do sprawdzenia wynikowego
+manifestu oraz próby odinstalowania/ponownej instalacji nowego APK.
 
 Źródła: [Android Auto Backup](https://developer.android.com/identity/data/autobackup),
 [bezpieczny backup](https://developer.android.com/privacy-and-security/risks/backup-best-practices).

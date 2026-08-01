@@ -170,6 +170,7 @@ def test_build_config_supports_rotation_and_current_android_libraries():
 
     assert "orientation = portrait, landscape, portrait-reverse, landscape-reverse" in spec
     assert "android.permissions = INTERNET, ACCESS_NETWORK_STATE" in spec
+    assert "android.allow_backup = False" in spec
     assert "WRITE_EXTERNAL_STORAGE" not in spec
     assert "READ_EXTERNAL_STORAGE" not in spec
     assert "/sdcard/Download" not in mobile_app
@@ -202,12 +203,16 @@ def test_workflows_pin_reproducible_build_tools():
         assert "git+https://github.com/kivy/buildozer" not in workflow
         assert "actions/checkout@v4" not in workflow
         assert "actions/cache@v4" not in workflow
+        assert "uses: actions/cache/restore@27d5ce7f" in workflow
+        assert "uses: actions/cache@27d5ce7f" not in workflow
         assert "actions/upload-artifact@v4" not in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON_BASE64" in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE" in workflow
         assert "tools/android_size_report.py" in workflow
         assert "Cache Buildozer build dir" not in workflow
         assert "Report runner storage after cache restore" in workflow
+        assert "Verify Android backup policy" in workflow
+        assert "android:allowBackup=\"[Ff]alse\"" in workflow
 
     debug_workflow = (ROOT / ".github/workflows/android.yml").read_text(
         encoding="utf-8"

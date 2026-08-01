@@ -72,8 +72,11 @@ jobs:
           df -h / "$GITHUB_WORKSPACE"
           du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
 
-      - name: Cache Buildozer global dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      # Restore only: saving the full SDK/NDK/Gradle tree after a build can
+      # consume the last gigabytes of runner storage. The existing cache is a
+      # reusable toolchain seed; a miss simply makes this build slower.
+      - name: Restore Buildozer global cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.buildozer
@@ -167,6 +170,12 @@ jobs:
           AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
           test -n "$AAB_PATH"
           python tools/verify_android_abi_bundle.py "$AAB_PATH"
+
+      - name: Verify Android backup policy
+        run: |
+          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
+          test -n "$MANIFEST_PATH"
+          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
 
       - name: Collect Play Console diagnostic files
         if: always()
