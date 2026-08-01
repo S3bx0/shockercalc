@@ -107,12 +107,12 @@ typów danych:
 
 | Typ w Konsoli Play | Źródło | Charakter | Typowe cele |
 | --- | --- | --- | --- |
-| Lokalizacja > Przybliżona lokalizacja | adres IP: AdMob, Analytics/Remote Config/Firebase Installations | AdMob automatycznie; ruch Firebase przed zgodą wymaga ponownej weryfikacji | reklamy, analityka, zapobieganie oszustwom |
+| Lokalizacja > Przybliżona lokalizacja | adres IP: AdMob, Analytics/Remote Config/Firebase Installations | AdMob przy żądaniu reklam; Firebase dopiero po zgodzie | reklamy, analityka, zapobieganie oszustwom |
 | Aktywność w aplikacjach > Interakcje z aplikacją | AdMob i Analytics | AdMob automatycznie; Analytics po zgodzie | reklamy, analityka, zapobieganie oszustwom |
 | Informacje o aplikacjach i ich działaniu > Dzienniki awarii | Crashlytics | opcjonalnie po zgodzie | funkcje aplikacji, analityka |
-| Informacje o aplikacjach i ich działaniu > Diagnostyka | AdMob i Crashlytics | AdMob automatycznie; Crashlytics po zgodzie | reklamy, analityka, zapobieganie oszustwom |
-| Identyfikatory urządzenia i inne | AdMob, Analytics, Firebase Installations/Crashlytics | AdMob automatycznie; FID może powstać przed zgodą, pozostała telemetria jest wyłączona do zgody | reklamy, analityka, bezpieczeństwo |
-| Informacje finansowe > Historia zakupów | automatyczne zdarzenia Analytics dotyczące zakupów i subskrypcji | opcjonalnie po zgodzie Analytics | analityka |
+| Informacje o aplikacjach i ich działaniu > Diagnostyka | AdMob, Google Play Billing i Crashlytics | AdMob i techniczna telemetria Billing; Crashlytics po zgodzie | funkcje aplikacji/płatności, reklamy, analityka, zapobieganie oszustwom |
+| Identyfikatory urządzenia i inne | AdMob, Analytics, Firebase Installations/Crashlytics | AdMob automatycznie; Firebase dopiero po zgodzie | reklamy, analityka, bezpieczeństwo |
+| Informacje finansowe > Historia zakupów | Google Play Billing oraz automatyczne zdarzenia Analytics | podstawowa obsługa płatności; dodatkowa analityka po zgodzie | funkcje aplikacji/płatności, analityka |
 
 Dla danych wysyłanych przez AdMob oficjalna dokumentacja SDK mówi o zbieraniu
 i udostępnianiu. Dla Firebase należy rozróżnić dane zbierane od
@@ -123,10 +123,13 @@ wszystkich danych Firebase automatycznie jako udostępniane.
 Zbieranie przez AdMob nie jest opcjonalne tylko dlatego, że UMP pozwala odmówić
 personalizacji; ograniczone reklamy nadal mogą wymagać danych technicznych.
 Analytics, raportowanie Crashlytics i pobieranie Remote Config są w aplikacji
-domyślnie wyłączone i użytkownik może je włączyć lub wyłączyć. Nie przesądza to
-jednak o Firebase Installation ID tworzonym przez zależności SDK. Ostateczne
-odpowiedzi muszą uwzględniać aktualne ustawienia AdMob, Analytics i Firebase
-Console oraz wynik testu ruchu sieciowego na świeżej instalacji.
+domyślnie wyłączone i użytkownik może je włączyć lub wyłączyć. Test z
+1 sierpnia po usunięciu providerów automatycznego startu potwierdził brak FID i
+plików Firebase przed zgodą. Zdarzenia wysłane wspólnym Google DataTransport
+miały wyłącznie nazwę `PLAY_BILLING_LIBRARY`, dlatego sekcję Diagnostyka trzeba
+ponownie porównać z aktualnym formularzem. Ostateczne odpowiedzi muszą
+uwzględniać ustawienia AdMob, Billing, Analytics i Firebase Console oraz wynik
+testu na świeżej instalacji.
 
 W formularzu zaznaczono również szyfrowanie danych podczas przesyłania, brak
 tworzenia kont użytkowników oraz możliwość żądania usunięcia danych przez:

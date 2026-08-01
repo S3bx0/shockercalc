@@ -31,8 +31,10 @@ debug APK. Dla problemu 3 wdrożono ręczny start Firebase po zgodzie, usunięci
 manifestu. Pierwszy pomiar wykazał jednak żądanie wspólnego transportu Google
 do `firebaselogging.googleapis.com`, mimo braku lokalnych artefaktów Firebase.
 W odpowiedzi usunięto również `MobileAdsInitProvider` i rozszerzono bramkę CI.
-NO-GO pozostaje do ponownego pomiaru oraz pełnej weryfikacji nowego podpisanego
-AAB.
+Powtórny pomiar bazy DataTransport wykazał wyłącznie zdarzenia
+`PLAY_BILLING_LIBRARY`, więc sama nazwa hosta nie była dowodem działania
+Firebase. NO-GO pozostaje do testu włączenia/cofnięcia zgody na ARM oraz pełnej
+weryfikacji nowego podpisanego AAB.
 
 Po usunięciu tych blokad należy zbudować nowy AAB z aktualnego `HEAD`, wykonać
 testy pakietów wygenerowanych przez Bundletool, przesłać go do Alpha i dopiero
@@ -214,20 +216,31 @@ manifest usuwa `FirebaseInitProvider`, a rezygnacja wyłącza kolekcję, resetuj
 lokalne dane Analytics, usuwa niewysłane raporty Crashlytics i zleca usunięcie
 FID. Pierwszy test świeżej instalacji potwierdził brak `FirebaseApp`, plików
 Installations, Crashlytics i Sessions przed zgodą, lecz log systemowy pokazał
-żądanie DataTransport do `firebaselogging.googleapis.com`. Najbardziej
-prawdopodobnym źródłem był automatyczny `MobileAdsInitProvider`, uruchamiany
-przed ręcznym `MobileAds.initialize()`. Provider reklam również został usunięty,
-a walidator APK/manifestu odrzuca teraz obecność któregokolwiek z obu providerów.
-Punkt 5 pozostaje otwarty do powtórzenia testu na nowym APK; sam odczyt
-manifestu nie dowodzi braku ruchu sieciowego.
+żądanie DataTransport do `firebaselogging.googleapis.com`. Provider reklam
+również został usunięty, a walidator APK/manifestu odrzuca teraz obecność obu
+providerów automatycznego startu.
 
-Kryterium akceptacji: powtarzalny raport sieciowy „zero Firebase przed zgodą”,
-brak plików/identyfikatorów utworzonych przez te usługi przed zgodą oraz test
-wycofania zgody.
+Powtórny test APK z przebiegu `30696006335` na całkowicie wyczyszczonych danych
+potwierdził komunikat `Firebase remains dormant until telemetry consent`, brak
+plików Firebase i brak obu providerów w binarnym manifeście. Przechwycenie
+kolejki przed wysłaniem dało 20 zdarzeń, wszystkie z
+`transport_name=PLAY_BILLING_LIBRARY`; pole `pseudonymous_id` było puste.
+Oznacza to, że obserwowany host jest współdzielonym kanałem telemetrycznym
+Biblioteki płatności Google Play, a nie dowodem inicjalizacji Firebase.
+Etap „przed zgodą” jest zaliczony. Nadal trzeba na fizycznym urządzeniu ARM
+potwierdzić utworzenie danych dopiero po zgodzie oraz ich wyczyszczenie po jej
+cofnięciu; emulator x86 zakończył warstwę Kivy przez ograniczenie translacji
+ARM (`SIGILL` w `libndk_translation.so`).
+
+Kryterium akceptacji: brak instancji, plików, identyfikatorów i transportów
+Firebase przed zgodą; host współdzielony z innym SDK musi być oceniany razem z
+`transport_name`, a nie tylko po nazwie domeny. Po zgodzie wymagany jest test
+utworzenia danych i ich wyczyszczenia po wycofaniu zgody.
 
 Źródła: [sterowanie Analytics](https://firebase.google.com/docs/analytics/android/configure-data-collection),
 [Firebase Installations](https://firebase.google.com/docs/projects/manage-installations),
-[ujawnianie danych Firebase](https://firebase.google.com/docs/android/play-data-disclosure).
+[ujawnianie danych Firebase](https://firebase.google.com/docs/android/play-data-disclosure),
+[formularz Bezpieczeństwo danych](https://support.google.com/googleplay/android-developer/answer/10787469).
 
 ### P0.4. Zamknąć PR i odtworzyć wydanie z aktualnego kodu
 
