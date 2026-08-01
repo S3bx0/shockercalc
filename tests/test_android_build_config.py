@@ -182,8 +182,11 @@ def test_build_config_supports_rotation_and_current_android_libraries():
     assert "com.google.firebase:firebase-analytics:23.2.0" in spec
     assert "com.google.firebase:firebase-crashlytics:20.0.6" in spec
     assert "com.google.firebase:firebase-config:23.1.0" in spec
+    assert "com.google.firebase:firebase-installations:19.1.2" in spec
+    assert "firebase_data_collection_default_enabled=false" in spec
     assert "firebase_analytics_collection_enabled=false" in spec
     assert "firebase_crashlytics_collection_enabled=false" in spec
+    assert "google_analytics_adid_collection_enabled=false" in spec
     assert "p4a.branch = master" in spec
     assert "p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831" in spec
 
@@ -213,6 +216,8 @@ def test_workflows_pin_reproducible_build_tools():
         assert "Report runner storage after cache restore" in workflow
         assert "Verify Android backup policy" in workflow
         assert "android:allowBackup=\"[Ff]alse\"" in workflow
+        assert "Verify Firebase opt-in manifest" in workflow
+        assert "tools/verify_android_firebase_manifest.py" in workflow
 
     debug_workflow = (ROOT / ".github/workflows/android.yml").read_text(
         encoding="utf-8"
@@ -350,6 +355,28 @@ android {}
     assert patched.count("Refrigeration Calc supported ABIs") == 1
     assert "abiFilters.clear()" in patched
     assert "abiFilters 'arm64-v8a'" in patched
+
+
+def test_p4a_hook_removes_automatic_firebase_provider_from_main_manifest(tmp_path):
+    manifest = tmp_path / "project/src/main/AndroidManifest.xml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Refrigeration Calc">
+    </application>
+</manifest>
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_firebase_init_provider(tmp_path) == 1
+    assert p4a_hooks._patch_firebase_init_provider(tmp_path) == 0
+    patched = manifest.read_text(encoding="utf-8")
+
+    assert patched.count("Refrigeration Calc manual Firebase initialization") == 1
+    assert 'xmlns:tools="http://schemas.android.com/tools"' in patched
+    assert "com.google.firebase.provider.FirebaseInitProvider" in patched
+    assert 'tools:node="remove"' in patched
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

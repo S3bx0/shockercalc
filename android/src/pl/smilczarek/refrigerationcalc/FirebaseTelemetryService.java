@@ -10,6 +10,7 @@ import android.util.Log;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.firebase.installations.FirebaseInstallations;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
@@ -36,7 +37,9 @@ final class FirebaseTelemetryService {
     private final Context context;
     private final SharedPreferences preferences;
     private final boolean debugBuild;
+    private final boolean configured;
 
+    private FirebaseApp firebaseApp;
     private FirebaseAnalytics firebaseAnalytics;
     private FirebaseCrashlytics firebaseCrashlytics;
     private FirebaseRemoteConfig firebaseRemoteConfig;
@@ -47,18 +50,45 @@ final class FirebaseTelemetryService {
         this.preferences = preferences;
         this.debugBuild = (context.getApplicationInfo().flags
                 & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        this.configured = hasFirebaseConfiguration(context);
     }
 
-    /** Firebase stays optional when a developer build has no configuration. */
-    void initialize() {
+    /**
+     * Starts Firebase only for a consent choice persisted by the user.
+     *
+     * <p>Configuration detection uses the generated string resource and does
+     * not touch any Firebase SDK singleton, installation identifier or network
+     * transport.</p>
+     */
+    void initializeIfConsented() {
+        if (!isEnabled()) {
+            Log.i(TAG, "Firebase remains dormant until telemetry consent.");
+            return;
+        }
+        enableTelemetry();
+    }
+
+    private void enableTelemetry() {
+        initializeFirebase();
+        if (!available) {
+            return;
+        }
+        applyCollectionPreference(true);
+        applyDiagnosticKeys();
+        configureAndFetchRemoteConfig();
+    }
+
+    private void initializeFirebase() {
+        if (!configured || available) {
+            return;
+        }
         try {
-            FirebaseApp app;
             if (FirebaseApp.getApps(context).isEmpty()) {
-                app = FirebaseApp.initializeApp(context);
+                firebaseApp = FirebaseApp.initializeApp(context);
             } else {
-                app = FirebaseApp.getInstance();
+                firebaseApp = FirebaseApp.getInstance();
             }
-            if (app == null) {
+            if (firebaseApp == null) {
                 Log.i(TAG, "Firebase configuration not present; telemetry disabled.");
                 return;
             }
@@ -66,19 +96,28 @@ final class FirebaseTelemetryService {
             firebaseCrashlytics = FirebaseCrashlytics.getInstance();
             firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
             available = true;
-            applyCollectionPreference(isEnabled());
-            if (isEnabled()) {
-                applyDiagnosticKeys();
-                configureAndFetchRemoteConfig();
-            }
         } catch (Exception exc) {
             available = false;
             Log.w(TAG, "Firebase initialization unavailable", exc);
         }
     }
 
+    private static boolean hasFirebaseConfiguration(Context context) {
+        int resourceId = context.getResources().getIdentifier(
+                "google_app_id", "string", context.getPackageName());
+        if (resourceId == 0) {
+            return false;
+        }
+        try {
+            String appId = context.getString(resourceId);
+            return appId != null && !appId.trim().isEmpty();
+        } catch (Exception exc) {
+            return false;
+        }
+    }
+
     boolean isAvailable() {
-        return available;
+        return configured;
     }
 
     boolean hasPreference() {
@@ -94,10 +133,29 @@ final class FirebaseTelemetryService {
                 .putBoolean(PREF_TELEMETRY_SET, true)
                 .putBoolean(PREF_TELEMETRY_ENABLED, enabled)
                 .apply();
-        applyCollectionPreference(enabled);
-        if (enabled && firebaseCrashlytics != null) {
-            applyDiagnosticKeys();
-            configureAndFetchRemoteConfig();
+        if (enabled) {
+            enableTelemetry();
+        } else {
+            disableAndClearTelemetry();
+        }
+    }
+
+    private void disableAndClearTelemetry() {
+        if (!available) {
+            return;
+        }
+        applyCollectionPreference(false);
+        try {
+            firebaseAnalytics.resetAnalyticsData();
+            firebaseCrashlytics.deleteUnsentReports();
+            if (firebaseApp != null) {
+                firebaseApp.setDataCollectionDefaultEnabled(false);
+                FirebaseInstallations.getInstance(firebaseApp).delete()
+                        .addOnFailureListener(exception ->
+                                Log.w(TAG, "Unable to delete Firebase installation", exception));
+            }
+        } catch (Exception exc) {
+            Log.w(TAG, "Unable to clear Firebase telemetry data", exc);
         }
     }
 

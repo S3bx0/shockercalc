@@ -45,16 +45,24 @@
     <strong>Google Analytics for Firebase</strong>,
     <strong>Firebase Crashlytics</strong> i <strong>Firebase Remote Config</strong>.
     Zbieranie jest domyślnie wyłączone. Zgodę można włączyć lub wyłączyć w
-    ustawieniach prywatności Aplikacji.
+    ustawieniach prywatności Aplikacji. Przed zgodą Aplikacja nie inicjalizuje
+    Firebase ani nie tworzy identyfikatora instalacji Firebase. Identyfikator
+    reklamowy jest trwale wyłączony dla Google Analytics.
   </p>
   <p>
-    Google może wtedy przetwarzać identyfikator instalacji i reklamowy, model
+    Google może wtedy przetwarzać identyfikator instalacji, model
     urządzenia, wersję systemu i Aplikacji, przybliżony kraj ustalony na
     podstawie adresu IP, informacje o użytych ekranach i funkcjach, zdarzenia
     zakupów i subskrypcji oraz dane diagnostyczne, takie jak stos błędu.
     Nie wysyłamy wartości obliczeń, temperatur, mas, nazw wybranych lub własnych
     produktów ani zawartości PDF. Remote Config pobiera wyłącznie bezpieczne
     ustawienia funkcji, np. limity i włączniki funkcji testowych.
+  </p>
+  <p>
+    Po cofnięciu zgody Aplikacja wyłącza dalsze zbieranie, usuwa lokalne dane
+    Analytics i niewysłane raporty Crashlytics oraz zleca Firebase usunięcie
+    identyfikatora instalacji. Usunięcie danych znajdujących się w systemach
+    Google odbywa się zgodnie z okresami retencji i procedurami Google.
   </p>
   <p>
     Informacje o przetwarzaniu danych przez Google znajdują się w
@@ -214,7 +222,9 @@
     <strong>Google Analytics for Firebase</strong>,
     <strong>Firebase Crashlytics</strong>, and <strong>Firebase Remote Config</strong>.
     Collection is disabled by default and can be enabled or disabled in the
-    App's privacy settings.
+    App's privacy settings. Before consent, the App does not initialize
+    Firebase or create a Firebase installation identifier. Advertising ID
+    collection is permanently disabled for Google Analytics.
   </p>
   <p>
     Google may then process an installation identifier, device model, operating
@@ -224,6 +234,12 @@
     calculation values, temperatures, masses, selected or custom product names,
     or PDF contents. Remote Config only downloads safe feature settings, such
     as limits and beta feature switches.
+  </p>
+  <p>
+    When consent is withdrawn, the App disables further collection, clears
+    local Analytics data and unsent Crashlytics reports, and asks Firebase to
+    delete the installation identifier. Deletion of data held in Google's
+    systems follows Google's retention periods and procedures.
   </p>
   <p>
     Learn more in the

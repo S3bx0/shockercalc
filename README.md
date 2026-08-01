@@ -214,8 +214,11 @@ w Play Console.
 Build obsługuje Google Analytics for Firebase, Crashlytics i Remote Config.
 Integracja jest aktywowana tylko wtedy, gdy CI otrzyma poprawny
 `google-services.json`, a samo zbieranie danych jest domyślnie wyłączone do
-czasu zgody użytkownika. Zdarzenia opisują użycie funkcji; nie zawierają
-wartości obliczeń, nazw własnych produktów ani treści PDF.
+czasu zgody użytkownika. Wynikowy manifest usuwa `FirebaseInitProvider`, więc
+przed zgodą nie powstaje `FirebaseApp` ani identyfikator instalacji. Cofnięcie
+zgody wyłącza kolekcję, czyści dane lokalne i zleca usunięcie FID. Zdarzenia
+opisują użycie funkcji; nie zawierają wartości obliczeń, nazw własnych
+produktów ani treści PDF. Identyfikator reklamowy jest wyłączony dla Analytics.
 
 Workflow debug może opcjonalnie przekazać APK testerom przez Firebase App
 Distribution. Pełna konfiguracja sekretów, Remote Config i zmian wymaganych w

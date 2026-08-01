@@ -36,7 +36,7 @@ public class RefrigerationCalcActivity extends PythonActivity {
         appShortcuts().initialize(getIntent());
         configureEdgeToEdge();
         showAnimatedIntro();
-        telemetry().initialize();
+        telemetry().initializeIfConsented();
         billing().initialize();
         initializeAds();
     }

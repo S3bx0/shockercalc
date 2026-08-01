@@ -25,6 +25,12 @@ następnym pakietem dla testerów:
    oraz zmierzyć brak transmisji Firebase przed zgodą albo skorygować
    deklaracje.
 
+Stan naprawy: problemy 1 i 2 mają już automatyczne bramki oraz potwierdzony
+debug APK. Dla problemu 3 wdrożono ręczny start Firebase po zgodzie, usunięcie
+`FirebaseInitProvider`, czyszczenie po cofnięciu zgody i walidator wynikowego
+manifestu. NO-GO pozostaje do zielonego APK z tej zmiany, pomiaru „zero
+Firebase przed zgodą” oraz pełnej weryfikacji nowego podpisanego AAB.
+
 Po usunięciu tych blokad należy zbudować nowy AAB z aktualnego `HEAD`, wykonać
 testy pakietów wygenerowanych przez Bundletool, przesłać go do Alpha i dopiero
 na nim prowadzić udokumentowany test zamknięty. Samo zwiększanie liczby funkcji
@@ -197,6 +203,14 @@ Preferowana poprawka:
    domen Firebase/Google Analytics/Crashlytics; po zgodzie wyłącznie
    zadeklarowane usługi;
 6. dopiero po teście zatwierdzić formularz Bezpieczeństwo danych i politykę.
+
+Stan wdrożenia 2026-08-01: punkty 1–4 zostały zaimplementowane.
+`FirebaseTelemetryService` wykrywa zasób `google_app_id` bez tworzenia obiektów
+SDK, `Activity` uruchamia usługę tylko dla wcześniej zapisanej aktywnej zgody,
+manifest usuwa `FirebaseInitProvider`, a rezygnacja wyłącza kolekcję, resetuje
+lokalne dane Analytics, usuwa niewysłane raporty Crashlytics i zleca usunięcie
+FID. Punkt 5 pozostaje obowiązkowym testem akceptacyjnym na świeżej instalacji;
+sam test źródłowy ani odczyt manifestu nie dowodzi braku ruchu sieciowego.
 
 Kryterium akceptacji: powtarzalny raport sieciowy „zero Firebase przed zgodą”,
 brak plików/identyfikatorów utworzonych przez te usługi przed zgodą oraz test

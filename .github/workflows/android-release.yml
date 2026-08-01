@@ -177,6 +177,15 @@ jobs:
           test -n "$MANIFEST_PATH"
           grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
 
+      - name: Verify Firebase opt-in manifest
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_firebase_manifest.py "$MERGED_MANIFEST"
+
       - name: Collect Play Console diagnostic files
         if: always()
         run: |

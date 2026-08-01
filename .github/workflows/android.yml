@@ -176,6 +176,12 @@ jobs:
           test -n "$MANIFEST_PATH"
           grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
 
+      - name: Verify Firebase opt-in manifest
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          python tools/verify_android_firebase_manifest.py "$APK_PATH"
+
       - name: Upload buildozer log (on failure)
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

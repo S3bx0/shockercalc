@@ -192,6 +192,55 @@ def _patch_android_manifest(*roots):
     print("[p4a hook] zaktualizowanych Manifestow:", patched)
 
 
+def _patch_firebase_init_provider(*roots):
+    """Usuwa automatyczny start Firebase z manifestu aplikacji.
+
+    Firebase ma byc inicjalizowany recznie dopiero po zapisanej zgodzie.
+    Dyrektywa ``tools:node=remove`` jest dodawana do glownego manifestu przed
+    scaleniem manifestow zaleznosci przez Gradle.
+    """
+    marker = "Refrigeration Calc manual Firebase initialization"
+    provider = "com.google.firebase.provider.FirebaseInitProvider"
+    patched = 0
+    for path in _iter_files("AndroidManifest.xml", *roots):
+        normalized = path.replace("\\", "/").lower()
+        if "/src/main/androidmanifest.xml" not in normalized:
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if marker in text:
+            continue
+        if "<application" not in text or "</application>" not in text:
+            continue
+
+        updated = text
+        if "xmlns:tools=" not in updated:
+            updated, count = re.subn(
+                r"(<manifest\b)",
+                r'\1 xmlns:tools="http://schemas.android.com/tools"',
+                updated,
+                count=1,
+            )
+            if not count:
+                continue
+        removal = f"""
+        <!-- {marker}: opt-in before SDK startup. -->
+        <provider
+            android:name="{provider}"
+            tools:node="remove" />
+"""
+        updated = updated.replace("</application>", removal + "    </application>", 1)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(updated)
+        patched += 1
+        print("[p4a hook] usunieto FirebaseInitProvider:", path)
+    print("[p4a hook] manifestow Firebase opt-in:", patched)
+    return patched
+
+
 def _patch_python_activity_orientation(*roots):
     """Usuwa odziedziczona blokade orientacji z launchera p4a.
 
@@ -443,6 +492,7 @@ def before_apk_assemble(toolchain):
     roots = _candidate_roots(toolchain)
     _set_16kb_build_flags()
     _patch_android_manifest(*roots)
+    _patch_firebase_init_provider(*roots)
     _patch_python_activity_orientation(*roots)
     _patch_firebase_gradle(*roots)
     _patch_android_abi_filters(*roots)
