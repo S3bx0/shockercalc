@@ -5,7 +5,7 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.12`
 
-**Stan jakości:** 396 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 403 testy automatyczne, statyczna kontrola Ruff i mypy,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
@@ -31,6 +31,8 @@ uruchamiania, kompilowania ani modyfikowania programu.
 - wyszukiwanie produktów, ostatnie wybory i własne produkty użytkownika,
 - eksport i udostępnianie raportów PDF,
 - dobrowolne wysyłanie opinii i zgłoszeń błędów przez edytowalny szkic e-mail,
+- skróty launchera otwierające bezpośrednio karty Chłodnicze, Zawory lub
+  Robocizna po przytrzymaniu ikony aplikacji,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
   telefonu i tabletu,
 - model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
@@ -62,7 +64,7 @@ tpof/                  # pakiet źródłowy
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
-    ├── android_bridge.py # fasada PyJNIus: reklamy, prywatność i udostępnianie
+    ├── android_bridge.py # fasada PyJNIus: platforma, skróty i udostępnianie
     ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
@@ -72,7 +74,9 @@ tpof/                  # pakiet źródłowy
     │   ├── freezing_workflow.py # walidacja i uruchamianie obliczeń
     │   ├── freezing_results.py  # prezentacja i zerowanie wyników
     │   ├── freezing_presentation.py # motyw i responsywny układ
-    │   ├── valves.py            # dobór zaworów dekompresyjnych
+    │   ├── valves.py            # koordynator doboru zaworów
+    │   ├── valves_view.py       # konstrukcja widoku zaworów
+    │   ├── valves_workflow.py   # walidacja i obliczenia zaworów
     │   ├── labor.py             # koordynator robocizny
     │   ├── labor_view.py        # konstrukcja widoku robocizny
     │   ├── labor_workflow.py    # parsowanie, walidacja i obliczenia
@@ -81,7 +85,7 @@ tpof/                  # pakiet źródłowy
     ├── layout.py      # responsywny układ telefonu i tabletu
     ├── currency.py    # kursy NBP, cache i przeliczanie PLN/EUR/USD
     ├── entitlements.py# trial, freemium, tokeny za reklamy, moduły płatne
-    ├── services/      # PRO, dostęp do modułów i dobrowolne opinie użytkownika
+    ├── services/      # skróty, PRO, dostęp do modułów i opinie użytkownika
     ├── widgets/       # współdzielone widżety, w tym wykres kosztów
     ├── telemetry.py   # bezpieczny most Analytics/Crashlytics/Remote Config
     ├── user_data.py   # podpowiedzi i lokalne produkty użytkownika
@@ -94,7 +98,8 @@ android/src/.../       # natywna powłoka Android
 ├── AdvertisingService.java
 ├── BillingService.java
 ├── FileShareService.java
-└── FeedbackService.java
+├── FeedbackService.java
+└── AppShortcutsService.java
 
 assets/                # zasoby aplikacji
 ├── Table3.json        # baza produktów
@@ -102,7 +107,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 386 testów logiki, UI i kontraktów natywnych
+tests/                 # 403 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 

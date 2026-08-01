@@ -24,6 +24,7 @@ from tpof.mobile.layout import ResponsiveLayoutController
 from tpof.mobile.localization import LocalizationController
 from tpof.mobile.paths import PROJECT_ROOT
 from tpof.mobile.pdf_export import PdfExportController
+from tpof.mobile.services.app_shortcuts import AppShortcutController
 from tpof.mobile.services.monetization import ProMonetizationController
 from tpof.mobile.services.rewarded_access import RewardedAccessController
 from tpof.mobile.services.user_feedback import UserFeedbackController
@@ -57,6 +58,11 @@ class AppControllerCompositionMixin:
         self._entitlements = Entitlements()
         self._entitlements.ensure_started()
         self._android = AndroidActivityBridge(is_android=IS_ANDROID)
+        self._app_shortcuts = AppShortcutController(
+            consume_target=self._android.consume_shortcut_tab,
+            open_tab=lambda name: self._show_tab(name, animate=False),
+            log_event=telemetry.log_event,
+        )
         self._localization = LocalizationController(
             initial_language="pl",
             is_android=IS_ANDROID,

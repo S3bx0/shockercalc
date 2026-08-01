@@ -222,6 +222,10 @@ def _create_app_class():
                 logger=log,
             )
             self._show_tab("freezing", animate=False, report=False)
+            Clock.schedule_once(
+                lambda *_: self._app_shortcuts.consume_pending(),
+                0,
+            )
 
             root.add_widget(self.footer_bar)
             root.add_widget(self.ad_slot)
@@ -301,6 +305,13 @@ def _create_app_class():
         def _on_tab_switch(self, *args):
             """Zgodność z dawnym callbackiem dolnej nawigacji."""
             return self._navigation_controller.handle_legacy_switch(*args)
+
+        def on_resume(self):
+            """Consume a shortcut delivered while the Android task was paused."""
+
+            shortcuts = getattr(self, "_app_shortcuts", None)
+            if shortcuts is not None:
+                shortcuts.consume_pending()
 
         def _show_tab(self, name: str, *, animate: bool = True, report: bool = True):
             """Przelacza widoczna karte bez ruszania wysokosci dolnego paska."""

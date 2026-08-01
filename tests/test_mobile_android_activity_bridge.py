@@ -15,6 +15,7 @@ class FakeActivity:
         self.banner_height = 72
         self.privacy_required = True
         self.privacy_form_calls = 0
+        self.pending_shortcut = "labor"
         self.shared_files: list[tuple[str, str, str, str]] = []
         self.feedback_emails: list[tuple[str, str, str]] = []
 
@@ -29,6 +30,11 @@ class FakeActivity:
 
     def showPrivacyOptionsForm(self) -> None:
         self.privacy_form_calls += 1
+
+    def consumePendingShortcutTab(self) -> str:
+        target = self.pending_shortcut
+        self.pending_shortcut = ""
+        return target
 
     def shareFile(
         self,
@@ -57,6 +63,8 @@ def test_bridge_delegates_native_activity_contract():
 
     assert bridge.activity() is activity
     assert bridge.set_active_ad_tab("valves") is True
+    assert bridge.consume_shortcut_tab() == "labor"
+    assert bridge.consume_shortcut_tab() is None
     assert bridge.banner_height_dp() == 72
     assert bridge.resolved_banner_height(False, 0) == 72
     assert bridge.resolved_banner_height(True, 40) == 40
@@ -103,6 +111,7 @@ def test_bridge_is_safe_noop_off_android():
     )
 
     assert bridge.set_active_ad_tab("labor") is False
+    assert bridge.consume_shortcut_tab() is None
     assert bridge.banner_height_dp() == 0
     assert bridge.resolved_banner_height(False, 64) == 64
     assert bridge.privacy_options_required() is False

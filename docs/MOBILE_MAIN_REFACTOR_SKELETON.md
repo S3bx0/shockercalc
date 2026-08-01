@@ -85,6 +85,7 @@ tpof/mobile/
 │   └── labor_results.py     # prezentacja wyników i wykres robocizny
 └── services/
     ├── __init__.py
+    ├── app_shortcuts.py     # walidacja celu skrótu i routing nawigacji
     ├── monetization.py      # status, cena i zakup PRO
     ├── rewarded_access.py   # rewarded, tokeny, zakup i blokada zaworów
     ├── entitlements_ui.py   # odświeżanie blokad i statusów UI

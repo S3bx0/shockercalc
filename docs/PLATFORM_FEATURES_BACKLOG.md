@@ -45,7 +45,10 @@ charakteryzującymi. Natywna bramka architektoniczna jest zamknięta.
 
 ### Po rozbiciu Activity
 
-1. **App Shortcuts** — mały zakres, widoczna poprawa UX, osobny handler intencji.
+1. **App Shortcuts — wykonane 2026-08-01** — trzy dynamiczne skróty launchera
+   otwierają karty Chłodnicze, Zawory i Robocizna. Rejestracja oraz obsługa
+   intencji należą do osobnego `AppShortcutsService`, a Python kieruje cel przez
+   `AppShortcutController` i istniejący `TabNavigationController`.
 2. **In-App Review** — niski koszt i małe ryzyko; uruchamianie po kilku udanych
    działaniach, z lokalnym throttlingiem i bez nagradzania za ocenę.
 3. **In-App Updates** — osobny `AppUpdateService`; najpierw tryb elastyczny,

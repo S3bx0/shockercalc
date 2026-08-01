@@ -56,6 +56,19 @@ class AndroidActivityBridge:
             log.debug("setActiveAdTab nie powiodło się", exc_info=True)
             return False
 
+    def consume_shortcut_tab(self) -> str | None:
+        """Return and clear the pending launcher-shortcut destination."""
+
+        if not self._is_android:
+            return None
+        try:
+            target = self.activity().consumePendingShortcutTab()
+            normalized = str(target or "").strip()
+            return normalized or None
+        except Exception:  # pragma: no cover - Android only
+            log.debug("Odczyt skrótu aplikacji nie powiódł się", exc_info=True)
+            return None
+
     def banner_height_dp(self) -> int:
         if not self._is_android:
             return 0
