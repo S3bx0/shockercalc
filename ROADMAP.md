@@ -14,7 +14,9 @@ zamknięte poniższe zadania P0:
    PRO, tokenów ani identyfikatorów SDK;
 3. opóźnić inicjalizację Firebase do zgody i potwierdzić pomiarem brak
    transmisji Firebase przed zgodą;
-4. naprawić przepełnienie dysku/cache w wymaganym checku PR #13, uzyskać
+4. naprawić powtarzalne przepełnienie dysku podczas odtwarzania cache Buildozera
+   w wymaganym checku PR #13 (przebiegi `30690032852` i `30692299604`),
+   ograniczyć lub usunąć ciężki cache, dodać raport wolnego miejsca, uzyskać
    zielone CI i zbudować nowy podpisany AAB z aktualnego `HEAD`;
 5. zweryfikować nowy AAB: podpis, wersję, 16 KB, kompletność ABI, split APK,
    uruchomienie ARM oraz API 35/36;

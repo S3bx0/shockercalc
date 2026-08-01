@@ -69,7 +69,7 @@ Ograniczenia audytu:
 | Debug APK arm64 z `6539a82` | PASS | przebieg 30690035825 |
 | Podpisany AAB 1.5.12 | PASS techniczny | przebieg 30569531604, Bundletool `validate` bez błędu |
 | Wyrównanie 16 KB | PASS | `PAGE_ALIGNMENT_16K`, brak wykrytych bibliotek 4 KB |
-| Check PR #13 „Buildozer” | FAIL infrastrukturalny | runner zakończył się na `No space left on device` podczas odtwarzania cache |
+| Check PR #13 „Buildozer” | FAIL infrastrukturalny, powtarzalny | przebiegi `30690032852` i `30692299604` zakończyły się na `No space left on device` podczas odtwarzania cache; drugi runner nie mógł już zapisać własnego logu diagnostycznego |
 | PR #13 | NIEGOTOWY | draft, `mergeable`, lecz `mergeStateStatus=UNSTABLE` |
 | Domyślna gałąź `main` | NIEAKTUALNA | 12 commitów za gałęzią audytowaną; README/buildozer nadal 1.5.11 |
 | Opis repozytorium GitHub | NIEAKTUALNY | nadal zaczyna się od „Refrigeration Calc 1.5.11” |
@@ -424,7 +424,11 @@ werdykt, ale uzasadnia bazę wydajnościową:
 2. Ustalić oraz wdrożyć jawną politykę backupu.
 3. Zrobić Firebase lazy opt-in i test „zero transmisji przed zgodą”.
 4. Podnieść krytyczne zależności, o ile test kompatybilności Androida przejdzie.
-5. Naprawić przepełnienie cache runnera i uzyskać zielone checki PR.
+5. Naprawić powtarzalne przepełnienie cache runnera: ograniczyć/usunąć cache
+   `.buildozer`, raportować miejsce przed i po restore, a następnie uzyskać
+   zielone checki PR. Dwa niezależne przebiegi (`30690032852` i `30692299604`)
+   zakończyły się w tym samym miejscu, więc ponowienie bez zmiany workflow nie
+   jest rozwiązaniem.
 
 ### Etap B — nowy checkpoint AAB, około 1 dzień + czas CI/Play
 
