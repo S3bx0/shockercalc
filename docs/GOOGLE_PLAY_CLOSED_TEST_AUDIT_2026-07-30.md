@@ -4,6 +4,14 @@ Dokument opisuje stan sprawdzony bezpośrednio w Konsoli Play oraz czynności,
 które trzeba wykonać przed drugim wnioskiem o dostęp produkcyjny. Nie stanowi
 podstawy do deklarowania fikcyjnej aktywności ani opinii.
 
+> Aktualizacja 2026-08-01: techniczny superaudyt wykazał, że obecna
+> inicjalizacja Firebase może utworzyć Firebase Installation ID i lokalne dane
+> sesji przed dobrowolną zgodą na Analytics/Crashlytics. Szczegóły i bramka
+> naprawcza znajdują się w
+> `docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md`. Do czasu wdrożenia
+> lazy opt-in nie należy opisywać wszystkich identyfikatorów Firebase jako
+> zbieranych wyłącznie po zgodzie.
+
 ## Stan potwierdzony w Konsoli Play
 
 - pierwszy wniosek został odrzucony 30 lipca 2026 o 16:25;
@@ -99,11 +107,11 @@ typów danych:
 
 | Typ w Konsoli Play | Źródło | Charakter | Typowe cele |
 | --- | --- | --- | --- |
-| Lokalizacja > Przybliżona lokalizacja | adres IP: AdMob, Analytics/Remote Config | AdMob automatycznie; Firebase po zgodzie | reklamy, analityka, zapobieganie oszustwom |
+| Lokalizacja > Przybliżona lokalizacja | adres IP: AdMob, Analytics/Remote Config/Firebase Installations | AdMob automatycznie; ruch Firebase przed zgodą wymaga ponownej weryfikacji | reklamy, analityka, zapobieganie oszustwom |
 | Aktywność w aplikacjach > Interakcje z aplikacją | AdMob i Analytics | AdMob automatycznie; Analytics po zgodzie | reklamy, analityka, zapobieganie oszustwom |
 | Informacje o aplikacjach i ich działaniu > Dzienniki awarii | Crashlytics | opcjonalnie po zgodzie | funkcje aplikacji, analityka |
 | Informacje o aplikacjach i ich działaniu > Diagnostyka | AdMob i Crashlytics | AdMob automatycznie; Crashlytics po zgodzie | reklamy, analityka, zapobieganie oszustwom |
-| Identyfikatory urządzenia i inne | AdMob, Analytics, Firebase Installations/Crashlytics | AdMob automatycznie; Firebase częściowo po zgodzie | reklamy, analityka, bezpieczeństwo |
+| Identyfikatory urządzenia i inne | AdMob, Analytics, Firebase Installations/Crashlytics | AdMob automatycznie; FID może powstać przed zgodą, pozostała telemetria jest wyłączona do zgody | reklamy, analityka, bezpieczeństwo |
 | Informacje finansowe > Historia zakupów | automatyczne zdarzenia Analytics dotyczące zakupów i subskrypcji | opcjonalnie po zgodzie Analytics | analityka |
 
 Dla danych wysyłanych przez AdMob oficjalna dokumentacja SDK mówi o zbieraniu
@@ -114,10 +122,11 @@ wszystkich danych Firebase automatycznie jako udostępniane.
 
 Zbieranie przez AdMob nie jest opcjonalne tylko dlatego, że UMP pozwala odmówić
 personalizacji; ograniczone reklamy nadal mogą wymagać danych technicznych.
-Telemetria Firebase jest w aplikacji domyślnie wyłączona i użytkownik może ją
-włączyć lub wyłączyć, więc odpowiada warunkowi zbierania opcjonalnego. Ostateczne
+Analytics, raportowanie Crashlytics i pobieranie Remote Config są w aplikacji
+domyślnie wyłączone i użytkownik może je włączyć lub wyłączyć. Nie przesądza to
+jednak o Firebase Installation ID tworzonym przez zależności SDK. Ostateczne
 odpowiedzi muszą uwzględniać aktualne ustawienia AdMob, Analytics i Firebase
-Console.
+Console oraz wynik testu ruchu sieciowego na świeżej instalacji.
 
 W formularzu zaznaczono również szyfrowanie danych podczas przesyłania, brak
 tworzenia kont użytkowników oraz możliwość żądania usunięcia danych przez:

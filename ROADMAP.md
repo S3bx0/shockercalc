@@ -1,5 +1,32 @@
 # Refrigeration Calc roadmap
 
+## Bramka jakości po superaudycie 2026-08-01
+
+Pełny raport znajduje się w
+[`docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md`](docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md).
+Decyzja dla obecnego stanu to **NO-GO dla kolejnego AAB**, dopóki nie zostaną
+zamknięte poniższe zadania P0:
+
+1. usunąć z AAB niekompletne ABI `armeabi-v7a`, `x86` i `x86_64` albo
+   dostarczyć dla nich pełny runtime; wygenerowany przez Bundletool pakiet
+   `x86_64` obecnie instaluje się i natychmiast ulega awarii;
+2. ustawić jawną politykę Android Auto Backup i nie przywracać lokalnych flag
+   PRO, tokenów ani identyfikatorów SDK;
+3. opóźnić inicjalizację Firebase do zgody i potwierdzić pomiarem brak
+   transmisji Firebase przed zgodą;
+4. naprawić przepełnienie dysku/cache w wymaganym checku PR #13, uzyskać
+   zielone CI i zbudować nowy podpisany AAB z aktualnego `HEAD`;
+5. zweryfikować nowy AAB: podpis, wersję, 16 KB, kompletność ABI, split APK,
+   uruchomienie ARM oraz API 35/36;
+6. zmergować PR do `main`, zaktualizować opis repozytorium i publiczną politykę
+   prywatności przed tagiem i wysłaniem do Alpha.
+
+Następna warstwa P1 to: dostępność TalkBack, cele dotykowe 48 dp, kontrast,
+skalowanie czcionek, landscape/duże ekrany, audyt zależności w CI, progi
+pokrycia oraz bazowe pomiary wydajności release na ARM. Te prace mają być
+wydzielane do osobnych modułów i narzędzi; nie wolno ponownie rozbudować
+`app.py` ani `RefrigerationCalcActivity.java`.
+
 ## Nadrzędny kierunek: dekompozycja monolitu
 
 Każda kolejna funkcja powinna zmniejszać odpowiedzialność tymczasowych powłok
@@ -46,13 +73,14 @@ Wdrożone cięcia:
   produktów, obliczeń, wyników oraz prezentacji motywu i responsywnego układu;
   koordynator ma 160 linii zamiast pierwotnych 1270.
 
-Następny krok publikacyjny to zebrać rzeczywiste opinie przez wdrożoną akcję
-„Wyślij opinię / Zgłoś błąd” oraz prywatny kanał Google Play, zapisać decyzje w
-`docs/CLOSED_TEST_FEEDBACK_LOG.md` i wydać co najmniej jedną uzasadnioną
-aktualizację testową. Następny krok platformowy po ustabilizowaniu testu to
-In-App Review jako osobny kontroler Python i osobny serwis Java. Elastyczne
-In-App Updates również nie powinny ponownie rozbudowywać Activity. App
-Shortcuts zrealizowano przez osobny serwis Java, mostek i kontroler Python.
+Po zamknięciu bramki P0 następny krok publikacyjny to zebrać rzeczywiste opinie
+przez wdrożoną akcję „Wyślij opinię / Zgłoś błąd” oraz prywatny kanał Google
+Play, zapisać decyzje w `docs/CLOSED_TEST_FEEDBACK_LOG.md` i wydać co najmniej
+jedną uzasadnioną aktualizację testową. Następny krok platformowy po
+ustabilizowaniu testu to In-App Review jako osobny kontroler Python i osobny
+serwis Java. Elastyczne In-App Updates również nie powinny ponownie
+rozbudowywać Activity. App Shortcuts zrealizowano przez osobny serwis Java,
+mostek i kontroler Python.
 
 Raport testowy został rozszerzony o wersjonowany, ustrukturyzowany szablon 2.
 Proces operacyjny, scenariusze i wiadomość dla testerów znajdują się w
@@ -68,7 +96,9 @@ udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem
 
 - 30 lipca 2026 o 16:25 Google odrzucił pierwszy wniosek i w Konsoli Play
   rozpoczął wymaganie kolejnych 14 dni liczonych od daty sprawdzenia; wersja
-  96 (1.5.11) jest dostępna w aktywnej ścieżce Alpha od 30 lipca, 19:59,
+  96 (1.5.11) była dostępna w aktywnej ścieżce Alpha od 30 lipca, 19:59, a
+  później przesłano wersję 98 (1.5.12) do sprawdzenia; przed kolejnym AAB
+  potwierdzić w Konsoli, która wersja jest obecnie dostępna testerom,
 - nie składać wniosku przed odblokowaniem przycisku przez Konsolę Play;
   operacyjnie najbezpieczniej sprawdzić możliwość ponownego zgłoszenia
   14 sierpnia 2026, zamiast zakładać samodzielnie wcześniejszą godzinę końca,
@@ -85,16 +115,17 @@ udokumentowanego procesu zbierania i wdrażania opinii. Przed ponownym wnioskiem
   tle; należy udostępnić ją testerom w kolejnej kompilacji,
 - równolegle zbierać prywatne opinie w Google Play i prowadzić rejestr:
   data, obszar aplikacji, zgłoszenie, decyzja i wersja zawierająca poprawkę,
-- 30 lipca sekcja „Opinie z testów” nie zawierała jeszcze żadnego wpisu;
-  przed kolejnym wnioskiem zebrać rzeczywiste opinie i odpowiedzieć testerom,
+- 30 lipca sekcja „Opinie z testów” zawierała jedną starszą, ogólną ocenę 5/5
+  „Super”, bez szczegółów możliwych do wdrożenia; przed kolejnym wnioskiem
+  zebrać nowe, konkretne opinie i odpowiedzieć testerom,
 - opublikować w teście zamkniętym co najmniej jedną uzasadnioną aktualizację
   wynikającą z rzeczywistych opinii testerów i zachować jej informacje o wersji,
 - sprawdzić raport przed opublikowaniem, Android Vitals, awarie i ANR oraz
   naprawić istotne problemy przed kolejnym zgłoszeniem,
-- zaktualizować formularz „Bezpieczeństwo danych”: obecna deklaracja wskazuje
-  tylko identyfikatory urządzenia, choć wydanie zawiera aktywną konfigurację
-  AdMob oraz dobrowolne Analytics, Crashlytics i Remote Config; szczegóły
-  audytu są w `docs/GOOGLE_PLAY_CLOSED_TEST_AUDIT_2026-07-30.md`,
+- formularz „Bezpieczeństwo danych” został rozszerzony 30 lipca o sześć typów
+  danych, ale po zmianie inicjalizacji Firebase i polityki backupu trzeba go
+  ponownie porównać z rzeczywistym ruchem sieciowym; szczegóły są w
+  `docs/GOOGLE_PLAY_CLOSED_TEST_AUDIT_2026-07-30.md` i nowym superaudycie,
 - ponownie wnioskować dopiero po zakończeniu okresu wskazanego w Konsoli Play
   i opisać wyłącznie rzeczywiste zaangażowanie, feedback oraz wdrożone zmiany.
 

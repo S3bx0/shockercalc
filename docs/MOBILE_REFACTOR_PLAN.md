@@ -1,10 +1,10 @@
 # Mobile Refactor Plan
 
-Stan na 2026-07-29: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
+Stan na 2026-08-01: `tpof/mobile/main.py` ma 13 linii i jest gotowym, cienkim
 launcherem. `ShockerCalcApp` i cykl życia Kivy znajdują się w
-`tpof/mobile/app.py` (374 linie, z czego `build()` zajmuje 174), a składanie
+`tpof/mobile/app.py` (385 linii), a składanie
 stanu i kontrolerów w niezależnym od frameworka
-`tpof/mobile/app_controllers.py` (355 linii). Wszystkie trzy zakładki, powłoka aplikacji,
+`tpof/mobile/app_controllers.py` (371 linii). Wszystkie trzy zakładki, powłoka aplikacji,
 motyw, responsywny układ, dialogi oraz wspólna obsługa
 podpowiedzi, walidacji, klawiatury, lokalizacji, reklam nagradzanych, tokenów i
 dostępu do modułu zaworów są już wydzielone. PyJNIus, natywna Activity oraz
@@ -17,8 +17,9 @@ obliczenia w `tabs/freezing_workflow.py`, wyniki w
 `tabs/freezing_presentation.py`. `tabs/freezing.py` zmniejszył się z 1270 do
 160 linii bez zmiany zachowania.
 Widok zakładki robocizny jest w `tabs/labor_view.py` (330 linii), workflow
-obliczeń w `tabs/labor_workflow.py` (236 linii), a `tabs/labor.py` po dwóch
-cięciach zmniejszył się z 1112 do 604 linii.
+obliczeń w `tabs/labor_workflow.py` (236 linii), prezentacja wyników i wykresu
+w `tabs/labor_results.py` (396 linii), a `tabs/labor.py` po trzech cięciach
+zmniejszył się z 1112 do 257 linii.
 W `app.py` pozostaje głównie składanie widoku, cykl życia oraz krótka
 orkiestracja usług aplikacji.
 
@@ -159,6 +160,12 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
      API przez mixin workflow.
    - `tabs/labor.py` zmniejszył się z 798 do 604 linii.
 
+24. `tpof/mobile/tabs/labor_results.py` — wykonane
+   - Zawiera prezentację wyniku, podsumowania kosztów, legendę i dialog
+     interaktywnego wykresu robocizny.
+   - Koordynator `tabs/labor.py` ma 257 linii i nie rysuje już wykresu.
+   - Osobne testy pilnują danych wykresu, widoczności i granicy importów.
+
 ## Kolejność prac
 
 1. Wydzielić współdzielone stałe do `tpof/mobile/constants.py`, żeby uniknąć cykli importów przy przenoszeniu widgetów.
@@ -167,7 +174,7 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 4. Wydzielić dialogi jeden po drugim, zaczynając od najnowszego edytora stawek robocizny.
 5. Wydzielić zakładki dopiero po zamrożeniu obecnej wersji UI na testach.
 6. Dodać testy smoke i testy charakteryzujące dla każdego wydzielonego modułu
-   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 386 testów.
+   — wykonywane na każdym checkpointcie; bieżący zestaw obejmuje 403 testy.
 7. Wydzielić wybór, wyszukiwanie i historię produktów z `tabs/freezing.py`
    bez przenoszenia walidacji i obliczeń — wykonane.
 8. Wydzielić walidację pól i uruchamianie obliczeń z
@@ -183,8 +190,15 @@ Konkretny szkielet podziału plików, mapowanie metod i kolejność bezpiecznej 
 12. Wydzielić parsowanie, walidację i `calculate()` do
     `tabs/labor_workflow.py`, bez przenoszenia wzorów z `tpof/labor`
     — wykonane.
-13. Następny krok: wydzielić prezentację wyników i wykres do
-    `tabs/labor_results.py`, pozostawiając workflow i wzory bez zmian.
+13. Wydzielić prezentację wyników i wykres do `tabs/labor_results.py`,
+    pozostawiając workflow i wzory bez zmian — wykonane.
+14. Przed dalszym refaktorem zamknąć bramkę publikacyjną z
+    `docs/GOOGLE_PLAY_RELEASE_QUALITY_AUDIT_2026-08-01.md`: ABI, backup,
+    inicjalizacja Firebase po zgodzie, zielone CI i nowy AAB.
+15. Następne cięcie po stabilnym checkpointcie: rozdzielić mechaniczne widoki
+    `labor_results.py` od modelu/prezentera danych wykresu, a następnie
+    analogicznie rozdzielić widok i workflow zaworów bez dokładania logiki do
+    `app.py`.
 
 ## Zasady bezpieczeństwa
 
