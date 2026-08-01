@@ -206,6 +206,8 @@ def test_workflows_pin_reproducible_build_tools():
         assert "FIREBASE_GOOGLE_SERVICES_JSON_BASE64" in workflow
         assert "FIREBASE_GOOGLE_SERVICES_JSON=$GITHUB_WORKSPACE" in workflow
         assert "tools/android_size_report.py" in workflow
+        assert "Cache Buildozer build dir" not in workflow
+        assert "Report runner storage after cache restore" in workflow
 
     debug_workflow = (ROOT / ".github/workflows/android.yml").read_text(
         encoding="utf-8"
@@ -318,6 +320,31 @@ android {}
     assert p4a_hooks._patch_firebase_gradle(project, config_path=config) == 1
     assert "com.google.gms.google-services" in main_gradle.read_text(encoding="utf-8")
     assert "com.google.gms.google-services" not in auxiliary.read_text(encoding="utf-8")
+
+
+def test_p4a_hook_filters_packaged_native_dependencies_to_arm64(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    gradle = project / "build.gradle"
+    gradle.write_text(
+        """buildscript {
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.0'
+    }
+}
+apply plugin: 'com.android.application'
+android {}
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_android_abi_filters(project) == 1
+    assert p4a_hooks._patch_android_abi_filters(project) == 0
+    patched = gradle.read_text(encoding="utf-8")
+
+    assert patched.count("Refrigeration Calc supported ABIs") == 1
+    assert "abiFilters.clear()" in patched
+    assert "abiFilters 'arm64-v8a'" in patched
 
 
 def test_p4a_hook_removes_runtime_orientation_lock(tmp_path):

@@ -70,6 +70,11 @@ jobs:
           curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain 1.96.0
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
+      - name: Report runner storage before cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
+
       - name: Cache Buildozer global dir
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -80,13 +85,13 @@ jobs:
           restore-keys: |
             buildozer-${{ runner.os }}-
 
-      - name: Cache Buildozer build dir
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: .buildozer
-          key: buildozer-build-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            buildozer-build-${{ runner.os }}-
+      # Do not cache the project-local .buildozer directory. Its compressed
+      # cache was ~1.9 GB and, together with the global cache, repeatedly
+      # exhausted the GitHub-hosted runner while being restored.
+      - name: Report runner storage after cache restore
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          du -sh "$HOME/.buildozer" "$HOME/.gradle" .buildozer 2>/dev/null || true
 
       - name: Install Python build tools
         run: |
@@ -155,6 +160,12 @@ jobs:
             mkdir -p bin
             cp "$APK_PATH" bin/refrigerationcalc-debug.apk
           fi
+
+      - name: Verify packaged ABI runtime
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          python tools/verify_android_abi_bundle.py "$APK_PATH"
 
       - name: Upload buildozer log (on failure)
         if: failure()

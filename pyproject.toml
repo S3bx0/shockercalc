@@ -91,6 +91,7 @@ files = [
     "tpof/mobile/tabs/labor_workflow.py",
     "tpof/mobile/tabs/valves.py",
     "tools/verify_android_legal_bundle.py",
+    "tools/verify_android_abi_bundle.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

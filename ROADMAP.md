@@ -23,6 +23,17 @@ zamknięte poniższe zadania P0:
 6. zmergować PR do `main`, zaktualizować opis repozytorium i publiczną politykę
    prywatności przed tagiem i wysłaniem do Alpha.
 
+Stan realizacji 2026-08-01:
+
+- **P0.1 ABI — wdrożenie gotowe, oczekuje na artefakt CI:** hook p4a dodaje
+  filtr Gradle `arm64-v8a`, a osobny walidator blokuje APK/AAB zawierające
+  nieobsługiwane ABI lub pozbawione bibliotek Python/SDL;
+- **P0.4 miejsce na runnerze — wdrożenie gotowe, oczekuje na CI:** usunięto
+  przywracanie projektowego cache `.buildozer` (~1,9 GB skompresowane) i dodano
+  pomiar miejsca przed oraz po przywróceniu cache globalnego;
+- stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
+  oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
+
 Następna warstwa P1 to: dostępność TalkBack, cele dotykowe 48 dp, kontrast,
 skalowanie czcionek, landscape/duże ekrany, audyt zależności w CI, progi
 pokrycia oraz bazowe pomiary wydajności release na ARM. Te prace mają być

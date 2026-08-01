@@ -21,6 +21,7 @@ import shutil
 import tarfile
 
 FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
+SUPPORTED_ANDROID_ABIS = ("arm64-v8a",)
 DEFAULT_FIREBASE_CONFIG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     ".firebase",
@@ -276,6 +277,54 @@ android {{
     print("[p4a hook] zaktualizowanych build.gradle diagnostics:", patched)
 
 
+def _patch_android_abi_filters(*roots):
+    """Ogranicza natywne biblioteki zaleznosci do ABI budowanego przez p4a.
+
+    ``android.archs`` steruje kompilacja runtime p4a, ale AAR-y zaleznosci moga
+    nadal wniesc biblioteki dla innych ABI. App Bundle uznalby wtedy te ABI za
+    obslugiwane, mimo braku Pythona i SDL. Filtr Gradle musi wiec odpowiadac
+    architekturom z ``buildozer.spec``.
+    """
+    marker = "Refrigeration Calc supported ABIs"
+    quoted_abis = ", ".join(repr(abi) for abi in SUPPORTED_ANDROID_ABIS)
+    snippet = f"""
+
+// {marker} (patched by p4a_hooks.py).
+android {{
+    defaultConfig {{
+        ndk {{
+            // Drop native libraries contributed by AARs for unsupported ABIs.
+            abiFilters.clear()
+            abiFilters {quoted_abis}
+        }}
+    }}
+}}
+"""
+    patched = 0
+    for path in _iter_files("build.gradle", *roots):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+
+        if marker in text:
+            continue
+        if (
+            "com.android.application" not in text
+            or "com.android.tools.build:gradle" not in text
+            or "android {" not in text
+        ):
+            continue
+
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text.rstrip() + snippet + "\n")
+        patched += 1
+        print("[p4a hook] ograniczono ABI w build.gradle:", path)
+    print("[p4a hook] zaktualizowanych filtrow ABI:", patched)
+    return patched
+
+
 def _firebase_config_matches_package(path):
     try:
         with open(path, encoding="utf-8") as fh:
@@ -396,6 +445,7 @@ def before_apk_assemble(toolchain):
     _patch_android_manifest(*roots)
     _patch_python_activity_orientation(*roots)
     _patch_firebase_gradle(*roots)
+    _patch_android_abi_filters(*roots)
     _patch_release_gradle_diagnostics(*roots)
     _strip_fonttools_native(*roots)
     _strip_python_bundle_payload(*roots)

@@ -123,6 +123,11 @@ Kryterium akceptacji: AAB reklamuje wyłącznie kompletne ABI, Bundletool nie
 generuje niekompletnego zestawu, a testowe uruchomienie nie zawiera
 `UnsatisfiedLinkError` ani `FATAL EXCEPTION`.
 
+Stan naprawy 2026-08-01: na gałęzi roboczej dodano filtr ABI do generowanego
+`build.gradle` oraz niezależny walidator APK/AAB. Walidator odrzuca oba stare
+artefakty 1.5.12 z powodu `armeabi-v7a`, `x86` i `x86_64`. Naprawa pozostaje
+otwarta do czasu zbudowania i sprawdzenia nowego artefaktu ARM64 w CI.
+
 Źródło: [format Android App Bundle](https://developer.android.com/guide/app-bundle/app-bundle-format).
 
 ### P0.2. Auto Backup a dane lokalne i uprawnienia PRO
