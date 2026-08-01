@@ -20,6 +20,11 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 
 - Aplikacja nie wymaga szerokich uprawnień do plików użytkownika.
 - `buildozer.spec` powinien zawierać tylko `INTERNET` i `ACCESS_NETWORK_STATE`.
+- Finalny manifest zawiera również zwykłe uprawnienia dodane przez AdMob,
+  Google Play Billing, Firebase/DataTransport i WorkManager. Ich jawna allowlista
+  jest sprawdzana w CI; każde nowe uprawnienie zatrzymuje build do audytu.
+- Aplikacja nie może żądać dostępu do aparatu, mikrofonu, kontaktów, dokładnej
+  lokalizacji ani współdzielonych plików i zdjęć użytkownika.
 - Eksport PDF na Androidzie tworzy roboczy plik w prywatnym katalogu aplikacji,
   a finalny zapis/udostępnienie przechodzi przez natywny most MediaStore/Share.
 - Do Play Console przesyłać wyłącznie plik `.aab`; raporty diagnostyczne z CI nie

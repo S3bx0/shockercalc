@@ -451,8 +451,11 @@ werdykt, ale uzasadnia bazę wydajnościową:
 
 ## Co już spełnia dobre praktyki
 
-- aplikacja żąda tylko `INTERNET` i `ACCESS_NETWORK_STATE`; brak dostępu do
-  lokalizacji, kamery, kontaktów i pamięci współdzielonej;
+- `buildozer.spec` jawnie żąda tylko `INTERNET` i `ACCESS_NETWORK_STATE`, a
+  końcowy manifest zawiera ponadto zwykłe uprawnienia techniczne pochodzące z
+  AdMob, Play Billing, Firebase/DataTransport i WorkManager; ich ścisła
+  allowlista jest kontrolowana w CI, a aplikacja nie żąda dostępu do dokładnej
+  lokalizacji, kamery, mikrofonu, kontaktów ani pamięci współdzielonej;
 - release nie jest debuggowalny, a kod własny używa HTTPS i waliduje odpowiedź
   NBP z timeoutem oraz atomowym cache;
 - UMP jest uruchamiany przed inicjalizacją reklam, a reklamy czekają na

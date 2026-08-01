@@ -176,6 +176,15 @@ jobs:
           test -n "$MANIFEST_PATH"
           grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
 
+      - name: Verify final Android permission allowlist
+        run: |
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_permissions.py "$MERGED_MANIFEST"
+
       - name: Verify Firebase opt-in manifest
         run: |
           APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"

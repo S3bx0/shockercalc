@@ -50,7 +50,9 @@ Stan realizacji 2026-08-01:
 - **P0.5 bramka AAB — wdrażana:** kontrola wyrównania bibliotek została
   wydzielona do testowanego narzędzia i zmieniona z ostrzeżenia na twardy błąd;
   workflow sprawdza też podpis AAB i wykonuje `bundletool validate` narzędziem
-  przypiętym wersją oraz SHA-256;
+  przypiętym wersją oraz SHA-256. Odczyt finalnego AAB ujawnił techniczne
+  uprawnienia zależności, dlatego CI otrzymuje jawną allowlistę i ma blokować
+  każde nowe uprawnienie do czasu audytu;
 - stare artefakty 1.5.12 są celowo odrzucane przez nową bramkę; zadania można
   oznaczyć jako zamknięte dopiero po zielonym buildzie i inspekcji nowego AAB.
 

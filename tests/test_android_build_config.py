@@ -216,6 +216,8 @@ def test_workflows_pin_reproducible_build_tools():
         assert "Report runner storage after cache restore" in workflow
         assert "Verify Android backup policy" in workflow
         assert "android:allowBackup=\"[Ff]alse\"" in workflow
+        assert "Verify final Android permission allowlist" in workflow
+        assert "tools/verify_android_permissions.py" in workflow
         assert "Verify Firebase opt-in manifest" in workflow
         assert "tools/verify_android_firebase_manifest.py" in workflow
 
