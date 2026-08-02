@@ -24,6 +24,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Zmieniono
 
+- Rozszerzono spójną serię ilustracji pixel-art z przezroczystym tłem i
+  zachowanym cieniem kontaktowym o banany, cebulę, ananasa, awokado, świeże
+  brzoskwinie, granaty i truskawki. Świeże brzoskwinie mają również bezpieczny
+  alias ASCII dla Androida.
 - Zaktualizowano Pillow do 12.3.0, pypdf do 6.14.2, ttkbootstrap do 1.20.4,
   Ruff do 0.15.22 i mypy do 2.3.0. Android zachowuje Pillow 11.3.0 wymagane
   przez oficjalną recepturę python-for-android 2026.05.09 do czasu osobnego

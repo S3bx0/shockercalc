@@ -51,6 +51,7 @@ def test_safe_image_path_uzywa_aliasu_ascii_dla_polskich_znakow():
 
     for name, alias in (
         ("Bakłażan", "Baklazan.webp"),
+        ("Brzoskwinie świeże", "Brzoskwinie swieze.webp"),
         ("Wiśnie kwaśne", "Wisnie kwasne.webp"),
         ("Wiśnie słodkie", "Wisnie slodkie.webp"),
     ):
