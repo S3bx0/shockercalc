@@ -590,6 +590,7 @@ CATEGORY_LABELS_EN = {
 }
 
 _PRODUCT_LABELS_EN_EXACT = {
+    "Agrest": "Gooseberries",
     "Arbuz": "Watermelon",
     "Awokado": "Avocado",
     "Banany": "Bananas",
