@@ -124,7 +124,7 @@ class FreezingProductSelectionMixin:
         from kivy.metrics import dp
         from kivymd.uix.menu import MDDropdownMenu
 
-        item_height = dp(46 if self._is_compact() else 52)
+        item_height = dp(48 if self._is_compact() else 52)
         featured, remaining = _ordered_mobile_categories(
             self._categories,
             self._display_category,
@@ -307,7 +307,7 @@ class FreezingProductSelectionMixin:
             query,
             self._display_product,
         )
-        item_height = dp(46 if self._is_compact() else 52)
+        item_height = dp(48 if self._is_compact() else 52)
         if not names:
             self._add_product_search_heading(
                 self._translate("no_products_found"),

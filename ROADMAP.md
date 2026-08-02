@@ -93,11 +93,33 @@ Podpisany AAB z commita `f57ed4b` i przebiegu `30699855081` przeszedł podpis,
 backup, allowlistę uprawnień, blokadę cleartext traffic oraz bramkę providerów
 Firebase/AdMob. Pozostaje odtworzyć go z `main` po scaleniu release train.
 
-Następna warstwa P1 to: dostępność TalkBack, cele dotykowe 48 dp, kontrast,
-skalowanie czcionek, landscape/duże ekrany, audyt zależności w CI, progi
-pokrycia oraz bazowe pomiary wydajności release na ARM. Te prace mają być
-wydzielane do osobnych modułów i narzędzi; nie wolno ponownie rozbudować
-`app.py` ani `RefrigerationCalcActivity.java`.
+Stan warstwy P1 po pakiecie jakości 2026-08-02:
+
+- **dostępność — etap 1 wdrożony:** osobny kontroler Python i natywny serwis
+  Android udostępniają TalkBackowi lokalizowany opis aktywnej karty oraz
+  komunikaty o zmianie ekranu, wyniku i błędzie; wszystkie krytyczne akcje mają
+  co najmniej 48 dp, kontrast palet jest testowany względem 4,5:1, a układ
+  reaguje na font scale do 200% i landscape;
+- **ważne ograniczenie Kivy:** obecna warstwa udostępnia semantykę całej
+  powierzchni i komunikaty live region, ale jeszcze nie tworzy osobnych
+  `AccessibilityNodeInfo` dla każdego pola i przycisku. Pełna nawigacja bez
+  wzroku pozostaje zadaniem P1.1 po ręcznym teście POC na urządzeniu;
+- **CI wdrożone:** pełna suita ma próg pokrycia 50%, zależności są sprawdzane
+  przez `pip-audit`, a historia Git przez Gitleaks;
+- **zależności desktop/core zaktualizowane:** Pillow 12.3.0, pypdf 6.14.2,
+  ttkbootstrap 1.20.4, Ruff 0.15.22 i mypy 2.3.0; fallback szyfrowania PDF
+  obsługuje obie sygnatury API;
+- **otwarte:** Pillow 11.3.0 w AAB pochodzi bezpośrednio z oficjalnej receptury
+  python-for-android v2026.05.09. Podniesienie go do 12.3.0 wymaga własnej
+  receptury, pełnego AAB i smoke testu obrazów/PDF na ARM, więc nie wolno
+  podmieniać go bez tego checkpointu. CI audytuje faktyczne piny AAB i ma
+  terminowy wyjątek wyłącznie dla znanych zgłoszeń Pillow, wygasający
+  31 sierpnia 2026; nowe zgłoszenia pozostają błędem;
+- **następne P1:** ręczny audyt TalkBack/Switch Access, test fizycznego ARM oraz
+  API 35/36 i bazowe pomiary startu, pamięci, ANR/jank release.
+
+Te prace są wydzielane do osobnych modułów i narzędzi; nie wolno ponownie
+rozbudować `app.py` ani `RefrigerationCalcActivity.java`.
 
 ## Nadrzędny kierunek: dekompozycja monolitu
 

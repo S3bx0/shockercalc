@@ -46,6 +46,7 @@ def _responsive_state(*, pro_no_ads=False):
     screen_size = [640.0, 1400.0]
     hints_enabled = [False]
     native_ad_height = [0.0]
+    font_scale = [1.0]
     privacy_refreshes = []
     freezing_metrics = []
     tabs = (_Tab(), _Tab(), _Tab())
@@ -86,6 +87,7 @@ def _responsive_state(*, pro_no_ads=False):
         bottom_nav_bg=lambda: "nav-color",
         refresh_privacy_button=lambda: privacy_refreshes.append(True),
         apply_freezing_layout=freezing_metrics.append,
+        font_scale=lambda: font_scale[0],
     )
     return {
         "controller": controller,
@@ -93,6 +95,7 @@ def _responsive_state(*, pro_no_ads=False):
         "screen_size": screen_size,
         "hints_enabled": hints_enabled,
         "native_ad_height": native_ad_height,
+        "font_scale": font_scale,
         "privacy_refreshes": privacy_refreshes,
         "freezing_metrics": freezing_metrics,
         "tabs": tabs,
@@ -141,6 +144,42 @@ def test_compute_metrics_native_ad_height_reserves_more_space():
     assert large["ad_h"] > small["ad_h"]
 
 
+def test_compute_metrics_keeps_interactive_targets_at_least_48_dp():
+    metrics = compute_metrics(_dp, 320, 640, hints_enabled=False)
+
+    for name in (
+        "toolbar_btn_w",
+        "button_h",
+        "action_button_h",
+        "field_h",
+        "unit_h",
+        "pro_h",
+        "footer_h",
+    ):
+        assert metrics[name] >= 48, name
+
+
+def test_compute_metrics_respects_large_font_scale_without_unbounded_growth():
+    regular = compute_metrics(_dp, 412, 800, hints_enabled=True, font_scale=1.0)
+    large = compute_metrics(_dp, 412, 800, hints_enabled=True, font_scale=1.3)
+    capped = compute_metrics(_dp, 412, 800, hints_enabled=True, font_scale=9.0)
+
+    assert large["font_scale"] == 1.3
+    assert large["field_h"] > regular["field_h"]
+    assert large["toolbar_h"] > regular["toolbar_h"]
+    assert capped["font_scale"] == 2.0
+
+
+def test_compute_metrics_marks_landscape_and_reduces_vertical_gutters():
+    portrait = compute_metrics(_dp, 412, 800, hints_enabled=True)
+    landscape = compute_metrics(_dp, 800, 412, hints_enabled=True)
+
+    assert portrait["landscape"] is False
+    assert landscape["landscape"] is True
+    assert landscape["content_top"] < portrait["content_top"]
+    assert landscape["content_spacing"] < portrait["content_spacing"]
+
+
 def test_responsive_controller_computes_metrics_before_view_attachment():
     state = _responsive_state()
     controller = state["controller"]
@@ -161,11 +200,14 @@ def test_responsive_controller_metrics_follow_hints_and_native_ad_height():
 
     state["hints_enabled"][0] = True
     state["native_ad_height"][0] = 180
+    state["font_scale"][0] = 1.3
     updated = controller.metrics()
 
     assert without_hints["product_hint_h"] == 0
-    assert updated["product_hint_h"] == 60
+    assert updated["product_hint_h"] > 60
     assert updated["ad_h"] > without_hints["ad_h"]
+    assert updated["font_scale"] == 1.3
+    assert updated["field_h"] > without_hints["field_h"]
 
 
 def test_responsive_controller_applies_shell_and_tab_metrics():

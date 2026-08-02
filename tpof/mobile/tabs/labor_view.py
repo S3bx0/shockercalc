@@ -142,13 +142,13 @@ class LaborTabViewCompositionMixin:
             orientation="horizontal",
             spacing=dp(8),
             size_hint_y=None,
-            height=dp(46),
+            height=dp(50),
         )
         highways_button = MDRaisedButton(
             text=self._translate("labor_highways_off"),
             size_hint_x=0.5,
             size_hint_y=None,
-            height=dp(44),
+            height=dp(48),
             font_size="13sp",
             on_release=lambda *_: self.toggle_highways(),
         )
@@ -156,7 +156,7 @@ class LaborTabViewCompositionMixin:
             text=self._translate("labor_additional_off"),
             size_hint_x=0.5,
             size_hint_y=None,
-            height=dp(44),
+            height=dp(48),
             font_size="13sp",
             on_release=lambda *_: self.toggle_additional(),
         )
@@ -231,7 +231,7 @@ class LaborTabViewCompositionMixin:
             size_hint_y=None,
             height=dp(44),
             theme_text_color="Custom",
-            text_color=self._total_color,
+            text_color=self.result_color(),
         )
         result_card.add_widget(total_label)
         currency_note = MDLabel(

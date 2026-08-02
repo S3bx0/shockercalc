@@ -63,6 +63,7 @@ class FreezingTabController(
         menu_text_color: Callable[[], Any],
         divider_color: Callable[[], Any],
         hints_enabled: Callable[[], bool],
+        announce_result: Callable[[str], bool] | None = None,
     ) -> None:
         self._catalog = catalog
         self._categories = categories
@@ -93,6 +94,7 @@ class FreezingTabController(
         self._menu_text_color = menu_text_color
         self._divider_color = divider_color
         self._hints_enabled = hints_enabled
+        self._announce_result = announce_result or (lambda _message: False)
 
         self._initialize_product_selection()
         self.mass_unit = "kg"
@@ -104,6 +106,9 @@ class FreezingTabController(
         """Return the built tab scroll widget."""
 
         return self.view.scroll if self.view is not None else None
+
+    def result_color(self) -> Any:
+        return self._total_color() if callable(self._total_color) else self._total_color
 
     def hint_field_items(self) -> tuple[tuple[Any, str], ...]:
         """Return the freezing fields and their contextual hint keys."""

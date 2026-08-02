@@ -41,6 +41,7 @@ class ValvesTabController(
         menu_factory: Callable[..., Any],
         is_compact: Callable[[], bool],
         menu_text_color: Callable[[], Any],
+        announce_result: Callable[[str], bool] | None = None,
     ) -> None:
         self._translate = translate
         self._card_bg = card_bg
@@ -61,6 +62,7 @@ class ValvesTabController(
         self._menu_factory = menu_factory
         self._is_compact = is_compact
         self._menu_text_color = menu_text_color
+        self._announce_result = announce_result or (lambda _message: False)
 
         self.valve_type = "Maxi Elebar"
         self.input_mode = "K"
@@ -74,6 +76,9 @@ class ValvesTabController(
         """Return the tab scroll widget after the view has been built."""
 
         return None if self.view is None else self.view.scroll
+
+    def result_color(self) -> Any:
+        return self._total_color() if callable(self._total_color) else self._total_color
 
     @staticmethod
     def _dp(value: float) -> float:
@@ -231,6 +236,7 @@ class ValvesTabController(
     def apply_theme(self) -> None:
         if self.view is None:
             return
+        self.view.count_label.text_color = self.result_color()
         for button, variant in (
             (self.view.buy_button, "pro"),
             (self.view.watch_button, "ice"),

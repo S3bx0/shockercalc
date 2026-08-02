@@ -1,9 +1,9 @@
 # Zależności warstwy mobilnej (Android via Buildozer)
 # Uwaga: instalacja `kivy` i `kivymd` na desktopie — opcjonalna,
 # do testów lokalnych UI. Sam build APK robi Buildozer w WSL/Linux.
-Pillow==12.2.0
+Pillow==12.3.0
 reportlab==5.0.0
-pypdf==6.13.3
+pypdf==6.14.2
 kivy==2.3.1
 kivymd==1.2.0
 certifi==2026.6.17

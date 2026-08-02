@@ -6,6 +6,40 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Dodano
+
+- Dodano pierwszą warstwę dostępności Android: lokalizowane opisy aktywnej
+  karty dla TalkBack, grzeczne komunikaty o zmianie ekranu, wynikach i błędach
+  oraz osobny natywny `AccessibilityService` poza klasą Activity.
+- Responsywny układ uwzględnia skalę tekstu systemowego do 200%, wariant
+  landscape i minimalne cele interaktywne 48 dp. Palety przycisków i wyników
+  mają automatyczne testy kontrastu WCAG 4,5:1.
+- CI wykonuje pełne testy z minimalnym pokryciem 50%, audyt zależności przez
+  `pip-audit` i skan pełnej historii pod kątem sekretów przez Gitleaks.
+  Rzeczywiste piny AAB mają osobny manifest; znane problemy upstreamowego
+  Pillow 11.3.0 są jawnie ograniczone wyjątkiem wygasającym 31 sierpnia 2026,
+  a każda nowa podatność nadal zatrzymuje CI.
+- Dodano checklistę ręcznej weryfikacji TalkBack, Switch Access, skalowania
+  tekstu, orientacji i kontrastu na urządzeniu Android.
+
+### Zmieniono
+
+- Zaktualizowano Pillow do 12.3.0, pypdf do 6.14.2, ttkbootstrap do 1.20.4,
+  Ruff do 0.15.22 i mypy do 2.3.0. Android zachowuje Pillow 11.3.0 wymagane
+  przez oficjalną recepturę python-for-android 2026.05.09 do czasu osobnego
+  testu bezpiecznej receptury 12.3.0.
+
+### Naprawiono
+
+- Fallback szyfrowania PDF rozpoznaje nową i starszą sygnaturę `encrypt()`,
+  nie maskuje błędów `TypeError` z wnętrza biblioteki i zachowuje zgodność z
+  prostymi wrapperami przyjmującymi argumenty pozycyjne.
+
+### Testy
+
+- Pełna suita zawiera 464 testy i utrzymuje 55,58% mierzonego pokrycia przy
+  twardym progu 50%.
+
 ## [1.5.13] - 2026-08-01
 
 ### Dodano

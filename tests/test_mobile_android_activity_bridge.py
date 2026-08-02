@@ -18,6 +18,8 @@ class FakeActivity:
         self.pending_shortcut = "labor"
         self.shared_files: list[tuple[str, str, str, str]] = []
         self.feedback_emails: list[tuple[str, str, str]] = []
+        self.accessibility_descriptions: list[str] = []
+        self.accessibility_announcements: list[str] = []
 
     def setActiveAdTab(self, tab: str) -> None:
         self.active_tabs.append(tab)
@@ -53,6 +55,12 @@ class FakeActivity:
     ) -> None:
         self.feedback_emails.append((recipient, subject, body))
 
+    def configureAccessibility(self, description: str) -> None:
+        self.accessibility_descriptions.append(description)
+
+    def announceForAccessibility(self, message: str) -> None:
+        self.accessibility_announcements.append(message)
+
 
 def test_bridge_delegates_native_activity_contract():
     activity = FakeActivity()
@@ -63,6 +71,8 @@ def test_bridge_delegates_native_activity_contract():
 
     assert bridge.activity() is activity
     assert bridge.set_active_ad_tab("valves") is True
+    assert bridge.configure_accessibility("Ekran zaworów") is True
+    assert bridge.announce_for_accessibility("Wynik: 4 zawory") is True
     assert bridge.consume_shortcut_tab() == "labor"
     assert bridge.consume_shortcut_tab() is None
     assert bridge.banner_height_dp() == 72
@@ -89,6 +99,8 @@ def test_bridge_delegates_native_activity_contract():
     )
 
     assert activity.active_tabs == ["valves"]
+    assert activity.accessibility_descriptions == ["Ekran zaworów"]
+    assert activity.accessibility_announcements == ["Wynik: 4 zawory"]
     assert activity.privacy_form_calls == 1
     assert activity.shared_files == [
         (
@@ -111,6 +123,9 @@ def test_bridge_is_safe_noop_off_android():
     )
 
     assert bridge.set_active_ad_tab("labor") is False
+    assert bridge.configure_accessibility("Ekran robocizny") is False
+    assert bridge.announce_for_accessibility("Wynik") is False
+    assert bridge.announce_for_accessibility("  ") is False
     assert bridge.consume_shortcut_tab() is None
     assert bridge.banner_height_dp() == 0
     assert bridge.resolved_banner_height(False, 64) == 64
@@ -149,12 +164,20 @@ def test_bridge_contains_failures_for_optional_ad_and_share_calls():
         ) -> None:
             raise RuntimeError(recipient)
 
+        def configureAccessibility(self, description: str) -> None:
+            raise RuntimeError(description)
+
+        def announceForAccessibility(self, message: str) -> None:
+            raise RuntimeError(message)
+
     bridge = AndroidActivityBridge(
         is_android=True,
         activity_loader=BrokenActivity,
     )
 
     assert bridge.set_active_ad_tab("freezing") is False
+    assert bridge.configure_accessibility("bad") is False
+    assert bridge.announce_for_accessibility("bad") is False
     assert bridge.banner_height_dp() == 0
     assert bridge.resolved_banner_height(False, 64) == 64
     assert bridge.share_file("bad.pdf", "application/pdf", "x", "y") is False

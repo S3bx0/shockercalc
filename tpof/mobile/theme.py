@@ -55,9 +55,35 @@ def menu_text_color(dark: bool):
     return (0.94, 0.97, 1.0, 1) if dark else (0.12, 0.14, 0.16, 1)
 
 
+def result_text_color(dark: bool):
+    """High-contrast green for result totals on dark and light cards."""
+
+    return (0.24, 0.86, 0.64, 1) if dark else (0.0, 0.34, 0.20, 1)
+
+
+def relative_luminance(color: tuple[float, ...]) -> float:
+    """Return WCAG relative luminance for an RGB/RGBA color."""
+
+    def linear(channel: float) -> float:
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    red, green, blue = color[:3]
+    return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+
+
+def contrast_ratio(foreground: tuple[float, ...], background: tuple[float, ...]) -> float:
+    """Return the WCAG contrast ratio between two opaque colors."""
+
+    lighter, darker = sorted(
+        (relative_luminance(foreground), relative_luminance(background)),
+        reverse=True,
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
 _BUTTON_PALETTES = {
     "primary": ((0.04, 0.42, 0.68, 1), (1, 1, 1, 1)),
-    "ice": ((0.04, 0.56, 0.72, 1), (0.94, 1.0, 1.0, 1)),
+    "ice": ((0.03, 0.42, 0.56, 1), (0.94, 1.0, 1.0, 1)),
     "dark": ((0.08, 0.12, 0.18, 1), (1.0, 0.58, 0.58, 1)),
     "muted": ((0.10, 0.18, 0.24, 1), (0.72, 0.86, 0.90, 1)),
     "pro": ((0.05, 0.48, 0.72, 1), (1, 1, 1, 1)),
@@ -184,6 +210,9 @@ class ThemeSyncController:
 
     def menu_text_color(self):
         return menu_text_color(self._is_dark())
+
+    def result_text_color(self):
+        return result_text_color(self._is_dark())
 
     def style_button(self, button: Any, variant: str = "primary") -> None:
         style_app_button(button, variant)

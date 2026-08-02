@@ -263,9 +263,45 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
 def test_lint_workflow_runs_full_mypy_baseline():
     workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
 
-    assert "mypy==2.1.0" in workflow
+    requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+
+    assert "mypy==2.3.0" in requirements
+    assert "-r requirements.txt -r requirements-dev.txt" in workflow
+    assert "python -m pytest" in workflow
+    assert "--cov-fail-under=50" in (
+        ROOT / "pyproject.toml"
+    ).read_text(encoding="utf-8")
     assert "python -m mypy\n" in workflow
     assert "python -m mypy ." in workflow
+
+
+def test_lint_workflow_audits_dependencies_and_secrets():
+    workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
+
+    assert "pip-audit==2.10.1" in workflow
+    assert "python -m pip_audit" in workflow
+    assert "requirements-android-audit.txt" in workflow
+    assert '"2026-08-31"' in workflow
+    assert "--ignore-vuln PYSEC-2026-3496" in workflow
+    assert "gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc" in workflow
+    assert "fetch-depth: 0" in workflow
+
+
+def test_android_audit_manifest_matches_embedded_security_sensitive_pins():
+    manifest = (ROOT / "requirements-android-audit.txt").read_text(encoding="utf-8")
+    spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
+
+    for requirement in (
+        "kivy==2.3.1",
+        "kivymd==1.2.0",
+        "Pillow==11.3.0",
+        "fpdf2==2.8.7",
+        "fonttools==4.63.0",
+        "defusedxml==0.7.1",
+        "certifi==2026.6.17",
+    ):
+        assert requirement in manifest
+        assert requirement.lower() in spec.lower()
 
 
 def test_p4a_hook_configures_firebase_only_with_matching_config(tmp_path):

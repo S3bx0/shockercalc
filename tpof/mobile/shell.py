@@ -100,7 +100,7 @@ class MobileShellBuilder:
         icon_size: str,
         on_release: Callable[[], None],
         active: bool = False,
-        size_dp: int = 44,
+        size_dp: int = 48,
     ) -> tuple[Any, Any]:
         dp = self._dp
         chip = self._factories.frost_chip(
@@ -137,13 +137,13 @@ class MobileShellBuilder:
             active=True,
             size_hint_x=None,
             size_hint_y=None,
-            width=dp(44),
-            height=dp(44),
+            width=dp(48),
+            height=dp(48),
         )
         toolbar_snowflake = factories.icon_button(
             icon="snowflake",
             size_hint=(1, 1),
-            width=dp(44),
+            width=dp(48),
             icon_size="28sp",
             theme_text_color="Custom",
             text_color=BRAND_ICE,
@@ -251,7 +251,7 @@ class MobileShellBuilder:
         footer_bar = factories.box_layout(
             orientation="horizontal",
             size_hint_y=None,
-            height=dp(48),
+            height=dp(56),
             padding=[dp(12), dp(4), dp(12), dp(4)],
             spacing=dp(8),
             md_bg_color=callbacks.footer_bg(),
@@ -268,7 +268,7 @@ class MobileShellBuilder:
             size_hint_x=None,
             width=dp(128),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(48),
             font_size="11sp",
             pos_hint={"center_y": 0.5},
             on_release=lambda *_args: callbacks.on_buy_pro(),

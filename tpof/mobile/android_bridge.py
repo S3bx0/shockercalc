@@ -69,6 +69,30 @@ class AndroidActivityBridge:
             log.debug("Odczyt skrótu aplikacji nie powiódł się", exc_info=True)
             return None
 
+    def configure_accessibility(self, description: str) -> bool:
+        """Expose the current Kivy-screen summary to Android TalkBack."""
+
+        if not self._is_android:
+            return False
+        try:
+            self.activity().configureAccessibility(str(description))
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.debug("Konfiguracja TalkBack nie powiodła się", exc_info=True)
+            return False
+
+    def announce_for_accessibility(self, message: str) -> bool:
+        """Politely announce an important UI message through TalkBack."""
+
+        if not self._is_android or not str(message).strip():
+            return False
+        try:
+            self.activity().announceForAccessibility(str(message).strip())
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.debug("Komunikat TalkBack nie powiódł się", exc_info=True)
+            return False
+
     def banner_height_dp(self) -> int:
         if not self._is_android:
             return 0
