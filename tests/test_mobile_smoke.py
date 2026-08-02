@@ -464,6 +464,30 @@ def test_pdf_output_dir_na_desktopie_zwraca_cwd():
     assert out.is_dir()
 
 
+def test_angielskie_etykiety_kategorii_i_produktow():
+    from tpof.mobile.i18n import display_category, display_product
+
+    assert display_category("en", "owoce") == "fruit"
+    assert display_product("en", "Arbuz") == "Watermelon"
+    assert display_product("en", "Brzoskwinie świeże") == "Fresh peaches"
+    assert display_product("pl", "Arbuz") == "Arbuz"
+
+
+def test_angielska_mapa_produktow_obejmuje_cala_baze():
+    from tpof.core.data_loader import load_products
+    from tpof.mobile.i18n import PRODUCT_LABELS_EN
+    from tpof.mobile.paths import DATA_PATH
+
+    catalog = load_products(DATA_PATH)
+    missing = [
+        product.nazwa
+        for products in catalog.values()
+        for product in products
+        if product.nazwa not in PRODUCT_LABELS_EN
+    ]
+    assert missing == []
+
+
 def test_main_bez_kivymd_rzuca_systemexit(monkeypatch):
     """Gdy KivyMD nie jest dostępne, main() powinien zakończyć się czytelnym SystemExit."""
     import builtins
