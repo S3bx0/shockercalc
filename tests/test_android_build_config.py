@@ -283,7 +283,10 @@ def test_lint_workflow_audits_dependencies_and_secrets():
     assert "requirements-android-audit.txt" in workflow
     assert '"2026-08-31"' in workflow
     assert "--ignore-vuln PYSEC-2026-3496" in workflow
-    assert "gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc" in workflow
+    assert "gitleaks_8.30.1_linux_x64.tar.gz" in workflow
+    assert "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in workflow
+    assert "sha256sum --check --strict" in workflow
+    assert "./gitleaks git . --redact --no-banner" in workflow
     assert "fetch-depth: 0" in workflow
 
 
