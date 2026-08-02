@@ -5,6 +5,12 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+    inputs:
+      upload_extra_artifacts:
+        description: Upload package size report and build logs
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       distribute_to_firebase:
@@ -22,6 +28,7 @@ jobs:
     name: Buildozer (debug APK)
     runs-on: ubuntu-24.04
     env:
+      UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts || 'false' }}
       # Savannah intermittently returns HTTP 502. python-for-android supports
       # recipe URL overrides, so use FreeType's official SourceForge mirror
       # and verify the archive against the publisher-provided SHA-256.
@@ -201,7 +208,7 @@ jobs:
           python tools/verify_android_firebase_manifest.py "$APK_PATH"
 
       - name: Upload buildozer log (on failure)
-        if: failure()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: buildozer-log
@@ -210,7 +217,7 @@ jobs:
           retention-days: 7
 
       - name: Generate package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         run: |
           APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
           if [ -n "$APK_PATH" ]; then
@@ -218,7 +225,7 @@ jobs:
           fi
 
       - name: Upload package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: apk-size-report
