@@ -326,6 +326,7 @@ class AppControllerCompositionMixin:
             categories=categories,
             translate=self._t,
             display_category=self._localization.display_category,
+            display_product=self._localization.display_product,
             card_bg=self._theme_controller.card_bg,
             total_color=STAGE_COLORS["total"],
             numeric_input_filter=_numeric_input_filter,

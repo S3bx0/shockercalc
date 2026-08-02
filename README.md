@@ -5,7 +5,7 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 442 testy automatyczne, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 447 testów automatycznych, statyczna kontrola Ruff i mypy,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium

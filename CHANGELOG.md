@@ -22,6 +22,15 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano trzy skróty launchera prowadzące bezpośrednio do kart Chłodnicze,
   Zawory i Robocizna.
 
+### Naprawiono
+
+- Mobilny selektor produktów korzysta z bezpiecznych aliasów ASCII dla grafik
+  wiśni i bakłażana, dzięki czemu Android nie musi otwierać tych plików przez
+  ścieżki zawierające polskie znaki.
+- Angielska wersja selektora pokazuje i wyszukuje angielskie nazwy wszystkich
+  produktów dostępnych w aplikacji. Polskie nazwy z Table3 pozostają stabilnymi
+  identyfikatorami używanymi przez obliczenia i zapis ustawień.
+
 ## [1.5.12] - 2026-07-30
 
 ### Dodano

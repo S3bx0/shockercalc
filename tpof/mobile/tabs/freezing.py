@@ -38,6 +38,7 @@ class FreezingTabController(
         categories: list[str],
         translate: Callable[..., str],
         display_category: Callable[[str | None], str],
+        display_product: Callable[[str | None], str],
         card_bg: Callable[[], Any],
         total_color: Any,
         numeric_input_filter: Callable[..., Any],
@@ -67,6 +68,7 @@ class FreezingTabController(
         self._categories = categories
         self._translate = translate
         self._display_category = display_category
+        self._display_product = display_product
         self._card_bg = card_bg
         self._total_color = total_color
         self._numeric_input_filter = numeric_input_filter
@@ -135,7 +137,9 @@ class FreezingTabController(
             else self._translate("choose_category")
         )
         view.product_button.text = (
-            self.selected_product or self._translate("choose_product")
+            self._display_product(self.selected_product)
+            if self.selected_product
+            else self._translate("choose_product")
         )
         view.image_placeholder_label.text = self._translate("image_placeholder")
         view.product_hint_label.text = self._translate("product_hint")

@@ -46,6 +46,19 @@ def test_safe_image_path_dla_istniejacego_produktu():
     assert path.endswith(".webp")
 
 
+def test_safe_image_path_uzywa_aliasu_ascii_dla_polskich_znakow():
+    from tpof.mobile.catalog import _safe_image_path
+
+    for name, alias in (
+        ("Bakłażan", "Baklazan.webp"),
+        ("Wiśnie kwaśne", "Wisnie kwasne.webp"),
+        ("Wiśnie słodkie", "Wisnie slodkie.webp"),
+    ):
+        path = _safe_image_path(name)
+        assert path is not None
+        assert path.endswith(alias)
+
+
 def test_safe_image_path_dla_nieistniejacego():
     from tpof.mobile.catalog import _safe_image_path
 
@@ -72,4 +85,22 @@ def test_wyszukiwanie_produktow_preferuje_poczatek_nazwy():
     assert _search_product_names(names, "morele") == [
         "Morele suszone",
         "Suszone morele",
+    ]
+
+
+def test_wyszukiwanie_produktow_obsluguje_angielskie_etykiety():
+    from tpof.mobile.catalog import _search_product_names
+
+    names = ["Bakłażan", "Wiśnie kwaśne", "Wiśnie słodkie"]
+    labels = {
+        "Bakłażan": "Eggplant",
+        "Wiśnie kwaśne": "Sour cherries",
+        "Wiśnie słodkie": "Sweet cherries",
+    }
+
+    assert _search_product_names(names, "egg", labels.__getitem__) == [
+        "Bakłażan"
+    ]
+    assert _search_product_names(names, "sweet", labels.__getitem__) == [
+        "Wiśnie słodkie"
     ]
