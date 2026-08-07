@@ -85,6 +85,11 @@ Stan realizacji 2026-08-01:
   każde nowe uprawnienie do czasu audytu. Następna bramka wymusza jawną blokadę
   cleartext traffic i pilnuje, aby nie pojawił się niezaudytowany Network
   Security Config;
+- **P0.6 walidacja finalnego backupu — naprawiona:** przebieg `31185098966`
+  zbudował poprawny podpisany AAB, lecz stary krok CI odczytał manifest
+  źródłowy sprzed scalania Gradle i zgłosił fałszywy błąd. Walidator odczytuje
+  teraz finalny manifest bezpośrednio z AAB przez Bundletool, a wariant APK
+  sprawdza finalny manifest scalony;
 - do pełnego zamknięcia technicznego pozostaje krótki test fizycznego ARM oraz
   API 35/36 na kandydacie odtworzonym z `main`.
 

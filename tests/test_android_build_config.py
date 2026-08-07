@@ -215,7 +215,9 @@ def test_workflows_pin_reproducible_build_tools():
         assert "Cache Buildozer build dir" not in workflow
         assert "Report runner storage after cache restore" in workflow
         assert "Verify Android backup policy" in workflow
-        assert "android:allowBackup=\"[Ff]alse\"" in workflow
+        assert "tools/verify_android_backup_policy.py" in workflow
+        assert "*/dists/*/src/main/AndroidManifest.xml" not in workflow
+        assert "UPLOAD_EXTRA_ARTIFACTS" in workflow
         assert "Verify final Android permission allowlist" in workflow
         assert "tools/verify_android_permissions.py" in workflow
         assert "Verify Android network security policy" in workflow
@@ -251,6 +253,8 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
     assert "bundletool-all-1.18.3.jar" in workflow
     assert "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29" in workflow
     assert 'validate --bundle="$AAB_PATH"' in workflow
+    assert "dump manifest" in workflow
+    assert 'final-AndroidManifest.xml' in workflow
     assert "Verify native libraries 16 KB alignment" in workflow
     assert "tools/verify_android_16kb_alignment.py" in workflow
     alignment_step = workflow.split(
@@ -258,6 +262,20 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
     )[1].split("- name:", maxsplit=1)[0]
     assert "if: always()" not in alignment_step
     assert "::warning::" not in alignment_step
+
+    for step_name in (
+        "Upload package size report",
+        "Upload sanitized buildozer log (on failure)",
+        "Upload 16 KB alignment report",
+        "Upload Play Console diagnostic files",
+    ):
+        step = workflow.split(f"- name: {step_name}", maxsplit=1)[1].split(
+            "- name:", maxsplit=1
+        )[0]
+        assert "env.UPLOAD_EXTRA_ARTIFACTS == 'true'" in step
+
+    aab_upload = workflow.split("- name: Upload AAB artifact", maxsplit=1)[1]
+    assert "if: always()" in aab_upload
 
 
 def test_lint_workflow_runs_full_mypy_baseline():

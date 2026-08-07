@@ -37,13 +37,19 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Naprawiono
 
+- Kontrola Android Auto Backup sprawdza teraz finalny manifest po scaleniu
+  Gradle, a dla wydania — manifest rzeczywiście zapakowany w AAB. Usuwa to
+  fałszywy błąd CI mimo poprawnego `android:allowBackup=false` w bundle.
+- APK/AAB pozostają zawsze dostępne jako artefakty CI, natomiast raporty
+  rozmiaru, wyrównania, logi i diagnostyka Play są opcjonalne przy ręcznym
+  uruchomieniu workflow, co ogranicza zużycie przestrzeni GitHub Actions.
 - Fallback szyfrowania PDF rozpoznaje nową i starszą sygnaturę `encrypt()`,
   nie maskuje błędów `TypeError` z wnętrza biblioteki i zachowuje zgodność z
   prostymi wrapperami przyjmującymi argumenty pozycyjne.
 
 ### Testy
 
-- Pełna suita zawiera 464 testy i utrzymuje 55,58% mierzonego pokrycia przy
+- Pełna suita zawiera 469 testów i utrzymuje 55,63% mierzonego pokrycia przy
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01

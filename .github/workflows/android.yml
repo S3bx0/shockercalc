@@ -16,6 +16,11 @@ on:
         description: Optional notes shown to Firebase testers
         required: false
         type: string
+      upload_extra_artifacts:
+        description: Upload size reports and diagnostic logs
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-apk:
@@ -26,6 +31,7 @@ jobs:
       # recipe URL overrides, so use FreeType's official SourceForge mirror
       # and verify the archive against the publisher-provided SHA-256.
       URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+      UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts == true }}
 
     steps:
       - name: Checkout repo
@@ -172,9 +178,12 @@ jobs:
 
       - name: Verify Android backup policy
         run: |
-          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
-          test -n "$MANIFEST_PATH"
-          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_backup_policy.py "$MERGED_MANIFEST"
 
       - name: Verify final Android permission allowlist
         run: |
@@ -201,7 +210,7 @@ jobs:
           python tools/verify_android_firebase_manifest.py "$APK_PATH"
 
       - name: Upload buildozer log (on failure)
-        if: failure()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: buildozer-log
@@ -210,7 +219,7 @@ jobs:
           retention-days: 7
 
       - name: Generate package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         run: |
           APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
           if [ -n "$APK_PATH" ]; then
@@ -218,7 +227,7 @@ jobs:
           fi
 
       - name: Upload package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: apk-size-report

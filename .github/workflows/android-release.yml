@@ -13,6 +13,12 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      upload_extra_artifacts:
+        description: Upload size, alignment, log and Play diagnostic reports
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-release:
@@ -25,6 +31,7 @@ jobs:
       URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
       BUNDLETOOL_URL: "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar"
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
+      UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts == true }}
 
     steps:
       - name: Checkout repo
@@ -196,9 +203,13 @@ jobs:
 
       - name: Verify Android backup policy
         run: |
-          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
-          test -n "$MANIFEST_PATH"
-          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          java -jar "$RUNNER_TEMP/bundletool.jar" dump manifest \
+            --bundle="$AAB_PATH" \
+            --module=base > "$RUNNER_TEMP/final-AndroidManifest.xml"
+          python tools/verify_android_backup_policy.py \
+            "$RUNNER_TEMP/final-AndroidManifest.xml"
 
       - name: Verify final Android permission allowlist
         run: |
@@ -228,7 +239,7 @@ jobs:
           python tools/verify_android_firebase_manifest.py "$MERGED_MANIFEST"
 
       - name: Collect Play Console diagnostic files
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         run: |
           set -eo pipefail
           python - <<'PY'
@@ -368,7 +379,7 @@ jobs:
             --report native-libs-16kb-report.txt
 
       - name: Sanitize buildozer log (on failure)
-        if: failure()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && failure()
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -391,7 +402,7 @@ jobs:
           PY
 
       - name: Generate package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         run: |
           AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
           if [ -n "$AAB_PATH" ]; then
@@ -399,7 +410,7 @@ jobs:
           fi
 
       - name: Upload package size report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aab-size-report
@@ -408,7 +419,7 @@ jobs:
           retention-days: 30
 
       - name: Upload sanitized buildozer log (on failure)
-        if: failure()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: buildozer-release-log
@@ -417,7 +428,7 @@ jobs:
           retention-days: 7
 
       - name: Upload 16 KB alignment report
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: native-libs-16kb-report
@@ -426,7 +437,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Play Console diagnostic files
-        if: always()
+        if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: play-console-diagnostics
