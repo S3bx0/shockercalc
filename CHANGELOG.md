@@ -28,6 +28,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
   zachowanym cieniem kontaktowym o banany, cebulę, ananasa, awokado, świeże
   brzoskwinie, granaty i truskawki. Świeże brzoskwinie mają również bezpieczny
   alias ASCII dla Androida.
+- Do tej samej serii dodano grejpfrut i agrest, zachowując przezroczyste tło,
+  pikselowy cień kontaktowy i budżet rozmiaru zasobów mobilnych.
 - Zaktualizowano Pillow do 12.3.0, pypdf do 6.14.2, ttkbootstrap do 1.20.4,
   Ruff do 0.15.22 i mypy do 2.3.0. Android zachowuje Pillow 11.3.0 wymagane
   przez oficjalną recepturę python-for-android 2026.05.09 do czasu osobnego

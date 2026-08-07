@@ -5,11 +5,11 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 ## Podsumowanie
 
 - Pliki WebP: 219
-- Laczy rozmiar katalogu `assets/images`: 8.97 MiB
-- Kandydaci high priority: 160
+- Laczy rozmiar katalogu `assets/images`: 8.89 MiB
+- Kandydaci high priority: 159
 - Kandydaci medium priority: 1
 - Kandydaci low priority: 9
-- Obrazy wygladajace jak szablon/karta: 160
+- Obrazy wygladajace jak szablon/karta: 159
 - Widoczne produkty mobilne: 208
 - Widoczne produkty bez grafiki: 0
 - Obrazy bez rekordu produktu: 4
@@ -25,7 +25,6 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 
 | Priorytet | Plik | Rozmiar | Heurystyka | Powody |
 |---|---:|---:|---|---|
-| high | `Agrest.webp` | 56.5 KiB | card-template | widoczny szablon karty lub biala etykieta |
 | high | `Tuńczyk błękitnopłetwy.webp` | 33.5 KiB | card-template | widoczny szablon karty lub biala etykieta |
 | high | `Makrela atlantycka.webp` | 32.7 KiB | card-template | widoczny szablon karty lub biala etykieta |
 | high | `Śledź wędzony.webp` | 32.5 KiB | card-template | widoczny szablon karty lub biala etykieta |
@@ -85,6 +84,7 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 | high | `Szparagi.webp` | 27.3 KiB | card-template | widoczny szablon karty lub biala etykieta |
 | high | `Wołowina, udziec, pełny kawałek, chudy i tłusty.webp` | 27.3 KiB | card-template | widoczny szablon karty lub biala etykieta |
 | high | `Endywia.webp` | 27.3 KiB | card-template | widoczny szablon karty lub biala etykieta |
+| high | `Rabarbar.webp` | 27.3 KiB | card-template | widoczny szablon karty lub biala etykieta |
 
 ## Najwieksze pliki
 
@@ -104,7 +104,7 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 | `Woda gazowana.webp` | 119.1 KiB | ok |
 | `Limonka.webp` | 116.5 KiB | ok |
 | `Brokuły.webp` | 114.6 KiB | ok |
-| `Grejpfrut.webp` | 113.7 KiB | ok |
+| `Kantalupa.webp` | 112.1 KiB | ok |
 
 ## Pokrycie katalogu mobilnego
 
