@@ -506,8 +506,12 @@ android {}
         encoding="utf-8",
     )
 
-    assert p4a_hooks._patch_android_abi_filters(project) == 1
-    assert p4a_hooks._patch_android_abi_filters(project) == 0
+    assert p4a_hooks._patch_android_abi_filters(
+        project, build_arch="arm64-v8a"
+    ) == 1
+    assert p4a_hooks._patch_android_abi_filters(
+        project, build_arch="arm64-v8a"
+    ) == 0
     patched = gradle.read_text(encoding="utf-8")
 
     assert patched.count("Refrigeration Calc supported ABIs") == 1
@@ -539,6 +543,12 @@ android {}
     assert "abiFilters.clear()" in patched
     assert "abiFilters 'x86_64'" in patched
     assert "abiFilters 'arm64-v8a'" not in patched
+
+
+def test_p4a_hook_reads_diagnostic_abi_from_environment(monkeypatch):
+    monkeypatch.setenv("BUILD_ARCH", "x86_64")
+
+    assert p4a_hooks._resolve_android_abis() == ("x86_64",)
 
 
 def test_p4a_hook_rejects_unknown_android_abi(tmp_path):
