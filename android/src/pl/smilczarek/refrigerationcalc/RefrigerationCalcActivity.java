@@ -26,6 +26,7 @@ public class RefrigerationCalcActivity extends PythonActivity {
     private FileShareService fileShareService;
     private FeedbackService feedbackService;
     private AppShortcutsService appShortcutsService;
+    private AccessibilityService accessibilityService;
     private FrameLayout splashOverlay;
     private RefrigerationSplashView splashView;
 
@@ -33,6 +34,7 @@ public class RefrigerationCalcActivity extends PythonActivity {
     protected void onCreate(Bundle savedInstanceState) {
         getWindow().setBackgroundDrawableResource(android.R.color.white);
         super.onCreate(savedInstanceState);
+        accessibilityService = new AccessibilityService(this);
         appShortcuts().initialize(getIntent());
         configureEdgeToEdge();
         showAnimatedIntro();
@@ -308,6 +310,14 @@ public class RefrigerationCalcActivity extends PythonActivity {
 
     public String consumePendingShortcutTab() {
         return appShortcuts().consumePendingTargetTab();
+    }
+
+    public void configureAccessibility(final String description) {
+        accessibilityService.configureRoot(description);
+    }
+
+    public void announceForAccessibility(final String message) {
+        accessibilityService.announce(message);
     }
 
     private boolean isDebugBuild() {

@@ -11,6 +11,8 @@ from tpof.mobile.tabs.freezing_view import FreezingTabView
 class _MassUnitPresenter(Protocol):
     def set_mass_unit(self, unit: str) -> None: ...
 
+    def result_color(self) -> Any: ...
+
 
 class FreezingTabPresentationMixin:
     """Apply shared theme and layout state to an already-built freezing view."""
@@ -24,7 +26,9 @@ class FreezingTabPresentationMixin:
     def apply_theme(self) -> None:
         if self.view is None:
             return
-        cast(_MassUnitPresenter, self).set_mass_unit(self.mass_unit)
+        presenter = cast(_MassUnitPresenter, self)
+        self.view.total_label.text_color = presenter.result_color()
+        presenter.set_mass_unit(self.mass_unit)
         for button, variant in (
             (self.view.category_button, "primary"),
             (self.view.product_button, "primary"),

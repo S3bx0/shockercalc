@@ -13,6 +13,7 @@ from tpof.mobile.paths import IMAGES_DIR
 
 FEATURED_MOBILE_CATEGORIES = ("owoce", "warzywa")
 _POLISH_SORT_TRANSLATION = str.maketrans({"ł": "l", "Ł": "L"})
+_MOBILE_ASCII_IMAGES_DIR = IMAGES_DIR / "mobile_ascii"
 
 
 def _mobile_sort_key(value: str) -> str:
@@ -57,11 +58,25 @@ def _mobile_product_names(catalog: dict[str, list[Product]], category: str) -> l
 
 
 def _safe_image_path(nazwa: str) -> str | None:
-    """Zwraca ścieżkę do .webp/.png/.jpg dla produktu albo None."""
-    for ext in (".webp", ".png", ".jpg", ".jpeg"):
-        candidate = IMAGES_DIR / f"{nazwa}{ext}"
-        if candidate.exists():
-            return str(candidate)
+    """Zwraca ścieżkę obrazu, z bezpiecznym aliasem ASCII na Androidzie.
+
+    Część wersji Androida/Kivy nie otwiera poprawnie plików z polskimi znakami
+    po rozpakowaniu ``private.tar``. Najpierw zachowujemy zgodność z pełną nazwą
+    katalogową, a następnie próbujemy stabilnego aliasu bez znaków diakrytycznych.
+    """
+
+    normalized = unicodedata.normalize(
+        "NFKD", str(nazwa or "").translate(_POLISH_SORT_TRANSLATION)
+    )
+    ascii_name = "".join(
+        char for char in normalized if not unicodedata.combining(char)
+    )
+    locations = ((_MOBILE_ASCII_IMAGES_DIR, ascii_name), (IMAGES_DIR, nazwa))
+    for directory, stem in locations:
+        for ext in (".webp", ".png", ".jpg", ".jpeg"):
+            candidate = directory / f"{stem}{ext}"
+            if candidate.exists():
+                return str(candidate)
     return None
 
 
@@ -72,24 +87,40 @@ def _search_key(value: str) -> str:
     return text.replace("ł", "l")
 
 
-def _search_product_names(names: list[str], query: str) -> list[str]:
-    """Filtruje produkty, preferując początek nazwy i początek słowa."""
+def _search_product_names(
+    names: list[str],
+    query: str,
+    display_name: Callable[[str], str] | None = None,
+) -> list[str]:
+    """Filtruje produkty po nazwie kanonicznej i aktualnej etykiecie UI."""
+
+    display_name = display_name or (lambda name: name)
     normalized_query = _search_key(query).strip()
     if not normalized_query:
         return list(names)
     tokens = normalized_query.split()
     matches = []
     for index, name in enumerate(names):
-        normalized_name = _search_key(name)
-        if not all(token in normalized_name for token in tokens):
+        search_names = tuple(
+            dict.fromkeys((_search_key(display_name(name)), _search_key(name)))
+        )
+        matching_names = [
+            candidate
+            for candidate in search_names
+            if all(token in candidate for token in tokens)
+        ]
+        if not matching_names:
             continue
-        words = normalized_name.split()
-        if normalized_name.startswith(normalized_query):
-            rank = 0
-        elif any(word.startswith(tokens[0]) for word in words):
-            rank = 1
-        else:
-            rank = 2
+        rank = min(
+            0
+            if candidate.startswith(normalized_query)
+            else (
+                1
+                if any(word.startswith(tokens[0]) for word in candidate.split())
+                else 2
+            )
+            for candidate in matching_names
+        )
         matches.append((rank, index, name))
     return [name for _rank, _index, name in sorted(matches)]
 

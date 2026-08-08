@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shocker-calc"
-version = "1.5.12"
+version = "1.5.13"
 description = "Refrigeration Calc — kalkulator zapotrzebowania chłodu dla procesu zamrażania (desktop + mobile)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,15 +20,15 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "Pillow==12.2.0",
+  "Pillow==12.3.0",
   "reportlab==5.0.0",
-  "pypdf==6.13.3",
+  "pypdf==6.15.0",
 ]
 
 [project.optional-dependencies]
-desktop = ["ttkbootstrap==1.20.3"]
+desktop = ["ttkbootstrap==1.20.4"]
 mobile = ["kivy==2.3.1", "kivymd==1.2.0"]
-dev = ["pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.15.20", "mypy==2.1.0"]
+dev = ["pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.15.22", "mypy==2.3.0"]
 
 [project.scripts]
 shocker-calc = "tpof.desktop.app:main"
@@ -42,7 +42,7 @@ tpof = ["../assets/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=tpof --cov=tools --cov-report=term-missing --cov-fail-under=50"
 
 [tool.ruff]
 line-length = 100
@@ -76,6 +76,7 @@ files = [
     "tpof/mobile/user_data.py",
     "tpof/mobile/entitlements.py",
     "tpof/mobile/paths.py",
+    "tpof/mobile/accessibility.py",
     "tpof/mobile/android_bridge.py",
     "tpof/mobile/pdf_export.py",
     "tpof/mobile/services/monetization.py",

@@ -23,25 +23,37 @@ def compute_metrics(
     *,
     hints_enabled: bool,
     native_ad_height_dp: float = 0,
+    font_scale: float = 1.0,
 ) -> dict:
     narrow = width_dp < 360
     compact = width_dp < 400
     short = height_dp < 720
+    landscape = width_dp > height_dp
+    font_scale = clamp(float(font_scale), 1.0, 2.0)
+    content_height_scale = 1.0 + (font_scale - 1.0) * 0.70
+    chrome_height_scale = 1.0 + (font_scale - 1.0) * 0.35
+
+    def content_h(value: float, minimum: float = 0) -> float:
+        return max(minimum, round(value * content_height_scale, 2))
+
+    def chrome_h(value: float, minimum: float = 0) -> float:
+        return max(minimum, round(value * chrome_height_scale, 2))
+
     text_scale = clamp(width_dp / 412.0, 0.88, 1.06)
     product_horizontal = width_dp >= 370
-    product_hint_h = 30 if hints_enabled else 0
+    product_hint_h = content_h(30) if hints_enabled else 0
 
     card_pad = 10 if narrow else 12 if compact else 14
     card_pad_x = card_pad
     card_pad_top = card_pad + (8 if compact else 10)
     card_pad_bottom = card_pad + (5 if compact else 6)
     content_pad = 10 if narrow else 14 if compact else 16
-    stage_row_h = 66 if compact or short else 74
-    action_h = 64 if compact else 68
-    title_h = 42 if compact else 46
-    total_h = 44 if compact else 50
+    stage_row_h = content_h(66 if compact or short else 74)
+    action_h = content_h(64 if compact else 68)
+    title_h = content_h(42 if compact else 46)
+    total_h = content_h(44 if compact else 50)
     result_space = 8 if compact or short else 10
-    field_h = 54 if compact or short else 60
+    field_h = content_h(54 if compact or short else 60, 48)
     card_spacing = 10 if compact else 12
     native_ad_h = native_ad_height_dp
     reserved_ad_h = max(64 if compact else 70, native_ad_h + 8 if native_ad_h else 0)
@@ -86,31 +98,33 @@ def compute_metrics(
         "narrow": narrow,
         "compact": compact,
         "short": short,
+        "landscape": landscape,
+        "font_scale": font_scale,
         "text_scale": text_scale,
         "product_horizontal": product_horizontal,
         "content_pad": dp(content_pad),
-        "content_top": dp(18 if compact else 20),
-        "content_bottom": dp(26 if compact else 30),
-        "content_spacing": dp(14 if compact or short else 16),
+        "content_top": dp(12 if landscape else 18 if compact else 20),
+        "content_bottom": dp(18 if landscape else 26 if compact else 30),
+        "content_spacing": dp(10 if landscape else 14 if compact or short else 16),
         "card_pad": dp(card_pad),
         "card_pad_x": dp(card_pad_x),
         "card_pad_top": dp(card_pad_top),
         "card_pad_bottom": dp(card_pad_bottom),
         "card_spacing": dp(card_spacing),
-        "toolbar_h": dp(62 if narrow else 66 if compact else 72),
+        "toolbar_h": dp(chrome_h(62 if narrow else 66 if compact else 72, 56)),
         "toolbar_icon_w": dp(38 if narrow else 42 if compact else 44),
-        "toolbar_btn_w": dp(40 if narrow else 42 if compact else 44),
+        "toolbar_btn_w": dp(48),
         "toolbar_icon_sp": 24 if narrow else 26 if compact else 28,
         "toolbar_btn_sp": 23 if narrow else 24 if compact else 26,
         "toolbar_title_sp": int(14 * text_scale) if narrow else int(15 * text_scale) if compact else 16,
-        "bottom_nav_h": dp(64 if compact else 70),
+        "bottom_nav_h": dp(chrome_h(64 if compact else 70, 64)),
         "bottom_tab_icon": dp(52 if compact else 56),
         "bottom_tab_sp": 11 if compact else 12,
         "title_h": dp(title_h),
         "title_sp": int(20 * text_scale),
         "body_sp": int(15 * text_scale),
         "caption_sp": int(12 * text_scale),
-        "button_h": dp(46 if compact else 52),
+        "button_h": dp(content_h(48 if compact else 52, 48)),
         "button_sp": int(14 * text_scale),
         "field_h": dp(field_h),
         "params_h": dp(params_h),
@@ -124,22 +138,22 @@ def compute_metrics(
         "placeholder_bottom": dp(20 if compact else 28),
         "placeholder_icon_sp": 36 if compact else 42,
         "action_h": dp(action_h),
-        "action_button_h": dp(44 if compact else 48),
+        "action_button_h": dp(content_h(48, 48)),
         "action_sp": int(13 * text_scale) if compact else int(14 * text_scale),
         "results_h": dp(result_h),
         "results_spacing": dp(result_space),
         "total_h": dp(total_h),
         "total_sp": int(20 * text_scale),
         "stage_row_h": dp(stage_row_h),
-        "stage_head_h": dp(34 if compact else 38),
+        "stage_head_h": dp(content_h(38 if compact else 42, 38)),
         "stage_icon_w": dp(34 if compact else 38),
         "stage_icon_sp": 22 if compact else 24,
         "unit_w": dp(64 if compact else 72),
-        "unit_h": dp(38 if compact else 42),
-        "footer_h": dp(42 if compact else 46),
+        "unit_h": dp(content_h(48, 48)),
+        "footer_h": dp(chrome_h(56, 56)),
         "footer_sp": int(11 * text_scale),
         "pro_w": dp(116 if compact else 128),
-        "pro_h": dp(28),
+        "pro_h": dp(48),
         "ad_h": dp(reserved_ad_h),
     }
 
@@ -217,6 +231,7 @@ class ResponsiveLayoutController:
         bottom_nav_bg: Callable[[], Any],
         refresh_privacy_button: Callable[[], None],
         apply_freezing_layout: Callable[[dict[str, Any]], None],
+        font_scale: Callable[[], float] = lambda: 1.0,
     ) -> None:
         self._dp = dp
         self._get_screen_size = get_screen_size
@@ -226,6 +241,7 @@ class ResponsiveLayoutController:
         self._bottom_nav_bg = bottom_nav_bg
         self._refresh_privacy_button = refresh_privacy_button
         self._apply_freezing_layout = apply_freezing_layout
+        self._font_scale = font_scale
         self._view: ResponsiveLayoutView | None = None
 
     @property
@@ -248,6 +264,7 @@ class ResponsiveLayoutController:
             height_dp,
             hints_enabled=self._hints_enabled(),
             native_ad_height_dp=self._native_ad_height_dp(),
+            font_scale=self._font_scale(),
         )
 
     def sync_root_background(self, *_args: object) -> bool:

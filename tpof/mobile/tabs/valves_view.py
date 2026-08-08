@@ -153,13 +153,13 @@ class ValvesTabViewCompositionMixin:
             orientation="horizontal",
             spacing=dp(8),
             size_hint_y=None,
-            height=dp(44),
+            height=dp(48),
         )
         volume_mode_button = MDRaisedButton(
             text=self._translate("valve_mode_volume"),
             size_hint_x=0.5,
             size_hint_y=None,
-            height=dp(44),
+            height=dp(48),
             font_size="13sp",
             on_release=lambda *_: self.set_input_mode("K"),
         )
@@ -167,7 +167,7 @@ class ValvesTabViewCompositionMixin:
             text=self._translate("valve_mode_dims"),
             size_hint_x=0.5,
             size_hint_y=None,
-            height=dp(44),
+            height=dp(48),
             font_size="13sp",
             on_release=lambda *_: self.set_input_mode("W"),
         )
@@ -275,7 +275,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_y=None,
             height=dp(42),
             theme_text_color="Custom",
-            text_color=self._total_color,
+            text_color=self.result_color(),
         )
         result_card.add_widget(count_label)
         delta_label = MDLabel(

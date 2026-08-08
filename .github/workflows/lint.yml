@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   lint:
-    name: Ruff + mypy
+    name: Tests + Ruff + mypy
     runs-on: ubuntu-24.04
 
     steps:
@@ -24,8 +24,11 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install lint tools
-        run: python -m pip install ruff==0.15.20 mypy==2.1.0
+      - name: Install project and quality tools
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Tests with coverage floor
+        run: python -m pytest
 
       - name: Ruff (lint)
         run: python -m ruff check tpof tests
@@ -35,3 +38,85 @@ jobs:
 
       - name: Mypy (full project baseline)
         run: python -m mypy .
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install pip-audit
+        run: python -m pip install pip-audit==2.10.1
+
+      - name: Audit shared dependencies
+        run: python -m pip_audit -r requirements.txt --progress-spinner=off
+
+      - name: Audit mobile dependencies
+        # Kivy is cross-compiled by python-for-android and cannot be resolved in
+        # pip-audit's temporary CPython environment. All direct pins are still
+        # checked against the vulnerability database.
+        run: >-
+          python -m pip_audit -r requirements-mobile.txt
+          --no-deps --disable-pip --progress-spinner=off
+
+      - name: Audit packages embedded in the Android bundle
+        # python-for-android v2026.05.09 hard-pins Pillow 11.3.0 in its native
+        # recipe. The app only decodes bundled, trusted product assets, so the
+        # known Pillow findings are temporarily accepted while a 12.3.0 recipe
+        # is validated in an AAB. New findings remain fatal. This exception
+        # deliberately expires and must not be silently extended.
+        run: |
+          if [[ "$(date -u +%F)" > "2026-08-31" ]]; then
+            echo "::error::The temporary Android Pillow audit exception expired."
+            exit 1
+          fi
+          python -m pip_audit -r requirements-android-audit.txt \
+            --no-deps --disable-pip --progress-spinner=off \
+            --ignore-vuln PYSEC-2026-165 \
+            --ignore-vuln PYSEC-2026-2249 \
+            --ignore-vuln PYSEC-2026-2250 \
+            --ignore-vuln PYSEC-2026-2251 \
+            --ignore-vuln PYSEC-2026-2252 \
+            --ignore-vuln PYSEC-2026-2253 \
+            --ignore-vuln PYSEC-2026-2254 \
+            --ignore-vuln PYSEC-2026-2255 \
+            --ignore-vuln PYSEC-2026-2256 \
+            --ignore-vuln PYSEC-2026-2257 \
+            --ignore-vuln PYSEC-2026-2874 \
+            --ignore-vuln PYSEC-2026-3451 \
+            --ignore-vuln PYSEC-2026-3453 \
+            --ignore-vuln PYSEC-2026-3454 \
+            --ignore-vuln PYSEC-2026-3493 \
+            --ignore-vuln PYSEC-2026-3494 \
+            --ignore-vuln PYSEC-2026-3495 \
+            --ignore-vuln PYSEC-2026-3496
+
+      - name: Audit development dependencies
+        run: python -m pip_audit -r requirements-dev.txt --progress-spinner=off
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        env:
+          GITLEAKS_URL: https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl --fail --location --retry 3 "$GITLEAKS_URL" --output gitleaks.tar.gz
+          echo "$GITLEAKS_SHA256  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git . --redact --no-banner

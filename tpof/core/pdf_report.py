@@ -6,10 +6,12 @@ warstwa mobilna (Kivy/Android) przez Storage Access Framework.
 
 from __future__ import annotations
 
+import inspect
 import logging
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 from reportlab.lib.colors import black, grey, lightgrey
 from reportlab.lib.enums import TA_CENTER
@@ -188,17 +190,24 @@ def _encrypt(pdf_bytes: bytes, owner_password: str) -> bytes:
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
-    try:
-        writer.encrypt(
+    encrypt: Any = writer.encrypt
+    parameters = inspect.signature(encrypt).parameters
+    if "user_password" in parameters:
+        encrypt(
             user_password="",
             owner_password=owner_password,
             use_128bit=True,
         )
-    except TypeError:
-        # Legacy pypdf fallback (older positional API); the modern keyword form
-        # above is used with the pinned version, so this branch is not reached.
-        # Positional order is always user password first, then owner password.
-        writer.encrypt("", owner_password)
+    elif "user_pwd" in parameters:
+        encrypt(
+            user_pwd="",
+            owner_pwd=owner_password,
+            use_128bit=True,
+        )
+    else:
+        # Last-resort compatibility for wrappers that expose only *args.
+        # Positional order remains user password first, then owner password.
+        encrypt("", owner_password)
     out = BytesIO()
     writer.write(out)
     return out.getvalue()

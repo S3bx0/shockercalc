@@ -227,7 +227,7 @@ def _view() -> FreezingTabView:
     )
 
 
-def _controller(*, access=True):
+def _controller(*, access=True, display_product=lambda name: name):
     product = Product(
         nazwa="Szynka",
         kategoria="Mieso",
@@ -257,6 +257,7 @@ def _controller(*, access=True):
         categories=["Mieso"],
         translate=translate,
         display_category=lambda category: f"display:{category}",
+        display_product=display_product,
         card_bg=lambda: (0, 0, 0, 1),
         total_color=(0, 1, 0, 1),
         numeric_input_filter=lambda *_args: True,
@@ -325,6 +326,21 @@ def test_freezing_controller_owns_product_and_mass_unit_state():
     assert view.unit_button.text == "t"
     assert state["recent"] == [("Mieso", "Szynka")]
     assert view.product_image.source == "/images/Szynka.png"
+
+
+def test_freezing_controller_displays_translated_product_but_keeps_canonical_name():
+    controller, state = _controller(
+        display_product=lambda name: {"Szynka": "Ham"}.get(name, name or "")
+    )
+    view = controller.view
+    assert view is not None
+
+    controller.select_category("Mieso")
+    controller.select_product("Szynka")
+
+    assert controller.selected_product == "Szynka"
+    assert view.product_button.text == "Ham"
+    assert state["recent"] == [("Mieso", "Szynka")]
 
 
 def test_product_dialog_temporarily_disables_below_target_window_panning():

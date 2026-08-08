@@ -1,0 +1,9 @@
+# Direct packages embedded by buildozer.spec. Keep this list in sync with the
+# python-for-android requirements and audit it without desktop wheel resolution.
+kivy==2.3.1
+kivymd==1.2.0
+Pillow==11.3.0
+fpdf2==2.8.7
+fonttools==4.63.0
+defusedxml==0.7.1
+certifi==2026.6.17

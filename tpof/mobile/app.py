@@ -57,7 +57,7 @@ def _create_app_class():
         from kivy.clock import Clock
         from kivy.core.window import Window
         from kivy.graphics import Color, Rectangle
-        from kivy.metrics import dp
+        from kivy.metrics import Metrics, dp
         from kivy.uix.floatlayout import FloatLayout
         from kivymd.app import MDApp
         from kivymd.uix.boxlayout import MDBoxLayout
@@ -122,6 +122,7 @@ def _create_app_class():
                 dp=dp,
                 window=Window,
                 chart_factory=LaborPieChart,
+                font_scale=lambda: float(Metrics.fontscale),
             )
             self._shell_builder = MobileShellBuilder(
                 dp=dp,
@@ -212,11 +213,7 @@ def _create_app_class():
                 get_host=lambda: self.tab_content_host,
                 set_active_name=lambda name: setattr(self, "_active_tab_name", name),
                 report_tab=self._report_tab,
-                on_tab_enter=lambda name: (
-                    self._rewarded_access.refresh_valve_lock_ui()
-                    if name == "valves"
-                    else None
-                ),
+                on_tab_enter=self._on_tab_enter,
                 refresh_theme=self._theme_controller.apply,
                 schedule_once=Clock.schedule_once,
                 logger=log,
@@ -262,6 +259,7 @@ def _create_app_class():
                 4.0,
             )
             Clock.schedule_once(lambda *_: self._form_interactions.apply(), 0.2)
+            Clock.schedule_once(lambda *_: self._accessibility.start(), 5.6)
             Clock.schedule_once(
                 lambda *_: self._privacy_dialog_controller.prompt_telemetry_consent(),
                 2.0,
@@ -325,6 +323,11 @@ def _create_app_class():
             self._android.set_active_ad_tab(name)
             telemetry.set_screen(name)
 
+        def _on_tab_enter(self, name: str):
+            if name == "valves":
+                self._rewarded_access.refresh_valve_lock_ui()
+            self._accessibility.activate_screen(name)
+
         def _refresh_ad_slot_height(self):
             height_dp = self._android.resolved_banner_height(
                 self._pro_no_ads, self._native_ad_height_dp
@@ -365,6 +368,9 @@ def _create_app_class():
                 telemetry.log_event("settings_opened", {"section": "legal"})
 
         def _show_error(self, message: str):
+            accessibility = getattr(self, "_accessibility", None)
+            if accessibility is not None:
+                accessibility.announce(message)
             notice = getattr(self, "center_notice", None)
             if notice is not None:
                 try:

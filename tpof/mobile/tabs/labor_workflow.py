@@ -36,6 +36,7 @@ class LaborCalculationWorkflowMixin:
     _clear_field_error: Callable[[Any], None]
     _mark_field_error: Callable[[Any, str | None], None]
     _show_message: Callable[[str], None]
+    _announce_result: Callable[[str], bool]
     _log_event: Callable[[str, Mapping[str, object] | None], None]
     _get_active_tab: Callable[[], str]
     _dp: Callable[[float], float]
@@ -201,6 +202,7 @@ class LaborCalculationWorkflowMixin:
                 self._rate_config(),
             )
             cast(_LaborResultsPresenter, self).render_results(breakdown)
+            self._announce_result(self.view.total_label.text)
             self._log_event(
                 "calculation_finished",
                 {

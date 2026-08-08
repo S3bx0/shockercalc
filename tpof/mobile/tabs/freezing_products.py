@@ -24,6 +24,7 @@ class FreezingProductSelectionMixin:
     _categories: list[str]
     _translate: Callable[..., str]
     _display_category: Callable[[str | None], str]
+    _display_product: Callable[[str | None], str]
     _show_message: Callable[[str], None]
     _is_product_selectable: Callable[[int], bool]
     _recent_products: Callable[[str, Sequence[str]], Sequence[str]]
@@ -99,7 +100,7 @@ class FreezingProductSelectionMixin:
         self.selected_product = name
         self._add_recent_product(self.selected_category, name)
         if self.view is not None:
-            self.view.product_button.text = name
+            self.view.product_button.text = self._display_product(name)
             self.view.product_error_line.opacity = 0
             resolved = (
                 image_path
@@ -116,14 +117,14 @@ class FreezingProductSelectionMixin:
         self.selected_product = product.nazwa
         self._add_recent_product(product.kategoria, product.nazwa)
         if self.view is not None:
-            self.view.product_button.text = product.nazwa
+            self.view.product_button.text = self._display_product(product.nazwa)
             self.show_product_image(None)
 
     def open_category_menu(self, caller: Any) -> None:
         from kivy.metrics import dp
         from kivymd.uix.menu import MDDropdownMenu
 
-        item_height = dp(46 if self._is_compact() else 52)
+        item_height = dp(48 if self._is_compact() else 52)
         featured, remaining = _ordered_mobile_categories(
             self._categories,
             self._display_category,
@@ -257,9 +258,12 @@ class FreezingProductSelectionMixin:
         allowed = self._is_product_selectable(index)
         item = OneLineListItem(
             text=(
-                name
+                self._display_product(name)
                 if allowed
-                else f"{name}{self._translate('locked_suffix')}"
+                else (
+                    f"{self._display_product(name)}"
+                    f"{self._translate('locked_suffix')}"
+                )
             ),
             height=item_height,
             theme_text_color="Custom",
@@ -298,8 +302,12 @@ class FreezingProductSelectionMixin:
         if self._product_results_list is None:
             return
         self._product_results_list.clear_widgets()
-        names = _search_product_names(self._product_dialog_names, query)
-        item_height = dp(46 if self._is_compact() else 52)
+        names = _search_product_names(
+            self._product_dialog_names,
+            query,
+            self._display_product,
+        )
+        item_height = dp(48 if self._is_compact() else 52)
         if not names:
             self._add_product_search_heading(
                 self._translate("no_products_found"),

@@ -3,9 +3,10 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-**Aktualna wersja Android:** `1.5.12`
+**Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 403 testy automatyczne, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 464 testy automatyczne, statyczna kontrola Ruff i mypy,
+minimalne pokrycie 50%, audyt zależności `pip-audit` i skan sekretów Gitleaks,
 podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
@@ -65,7 +66,8 @@ tpof/                  # pakiet źródłowy
     ├── shell.py       # budowa nagłówka, nawigacji, stopki i miejsca na reklamę
     ├── form_interactions.py # podpowiedzi, walidacja i przewijanie nad klawiaturę
     ├── localization.py # stan języka i synchronizacja tekstów całej aplikacji
-    ├── android_bridge.py # fasada PyJNIus: platforma, skróty i udostępnianie
+    ├── accessibility.py # opisy ekranów i komunikaty dla TalkBack
+    ├── android_bridge.py # fasada PyJNIus: platforma, dostępność i udostępnianie
     ├── pdf_export.py  # generowanie, zapis i udostępnianie raportów PDF
     ├── dialogs/       # niezależne kontrolery dialogów
     ├── tabs/          # kontrolery zakładek chłodniczej, zaworów i robocizny
@@ -108,7 +110,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 403 testy logiki, UI i kontraktów natywnych
+tests/                 # 464 testy logiki, UI i kontraktów natywnych
 archive/               # backupy przed-refaktorowe
 ```
 

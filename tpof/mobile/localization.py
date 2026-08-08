@@ -14,6 +14,7 @@ from typing import Any, Protocol
 from tpof import __version__
 from tpof.mobile.constants import APP_NAME
 from tpof.mobile.i18n import display_category, translate
+from tpof.mobile.product_labels import display_product
 
 _FOOTER_AUTHOR = "Sebastian Milczarek"
 
@@ -94,6 +95,9 @@ class LocalizationController:
 
     def display_category(self, category: str | None) -> str:
         return display_category(self._language, category)
+
+    def display_product(self, product_name: str | None) -> str:
+        return display_product(self._language, product_name)
 
     def ad_label_text(self) -> str:
         if self._is_pro_no_ads():

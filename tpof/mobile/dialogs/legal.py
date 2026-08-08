@@ -125,7 +125,7 @@ class LegalDialogController:
                 button = MDRaisedButton(
                     text=self._translate(document.title_key),
                     size_hint=(1, None),
-                    height=dp(46),
+                    height=dp(48),
                     on_release=lambda _button, selected=document.identifier: (
                         self.open_document(selected)
                     ),

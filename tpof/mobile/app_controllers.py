@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from tpof.core import list_products
 from tpof.mobile import telemetry
+from tpof.mobile.accessibility import AccessibilityController
 from tpof.mobile.android_bridge import AndroidActivityBridge
 from tpof.mobile.catalog import _safe_image_path
-from tpof.mobile.constants import IS_ANDROID, STAGE_COLORS
+from tpof.mobile.constants import IS_ANDROID
 from tpof.mobile.dialogs.custom_product import CustomProductDialogController
 from tpof.mobile.dialogs.labor_rates import LaborRatesDialogController
 from tpof.mobile.dialogs.legal import LegalDialogController
@@ -50,6 +51,7 @@ class AppControllerCompositionMixin:
         dp,
         window,
         chart_factory,
+        font_scale,
     ):
         self._themed_cards = []
         self._preferences = UiPreferences()
@@ -80,9 +82,15 @@ class AppControllerCompositionMixin:
                 lambda: self._valves_tab_controller.refresh_texts(),
                 lambda: self._monetization.refresh_label(),
                 lambda: self._form_interactions.apply(),
+                lambda: self._accessibility.refresh(),
             ),
         )
         self._t = self._localization.translate
+        self._accessibility = AccessibilityController(
+            translate=self._t,
+            configure_root=self._android.configure_accessibility,
+            announce_native=self._android.announce_for_accessibility,
+        )
         self._form_interactions = FormInteractionController(
             hints_enabled=self._preferences.hints_enabled,
             set_hints_enabled=self._preferences.set_hints_enabled,
@@ -137,6 +145,7 @@ class AppControllerCompositionMixin:
             apply_freezing_layout=lambda metrics: (
                 self._freezing_tab_controller.apply_layout(metrics)
             ),
+            font_scale=font_scale,
         )
         self._privacy_toolbar_controller = PrivacyToolbarController(
             options_available=lambda: (
@@ -260,7 +269,7 @@ class AppControllerCompositionMixin:
             is_pro=lambda: self._pro_no_ads,
             open_rates_dialog=lambda: self._labor_rates_dialog_controller.open(),
             card_bg=self._theme_controller.card_bg,
-            total_color=STAGE_COLORS["total"],
+            total_color=self._theme_controller.result_text_color,
             chart_factory=chart_factory,
             numeric_input_filter=_numeric_input_filter,
             register_themed_card=self._themed_cards.append,
@@ -269,6 +278,7 @@ class AppControllerCompositionMixin:
             clear_field_error=self._form_interactions.clear_field_error,
             mark_field_error=self._form_interactions.mark_field_error,
             show_message=self._show_error,
+            announce_result=self._accessibility.announce,
             log_event=telemetry.log_event,
             get_active_tab=lambda: getattr(
                 self,
@@ -293,7 +303,7 @@ class AppControllerCompositionMixin:
         self._valves_tab_controller = ValvesTabController(
             translate=self._t,
             card_bg=self._theme_controller.card_bg,
-            total_color=STAGE_COLORS["total"],
+            total_color=self._theme_controller.result_text_color,
             numeric_input_filter=_numeric_input_filter,
             register_themed_card=self._themed_cards.append,
             bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll,
@@ -301,6 +311,7 @@ class AppControllerCompositionMixin:
             clear_field_error=self._form_interactions.clear_field_error,
             mark_field_error=self._form_interactions.mark_field_error,
             show_message=self._show_error,
+            announce_result=self._accessibility.announce,
             log_event=telemetry.log_event,
             record_exception=telemetry.record_exception,
             can_calculate=self._rewarded_access.valve_module_available,
@@ -326,8 +337,9 @@ class AppControllerCompositionMixin:
             categories=categories,
             translate=self._t,
             display_category=self._localization.display_category,
+            display_product=self._localization.display_product,
             card_bg=self._theme_controller.card_bg,
-            total_color=STAGE_COLORS["total"],
+            total_color=self._theme_controller.result_text_color,
             numeric_input_filter=_numeric_input_filter,
             register_themed_card=self._themed_cards.append,
             bind_keyboard_scroll=self._form_interactions.bind_keyboard_scroll,
@@ -335,6 +347,7 @@ class AppControllerCompositionMixin:
             clear_field_error=self._form_interactions.clear_field_error,
             mark_field_error=self._form_interactions.mark_field_error,
             show_message=self._show_error,
+            announce_result=self._accessibility.announce,
             log_event=telemetry.log_event,
             record_exception=telemetry.record_exception,
             ensure_product_access=self._rewarded_access.ensure_product_access,

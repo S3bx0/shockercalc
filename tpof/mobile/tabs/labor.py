@@ -62,6 +62,7 @@ class LaborTabController(
         log_event: Callable[[str, Mapping[str, object] | None], None],
         get_active_tab: Callable[[], str],
         is_dark: Callable[[], bool],
+        announce_result: Callable[[str], bool] | None = None,
     ) -> None:
         self._translate = translate
         self._get_language = get_language
@@ -84,6 +85,7 @@ class LaborTabController(
         self._log_event = log_event
         self._get_active_tab = get_active_tab
         self._is_dark = is_dark
+        self._announce_result = announce_result or (lambda _message: False)
         self._presenter = LaborTabPresenter(
             translate=translate,
             get_language=get_language,
@@ -103,6 +105,9 @@ class LaborTabController(
         """Return the tab scroll widget after the view has been built."""
 
         return None if self.view is None else self.view.scroll
+
+    def result_color(self) -> Any:
+        return self._total_color() if callable(self._total_color) else self._total_color
 
     def hint_field_items(self) -> tuple[tuple[Any, str], ...]:
         """Expose labor inputs to the app-wide optional hint coordinator."""
@@ -235,6 +240,7 @@ class LaborTabController(
     def apply_theme(self) -> None:
         if self.view is None:
             return
+        self.view.total_label.text_color = self.result_color()
         self.view.chart.set_dark(self._is_dark())
         for button, variant in (
             (

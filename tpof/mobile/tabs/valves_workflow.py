@@ -19,6 +19,7 @@ class ValvesCalculationWorkflowMixin:
     _clear_field_error: Callable[[Any], None]
     _mark_field_error: Callable[[Any, str | None], None]
     _show_message: Callable[[str], None]
+    _announce_result: Callable[[str], bool]
     _log_event: Callable[[str, Mapping[str, object] | None], None]
     _record_exception: Callable[[BaseException, str], None]
     _can_calculate: Callable[[], bool]
@@ -126,6 +127,7 @@ class ValvesCalculationWorkflowMixin:
             )
             self.last_total_flow = total_flow
             self.render_results(results)
+            self._announce_result(self.view.count_label.text)
             self._log_event(
                 "calculation_finished",
                 {"calculator": "valves"},

@@ -271,7 +271,7 @@ class FreezingTabViewCompositionMixin:
             size_hint_x=None,
             width=dp(72),
             size_hint_y=None,
-            height=dp(42),
+            height=dp(48),
             font_size="15sp",
             pos_hint={"center_y": 0.5},
             on_release=lambda *_: self.toggle_mass_unit(),
@@ -376,7 +376,7 @@ class FreezingTabViewCompositionMixin:
             size_hint_y=None,
             height=dp(46),
             theme_text_color="Custom",
-            text_color=self._total_color,
+            text_color=self.result_color(),
         )
         results_card.add_widget(total_label)
 

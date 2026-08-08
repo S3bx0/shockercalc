@@ -43,6 +43,7 @@ class FreezingCalculationWorkflowMixin:
     _clear_field_error: Callable[[Any], None]
     _mark_field_error: Callable[[Any, str | None], None]
     _show_message: Callable[[str], None]
+    _announce_result: Callable[[str], bool]
     _log_event: Callable[[str, Mapping[str, object] | None], None]
     _record_exception: Callable[[BaseException, str], None]
     _ensure_product_access: Callable[[str, str], bool]
@@ -225,6 +226,7 @@ class FreezingCalculationWorkflowMixin:
             results = calculate_freezing(inputs, product)
             self.last_results = results
             cast(_FreezingResultsPresenter, self).render_results(results)
+            self._announce_result(self.view.total_label.text)
             self._log_event(
                 "calculation_finished",
                 {

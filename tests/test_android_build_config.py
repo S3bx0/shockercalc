@@ -24,9 +24,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.12" in spec
-    assert '__version__ = "1.5.12"' in package_init
-    assert 'version = "1.5.12"' in pyproject
+    assert "version = 1.5.13" in spec
+    assert '__version__ = "1.5.13"' in package_init
+    assert 'version = "1.5.13"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():
@@ -215,7 +215,9 @@ def test_workflows_pin_reproducible_build_tools():
         assert "Cache Buildozer build dir" not in workflow
         assert "Report runner storage after cache restore" in workflow
         assert "Verify Android backup policy" in workflow
-        assert "android:allowBackup=\"[Ff]alse\"" in workflow
+        assert "tools/verify_android_backup_policy.py" in workflow
+        assert "*/dists/*/src/main/AndroidManifest.xml" not in workflow
+        assert "UPLOAD_EXTRA_ARTIFACTS" in workflow
         assert "Verify final Android permission allowlist" in workflow
         assert "tools/verify_android_permissions.py" in workflow
         assert "Verify Android network security policy" in workflow
@@ -251,6 +253,8 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
     assert "bundletool-all-1.18.3.jar" in workflow
     assert "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29" in workflow
     assert 'validate --bundle="$AAB_PATH"' in workflow
+    assert "dump manifest" in workflow
+    assert 'final-AndroidManifest.xml' in workflow
     assert "Verify native libraries 16 KB alignment" in workflow
     assert "tools/verify_android_16kb_alignment.py" in workflow
     alignment_step = workflow.split(
@@ -259,13 +263,66 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
     assert "if: always()" not in alignment_step
     assert "::warning::" not in alignment_step
 
+    for step_name in (
+        "Upload package size report",
+        "Upload sanitized buildozer log (on failure)",
+        "Upload 16 KB alignment report",
+        "Upload Play Console diagnostic files",
+    ):
+        step = workflow.split(f"- name: {step_name}", maxsplit=1)[1].split(
+            "- name:", maxsplit=1
+        )[0]
+        assert "env.UPLOAD_EXTRA_ARTIFACTS == 'true'" in step
+
+    aab_upload = workflow.split("- name: Upload AAB artifact", maxsplit=1)[1]
+    assert "if: always()" in aab_upload
+
 
 def test_lint_workflow_runs_full_mypy_baseline():
     workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
 
-    assert "mypy==2.1.0" in workflow
+    requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+
+    assert "mypy==2.3.0" in requirements
+    assert "-r requirements.txt -r requirements-dev.txt" in workflow
+    assert "python -m pytest" in workflow
+    assert "--cov-fail-under=50" in (
+        ROOT / "pyproject.toml"
+    ).read_text(encoding="utf-8")
     assert "python -m mypy\n" in workflow
     assert "python -m mypy ." in workflow
+
+
+def test_lint_workflow_audits_dependencies_and_secrets():
+    workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
+
+    assert "pip-audit==2.10.1" in workflow
+    assert "python -m pip_audit" in workflow
+    assert "requirements-android-audit.txt" in workflow
+    assert '"2026-08-31"' in workflow
+    assert "--ignore-vuln PYSEC-2026-3496" in workflow
+    assert "gitleaks_8.30.1_linux_x64.tar.gz" in workflow
+    assert "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in workflow
+    assert "sha256sum --check --strict" in workflow
+    assert "./gitleaks git . --redact --no-banner" in workflow
+    assert "fetch-depth: 0" in workflow
+
+
+def test_android_audit_manifest_matches_embedded_security_sensitive_pins():
+    manifest = (ROOT / "requirements-android-audit.txt").read_text(encoding="utf-8")
+    spec = (ROOT / "buildozer.spec").read_text(encoding="utf-8")
+
+    for requirement in (
+        "kivy==2.3.1",
+        "kivymd==1.2.0",
+        "Pillow==11.3.0",
+        "fpdf2==2.8.7",
+        "fonttools==4.63.0",
+        "defusedxml==0.7.1",
+        "certifi==2026.6.17",
+    ):
+        assert requirement in manifest
+        assert requirement.lower() in spec.lower()
 
 
 def test_p4a_hook_configures_firebase_only_with_matching_config(tmp_path):

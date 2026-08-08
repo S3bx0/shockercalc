@@ -163,6 +163,16 @@ def test_style_app_button_applies_muted_palette_for_inactive_actions():
     assert button.theme_text_color == "Custom"
 
 
+def test_button_palettes_meet_wcag_normal_text_contrast():
+    for variant, (background, foreground) in theme._BUTTON_PALETTES.items():
+        assert theme.contrast_ratio(foreground, background) >= 4.5, variant
+
+
+def test_result_colors_meet_wcag_contrast_in_both_themes():
+    assert theme.contrast_ratio(theme.result_text_color(True), CARD_BG_DARK) >= 4.5
+    assert theme.contrast_ratio(theme.result_text_color(False), CARD_BG_LIGHT) >= 4.5
+
+
 def test_theme_controller_requires_attached_shell_view():
     state = _controller_state()
 

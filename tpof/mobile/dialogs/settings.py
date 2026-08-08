@@ -153,7 +153,7 @@ class SettingsDialogController:
             metric_row = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(42),
+                height=dp(48),
             )
             metric_button = MDRaisedButton(
                 text=self._translate("units_metric"),
@@ -167,7 +167,7 @@ class SettingsDialogController:
             imperial_row = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(42),
+                height=dp(48),
             )
             imperial_row.add_widget(
                 MDFlatButton(
@@ -199,7 +199,7 @@ class SettingsDialogController:
                 orientation="horizontal",
                 spacing=dp(8),
                 size_hint_y=None,
-                height=dp(42),
+                height=dp(48),
             )
             for code in SUPPORTED_DISPLAY_CURRENCIES:
                 button = MDRaisedButton(
@@ -252,7 +252,7 @@ class SettingsDialogController:
             auto_row = MDBoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=dp(42),
+                height=dp(48),
             )
             self._currency_auto_button = MDRaisedButton(
                 text="",
@@ -295,7 +295,7 @@ class SettingsDialogController:
             feedback_button = MDRaisedButton(
                 text=self._translate("settings_feedback_button"),
                 size_hint=(1, None),
-                height=dp(46),
+                height=dp(48),
                 on_release=lambda *_: self._on_open_feedback(),
             )
             self._style_button(feedback_button, "ice")
@@ -320,7 +320,7 @@ class SettingsDialogController:
             legal_button = MDRaisedButton(
                 text=self._translate("settings_legal_button"),
                 size_hint=(1, None),
-                height=dp(46),
+                height=dp(48),
                 on_release=lambda *_: self._on_open_legal(),
             )
             self._style_button(legal_button, "muted")

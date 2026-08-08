@@ -8,6 +8,60 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Dodano
 
+- Dodano pierwszą warstwę dostępności Android: lokalizowane opisy aktywnej
+  karty dla TalkBack, grzeczne komunikaty o zmianie ekranu, wynikach i błędach
+  oraz osobny natywny `AccessibilityService` poza klasą Activity.
+- Responsywny układ uwzględnia skalę tekstu systemowego do 200%, wariant
+  landscape i minimalne cele interaktywne 48 dp. Palety przycisków i wyników
+  mają automatyczne testy kontrastu WCAG 4,5:1.
+- CI wykonuje pełne testy z minimalnym pokryciem 50%, audyt zależności przez
+  `pip-audit` i skan pełnej historii pod kątem sekretów przez Gitleaks.
+  Rzeczywiste piny AAB mają osobny manifest; znane problemy upstreamowego
+  Pillow 11.3.0 są jawnie ograniczone wyjątkiem wygasającym 31 sierpnia 2026,
+  a każda nowa podatność nadal zatrzymuje CI.
+- Dodano checklistę ręcznej weryfikacji TalkBack, Switch Access, skalowania
+  tekstu, orientacji i kontrastu na urządzeniu Android.
+
+### Zmieniono
+
+- Rozszerzono spójną serię ilustracji pixel-art z przezroczystym tłem i
+  zachowanym cieniem kontaktowym o banany, cebulę, ananasa, awokado, świeże
+  brzoskwinie, granaty i truskawki. Świeże brzoskwinie mają również bezpieczny
+  alias ASCII dla Androida.
+- Do tej samej serii dodano grejpfrut i agrest, zachowując przezroczyste tło,
+  pikselowy cień kontaktowy i budżet rozmiaru zasobów mobilnych.
+- Zaktualizowano Pillow do 12.3.0, pypdf do 6.15.0, ttkbootstrap do 1.20.4,
+  Ruff do 0.15.22 i mypy do 2.3.0. Android zachowuje Pillow 11.3.0 wymagane
+  przez oficjalną recepturę python-for-android 2026.05.09 do czasu osobnego
+  testu bezpiecznej receptury 12.3.0.
+
+### Naprawiono
+
+- Odtworzono kompletne wnętrza ilustracji bananów i awokado po zbyt agresywnym
+  usuwaniu tła. Test regresji przegląda cały katalog produktów i zatrzymuje
+  duże, niezatwierdzone otwory w kanale alfa.
+- Kontrola Android Auto Backup sprawdza teraz finalny manifest po scaleniu
+  Gradle, a dla wydania — manifest rzeczywiście zapakowany w AAB. Usuwa to
+  fałszywy błąd CI mimo poprawnego `android:allowBackup=false` w bundle.
+- APK/AAB pozostają zawsze dostępne jako artefakty CI, natomiast raporty
+  rozmiaru, wyrównania, logi i diagnostyka Play są opcjonalne przy ręcznym
+  uruchomieniu workflow, co ogranicza zużycie przestrzeni GitHub Actions.
+- Fallback szyfrowania PDF rozpoznaje nową i starszą sygnaturę `encrypt()`,
+  nie maskuje błędów `TypeError` z wnętrza biblioteki i zachowuje zgodność z
+  prostymi wrapperami przyjmującymi argumenty pozycyjne.
+
+### Testy
+
+- Pełna suita zawiera 473 testy i utrzymuje 55,63% mierzonego pokrycia przy
+  twardym progu 50%.
+
+## [1.5.13] - 2026-08-01
+
+### Dodano
+
+- Rozpoczęto wymianę ilustracji produktów na spójne grafiki pixel-art z
+  przezroczystym tłem i neutralnym cieniem kontaktowym. Zaktualizowano wiśnie,
+  arbuza, bakłażana, bataty i cytryny.
 - Formularz opinii tworzy teraz ustrukturyzowany raport testowy z rodzajem
   zgłoszenia, testowanym obszarem, rzeczywistym i oczekiwanym rezultatem,
   częstotliwością oraz wpływem problemu. Dane urządzenia pozostają pustymi,
@@ -16,6 +70,15 @@ wersjonowanie wg [SemVer](https://semver.org/).
   odtwarzania, odpowiadania i ponownego testowania rzeczywistych zgłoszeń.
 - Dodano trzy skróty launchera prowadzące bezpośrednio do kart Chłodnicze,
   Zawory i Robocizna.
+
+### Naprawiono
+
+- Mobilny selektor produktów korzysta z bezpiecznych aliasów ASCII dla grafik
+  wiśni i bakłażana, dzięki czemu Android nie musi otwierać tych plików przez
+  ścieżki zawierające polskie znaki.
+- Angielska wersja selektora pokazuje i wyszukuje angielskie nazwy wszystkich
+  produktów dostępnych w aplikacji. Polskie nazwy z Table3 pozostają stabilnymi
+  identyfikatorami używanymi przez obliczenia i zapis ustawień.
 
 ## [1.5.12] - 2026-07-30
 

@@ -38,6 +38,7 @@ class FreezingTabController(
         categories: list[str],
         translate: Callable[..., str],
         display_category: Callable[[str | None], str],
+        display_product: Callable[[str | None], str],
         card_bg: Callable[[], Any],
         total_color: Any,
         numeric_input_filter: Callable[..., Any],
@@ -62,11 +63,13 @@ class FreezingTabController(
         menu_text_color: Callable[[], Any],
         divider_color: Callable[[], Any],
         hints_enabled: Callable[[], bool],
+        announce_result: Callable[[str], bool] | None = None,
     ) -> None:
         self._catalog = catalog
         self._categories = categories
         self._translate = translate
         self._display_category = display_category
+        self._display_product = display_product
         self._card_bg = card_bg
         self._total_color = total_color
         self._numeric_input_filter = numeric_input_filter
@@ -91,6 +94,7 @@ class FreezingTabController(
         self._menu_text_color = menu_text_color
         self._divider_color = divider_color
         self._hints_enabled = hints_enabled
+        self._announce_result = announce_result or (lambda _message: False)
 
         self._initialize_product_selection()
         self.mass_unit = "kg"
@@ -102,6 +106,9 @@ class FreezingTabController(
         """Return the built tab scroll widget."""
 
         return self.view.scroll if self.view is not None else None
+
+    def result_color(self) -> Any:
+        return self._total_color() if callable(self._total_color) else self._total_color
 
     def hint_field_items(self) -> tuple[tuple[Any, str], ...]:
         """Return the freezing fields and their contextual hint keys."""
@@ -135,7 +142,9 @@ class FreezingTabController(
             else self._translate("choose_category")
         )
         view.product_button.text = (
-            self.selected_product or self._translate("choose_product")
+            self._display_product(self.selected_product)
+            if self.selected_product
+            else self._translate("choose_product")
         )
         view.image_placeholder_label.text = self._translate("image_placeholder")
         view.product_hint_label.text = self._translate("product_hint")

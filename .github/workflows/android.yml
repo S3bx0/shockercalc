@@ -5,12 +5,6 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
-    inputs:
-      upload_extra_artifacts:
-        description: Upload package size report and build logs
-        required: false
-        type: boolean
-        default: false
   workflow_dispatch:
     inputs:
       distribute_to_firebase:
@@ -22,17 +16,22 @@ on:
         description: Optional notes shown to Firebase testers
         required: false
         type: string
+      upload_extra_artifacts:
+        description: Upload size reports and diagnostic logs
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-apk:
     name: Buildozer (debug APK)
     runs-on: ubuntu-24.04
     env:
-      UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts || 'false' }}
       # Savannah intermittently returns HTTP 502. python-for-android supports
       # recipe URL overrides, so use FreeType's official SourceForge mirror
       # and verify the archive against the publisher-provided SHA-256.
       URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+      UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts == true }}
 
     steps:
       - name: Checkout repo
@@ -179,9 +178,12 @@ jobs:
 
       - name: Verify Android backup policy
         run: |
-          MANIFEST_PATH="$(find .buildozer -type f -path '*/dists/*/src/main/AndroidManifest.xml' -print -quit)"
-          test -n "$MANIFEST_PATH"
-          grep -E 'android:allowBackup="[Ff]alse"' "$MANIFEST_PATH"
+          MERGED_MANIFEST="$(find .buildozer -type f \( \
+            -path '*/intermediates/merged_manifest/*/AndroidManifest.xml' -o \
+            -path '*/intermediates/merged_manifests/*/AndroidManifest.xml' \
+          \) | sort | tail -1)"
+          test -n "$MERGED_MANIFEST"
+          python tools/verify_android_backup_policy.py "$MERGED_MANIFEST"
 
       - name: Verify final Android permission allowlist
         run: |

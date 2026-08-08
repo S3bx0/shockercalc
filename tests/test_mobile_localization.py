@@ -165,3 +165,15 @@ def test_unknown_initial_language_falls_back_to_polish():
         "pl",
         "nav_labor",
     )
+
+
+def test_toggle_keeps_android_ad_text_and_pro_footer_consistent():
+    state = _controller_state(initial_language="pl", is_android=True, pro=True)
+    controller = state["controller"]
+
+    controller.toggle()
+
+    assert controller.language == "en"
+    assert controller.ad_label_text() == translate("en", "pro_ads_off")
+    assert "PRO • full access" in controller.footer_text()
+    assert "Refrigeration Calc" in controller.footer_text()

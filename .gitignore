@@ -37,6 +37,7 @@ archive/
 .audit-*/
 .gh-artifacts-*/
 .codex_inspect.txt
+tmp/imagegen/
 
 # Buildozer / Kivy (mobilna kompilacja)
 .buildozer/
