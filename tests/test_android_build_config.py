@@ -4,6 +4,7 @@ import json
 import tarfile
 from pathlib import Path
 
+import pytest
 from PIL import Image, ImageChops, ImageStat
 
 import p4a_hooks
@@ -254,6 +255,14 @@ def test_workflows_pin_reproducible_build_tools():
     )
     assert "firebase-tools@15.22.0" in debug_workflow
     assert "distribute_to_firebase" in debug_workflow
+    assert "build_arch:" in debug_workflow
+    assert "- arm64-v8a" in debug_workflow
+    assert "- x86_64" in debug_workflow
+    assert "BUILD_ARCH:" in debug_workflow
+    assert "Configure debug architecture" in debug_workflow
+    assert 'android.archs = ${BUILD_ARCH}' in debug_workflow
+    assert '--supported-abi "$BUILD_ARCH"' in debug_workflow
+    assert "${{ env.BUILD_ARCH }}-${{ hashFiles('buildozer.spec') }}" in debug_workflow
 
 
 def test_release_workflow_verifies_offline_legal_bundle():
@@ -497,13 +506,56 @@ android {}
         encoding="utf-8",
     )
 
-    assert p4a_hooks._patch_android_abi_filters(project) == 1
-    assert p4a_hooks._patch_android_abi_filters(project) == 0
+    assert p4a_hooks._patch_android_abi_filters(
+        project, build_arch="arm64-v8a"
+    ) == 1
+    assert p4a_hooks._patch_android_abi_filters(
+        project, build_arch="arm64-v8a"
+    ) == 0
     patched = gradle.read_text(encoding="utf-8")
 
     assert patched.count("Refrigeration Calc supported ABIs") == 1
     assert "abiFilters.clear()" in patched
     assert "abiFilters 'arm64-v8a'" in patched
+
+
+def test_p4a_hook_filters_packaged_native_dependencies_to_x86(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    gradle = project / "build.gradle"
+    gradle.write_text(
+        """buildscript {
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.0'
+    }
+}
+apply plugin: 'com.android.application'
+android {}
+""",
+        encoding="utf-8",
+    )
+
+    assert p4a_hooks._patch_android_abi_filters(
+        project, build_arch="x86_64"
+    ) == 1
+    patched = gradle.read_text(encoding="utf-8")
+
+    assert "abiFilters.clear()" in patched
+    assert "abiFilters 'x86_64'" in patched
+    assert "abiFilters 'arm64-v8a'" not in patched
+
+
+def test_p4a_hook_reads_diagnostic_abi_from_environment(monkeypatch):
+    monkeypatch.setenv("BUILD_ARCH", "x86_64")
+
+    assert p4a_hooks._resolve_android_abis() == ("x86_64",)
+
+
+def test_p4a_hook_rejects_unknown_android_abi(tmp_path):
+    with pytest.raises(RuntimeError, match="Niedozwolone Android ABI"):
+        p4a_hooks._patch_android_abi_filters(
+            tmp_path, build_arch="armeabi-v7a"
+        )
 
 
 def test_p4a_hook_removes_automatic_sdk_providers_from_main_manifest(tmp_path):
