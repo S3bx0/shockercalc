@@ -64,7 +64,7 @@ PR #25 wprowadza następujące korekty:
   były obcinane przy systemowym powiększeniu tekstu;
 - ukrycie niekrytycznej stopki w landscape i jej podpisu przy dużym tekście.
 
-Bramka automatyczna po zmianach: 495 testów, 56,14% pokrycia przy wymaganym
+Bramka automatyczna po zmianach: 497 testów, co najmniej 56% pokrycia przy wymaganym
 minimum 50%, Ruff i mypy bez błędów. Test emulatorowy obejmuje font scale 100%
 i 200%, orientację portrait/landscape, trzy karty oraz pierwszy dialog zgody.
 

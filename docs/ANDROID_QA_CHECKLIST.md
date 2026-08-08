@@ -19,9 +19,10 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 ## Dostępność i duży tekst
 
 - Sprawdzić każdą kartę przy systemowym font scale 100%, 130%, 150% i 200%.
-- Długie etykiety pól, w szczególności „Temperatura początkowa”, „Objętość
-  komory” i „Odległość w jedną stronę”, nie mogą być obcięte ani nachodzić na
-  sąsiednie kontrolki.
+- Długie etykiety pól, w szczególności temperatury początkowej, objętości
+  komory i odległości w jedną stronę, nie mogą być obcięte ani nachodzić na
+  sąsiednie kontrolki. Przy dużym tekście aplikacja używa ich krótszych,
+  jednoznacznych wariantów; pełne objaśnienie pozostaje w podpowiedzi pola.
 - Przy 200% karta produktu i grupy akcji mogą przejść do układu pionowego;
   cała treść musi pozostać osiągalna przez przewijanie.
 - Pierwszy dialog prywatności/telemetrii musi pokazywać obie akcje i umożliwiać

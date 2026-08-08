@@ -245,3 +245,14 @@ def test_valves_controller_refreshes_localized_text_and_theme():
     assert (view.watch_button, "ice") in state["styled"]
     assert (view.type_button, "primary") in state["styled"]
     assert (view.calculate_button, "ice") in state["styled"]
+
+
+def test_valves_controller_uses_compact_volume_label_for_large_text():
+    controller, _state = _controller()
+    view = controller.view
+    assert view is not None
+    controller._large_text_layout = True
+
+    controller.refresh_texts()
+
+    assert view.volume_input.hint_text == "valve_volume_short"

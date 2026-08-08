@@ -221,7 +221,11 @@ class ValvesTabController(
         self.view.type_button.text = self.valve_type
         self.view.volume_mode_button.text = self._translate("valve_mode_volume")
         self.view.dimensions_mode_button.text = self._translate("valve_mode_dims")
-        self.view.volume_input.hint_text = self._translate("valve_volume")
+        self.view.volume_input.hint_text = self._translate(
+            "valve_volume_short"
+            if bool(getattr(self, "_large_text_layout", False))
+            else "valve_volume"
+        )
         self.view.length_input.hint_text = self._translate("valve_length")
         self.view.width_input.hint_text = self._translate("valve_width")
         self.view.height_input.hint_text = self._translate("valve_height")

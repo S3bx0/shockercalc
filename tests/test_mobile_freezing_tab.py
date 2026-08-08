@@ -538,6 +538,8 @@ def test_freezing_controller_stacks_actions_for_large_text(monkeypatch):
     assert view.product_body.orientation == "vertical"
     assert view.action_row.orientation == "vertical"
     assert view.action_row.height == metrics["action_h"]
+    assert view.temp_start_input.hint_text == "temperature_start_short"
+    assert view.temp_end_input.hint_text == "temperature_end_short"
     assert all(
         button.size_hint_x == 1
         for button in (

@@ -74,6 +74,7 @@ class ValvesTabViewCompositionMixin:
 
         font_scale = max(1.0, min(2.0, float(Metrics.fontscale)))
         large_text = font_scale >= 1.5
+        self._large_text_layout = large_text
 
         def content_h(value: float) -> float:
             return round(value * font_scale, 2)
@@ -186,7 +187,9 @@ class ValvesTabViewCompositionMixin:
         input_card.add_widget(mode_box)
 
         volume_input = MDTextField(
-            hint_text=self._translate("valve_volume"),
+            hint_text=self._translate(
+                "valve_volume_short" if large_text else "valve_volume"
+            ),
             input_filter=self._numeric_input_filter,
         )
         volume_input.size_hint_y = None

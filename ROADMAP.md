@@ -109,7 +109,7 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
 - **dostępność — audyt responsywności 2026-08-08:** PR #25 usuwa potwierdzone
   na emulatorze nakładanie treści przy font scale 200%, układa długie formularze
   i akcje pionowo, przewija dialog zgody oraz zwalnia miejsce w landscape;
-  495 testów, próg pokrycia, Ruff i mypy są zielone. Wynik i ograniczenia są
+  497 testów, próg pokrycia, Ruff i mypy są zielone. Wynik i ograniczenia są
   zapisane w `docs/ACCESSIBILITY_TEST_PLAN_2026-08-02.md`;
 - **ważne ograniczenie Kivy:** obecna warstwa udostępnia semantykę całej
   powierzchni i komunikaty live region, ale jeszcze nie tworzy osobnych

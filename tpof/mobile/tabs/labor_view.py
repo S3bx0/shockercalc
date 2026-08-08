@@ -78,6 +78,7 @@ class LaborTabViewCompositionMixin:
 
         font_scale = max(1.0, min(2.0, float(Metrics.fontscale)))
         large_text = font_scale >= 1.5
+        self._large_text_layout = large_text
 
         def content_h(value: float) -> float:
             return round(value * font_scale, 2)
@@ -129,7 +130,10 @@ class LaborTabViewCompositionMixin:
             hint_text=self._translate("labor_days"), input_filter="int"
         )
         distance_input = MDTextField(
-            hint_text=self._translate("labor_distance"), input_filter="int"
+            hint_text=self._translate(
+                "labor_distance_short" if large_text else "labor_distance"
+            ),
+            input_filter="int",
         )
         lifts_input = MDTextField(
             hint_text=self._translate("labor_lifts"), input_filter="int"

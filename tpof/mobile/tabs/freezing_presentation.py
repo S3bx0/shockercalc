@@ -19,6 +19,7 @@ class FreezingTabPresentationMixin:
 
     _style_button: Callable[[Any, str], None]
     _hints_enabled: Callable[[], bool]
+    _translate: Callable[..., str]
 
     mass_unit: str
     view: FreezingTabView | None
@@ -47,6 +48,8 @@ class FreezingTabPresentationMixin:
 
         view = self.view
         compact = bool(metrics["compact"])
+        large_text = bool(metrics["large_text"])
+        self._large_text_layout = large_text
         card_padding = [
             metrics["card_pad_x"],
             metrics["card_pad_top"],
@@ -125,6 +128,12 @@ class FreezingTabPresentationMixin:
         for field in view.input_fields:
             field.height = metrics["field_h"]
             field.font_size = f'{metrics["control_sp"]}sp'
+        view.temp_start_input.hint_text = self._translate(
+            "temperature_start_short" if large_text else "temperature_start"
+        )
+        view.temp_end_input.hint_text = self._translate(
+            "temperature_end_short" if large_text else "temperature_end"
+        )
         view.results_card.padding = card_padding
         view.results_card.spacing = metrics["results_spacing"]
         view.results_card.height = metrics["results_h"]

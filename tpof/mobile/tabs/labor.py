@@ -231,7 +231,11 @@ class LaborTabController(
         self.view.hint_label.text = self._translate("labor_hint")
         self.view.people_input.hint_text = self._translate("labor_people")
         self.view.days_input.hint_text = self._translate("labor_days")
-        self.view.distance_input.hint_text = self._translate("labor_distance")
+        self.view.distance_input.hint_text = self._translate(
+            "labor_distance_short"
+            if bool(getattr(self, "_large_text_layout", False))
+            else "labor_distance"
+        )
         self.view.lifts_input.hint_text = self._translate("labor_lifts")
         self.view.containers_input.hint_text = self._translate("labor_containers")
         self.refresh_additional_hint()
