@@ -318,6 +318,12 @@ def test_release_workflow_attests_exact_aab_and_cyclonedx_sbom():
     assert "--configuration releaseRuntimeClasspath" in workflow
     assert "--offline --console=plain dependencies" in workflow
     assert "-mindepth 2 -maxdepth 2 -type f -name gradlew" in workflow
+    dependency_step = workflow.split(
+        "- name: Resolve release dependency graph for SBOM", maxsplit=1
+    )[1].split("- name:", maxsplit=1)[0]
+    assert "P4A_RELEASE_KEYSTORE: /home/runner/release.keystore" in dependency_step
+    assert "P4A_RELEASE_KEYSTORE_PASSWD" in dependency_step
+    assert "P4A_RELEASE_KEYALIAS_PASSWD" in dependency_step
     assert "--python-requirements requirements-android-audit.txt" in workflow
     assert "--manifest \"$RUNNER_TEMP/final-AndroidManifest.xml\"" in workflow
     assert "subject-path: bin/*.aab" in workflow

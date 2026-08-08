@@ -172,6 +172,11 @@ jobs:
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
 
       - name: Resolve release dependency graph for SBOM
+        env:
+          P4A_RELEASE_KEYSTORE: /home/runner/release.keystore
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -eo pipefail
           GRADLEW_PATH="$(find .buildozer/android/platform/build-arm64-v8a/dists \
