@@ -5,9 +5,10 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 464 testy automatyczne, statyczna kontrola Ruff i mypy,
-minimalne pokrycie 50%, audyt zależności `pip-audit` i skan sekretów Gitleaks,
-podpisany AAB oraz zgodność bibliotek natywnych z wyrównaniem stron 16 KB.
+**Stan jakości:** 481 testów automatycznych, statyczna kontrola Ruff i mypy,
+minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
+CodeQL dla Pythona i Javy. Podpisany AAB i biblioteki natywne przechodzą
+kontrole ABI, uprawnień i wyrównania stron 16 KB.
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
 > nie jest projektem open source. Kod jest dostępny wyłącznie na warunkach
@@ -110,8 +111,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 464 testy logiki, UI i kontraktów natywnych
-archive/               # backupy przed-refaktorowe
+tests/                 # 481 testów logiki, UI i kontraktów natywnych
 ```
 
 ## Uruchomienie (desktop)
