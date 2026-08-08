@@ -22,6 +22,7 @@ class _Widget:
         self.size_hint_y = "initial"
         self.md_bg_color = None
         self.shorten = False
+        self.disabled = False
 
 
 class _Root:
@@ -170,6 +171,21 @@ def test_compute_metrics_respects_large_font_scale_without_unbounded_growth():
     assert capped["font_scale"] == 2.0
 
 
+def test_compute_metrics_uses_scroll_friendly_layout_at_200_percent_text():
+    regular = compute_metrics(_dp, 412, 800, hints_enabled=True, font_scale=1.0)
+    large = compute_metrics(_dp, 412, 800, hints_enabled=True, font_scale=2.0)
+
+    assert large["large_text"] is True
+    assert large["product_horizontal"] is False
+    assert large["action_vertical"] is True
+    assert large["toolbar_title_visible"] is False
+    assert large["footer_label_visible"] is False
+    assert large["field_h"] == regular["field_h"] * 2
+    assert large["action_button_h"] == regular["action_button_h"] * 2
+    assert large["results_h"] > regular["results_h"] * 2
+    assert large["toolbar_icon_sp"] < regular["toolbar_icon_sp"]
+
+
 def test_compute_metrics_marks_landscape_and_reduces_vertical_gutters():
     portrait = compute_metrics(_dp, 412, 800, hints_enabled=True)
     landscape = compute_metrics(_dp, 800, 412, hints_enabled=True)
@@ -178,6 +194,9 @@ def test_compute_metrics_marks_landscape_and_reduces_vertical_gutters():
     assert landscape["landscape"] is True
     assert landscape["content_top"] < portrait["content_top"]
     assert landscape["content_spacing"] < portrait["content_spacing"]
+    assert landscape["toolbar_h"] == 56
+    assert landscape["footer_h"] == 0
+    assert landscape["footer_visible"] is False
 
 
 def test_responsive_controller_computes_metrics_before_view_attachment():
@@ -224,6 +243,7 @@ def test_responsive_controller_applies_shell_and_tab_metrics():
     assert view.toolbar_brand_chip.width == metrics["toolbar_icon_w"]
     assert view.toolbar_snowflake.icon_size == f'{metrics["toolbar_icon_sp"]}sp'
     assert view.toolbar_title.font_size == f'{metrics["toolbar_title_sp"]}sp'
+    assert view.toolbar_title.opacity == 1
     assert state["visible_chip"].width == metrics["toolbar_btn_w"]
     assert state["hidden_chip"].width == -1
     assert all(
@@ -243,9 +263,32 @@ def test_responsive_controller_applies_shell_and_tab_metrics():
     )
     assert state["freezing_metrics"] == [metrics]
     assert view.footer_bar.height == metrics["footer_h"]
+    assert view.footer_bar.disabled is False
     assert view.pro_button.width == metrics["pro_w"]
     assert view.ad_slot.height == metrics["ad_h"]
-    assert view.ad_label.font_size == f'{metrics["caption_sp"]}sp'
+    assert view.ad_label.font_size == f'{metrics["ad_sp"]}sp'
+
+
+def test_responsive_controller_hides_nonessential_chrome_when_space_is_tight():
+    state = _responsive_state()
+    controller = state["controller"]
+    view = state["view"]
+    controller.attach(view)
+
+    state["screen_size"][:] = [1400.0, 640.0]
+    assert controller.apply() is True
+
+    assert view.footer_bar.height == 0
+    assert view.footer_bar.opacity == 0
+    assert view.footer_bar.disabled is True
+
+    state["screen_size"][:] = [640.0, 1400.0]
+    state["font_scale"][0] = 2.0
+    assert controller.apply() is True
+
+    assert view.toolbar_title.opacity == 0
+    assert view.footer_label.opacity == 0
+    assert view.footer_bar.disabled is False
 
 
 def test_responsive_controller_preserves_hidden_pro_ad_slot():

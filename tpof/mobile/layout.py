@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from math import sqrt
 from typing import Any
 
 
@@ -30,8 +31,9 @@ def compute_metrics(
     short = height_dp < 720
     landscape = width_dp > height_dp
     font_scale = clamp(float(font_scale), 1.0, 2.0)
-    content_height_scale = 1.0 + (font_scale - 1.0) * 0.70
-    chrome_height_scale = 1.0 + (font_scale - 1.0) * 0.35
+    large_text = font_scale >= 1.5
+    content_height_scale = font_scale
+    chrome_height_scale = 1.0 + (font_scale - 1.0) * 0.15
 
     def content_h(value: float, minimum: float = 0) -> float:
         return max(minimum, round(value * content_height_scale, 2))
@@ -39,9 +41,19 @@ def compute_metrics(
     def chrome_h(value: float, minimum: float = 0) -> float:
         return max(minimum, round(value * chrome_height_scale, 2))
 
+    def fixed_visual_sp(value: float) -> float:
+        """Counter Android's font scale for icon glyphs that are not text."""
+
+        return round(value / font_scale, 2)
+
+    def chrome_sp(value: float) -> float:
+        """Scale compact chrome text without letting it double in size."""
+
+        return round(value / sqrt(font_scale), 2)
+
     text_scale = clamp(width_dp / 412.0, 0.88, 1.06)
-    product_horizontal = width_dp >= 370
-    product_hint_h = content_h(30) if hints_enabled else 0
+    product_horizontal = width_dp >= 370 and not large_text
+    product_hint_h = content_h(36 if large_text else 30) if hints_enabled else 0
 
     card_pad = 10 if narrow else 12 if compact else 14
     card_pad_x = card_pad
@@ -49,14 +61,23 @@ def compute_metrics(
     card_pad_bottom = card_pad + (5 if compact else 6)
     content_pad = 10 if narrow else 14 if compact else 16
     stage_row_h = content_h(66 if compact or short else 74)
-    action_h = content_h(64 if compact else 68)
+    action_vertical = large_text
+    action_button_h = content_h(48, 48)
+    action_h = (
+        (action_button_h * 3) + 32
+        if action_vertical
+        else content_h(64 if compact else 68)
+    )
     title_h = content_h(42 if compact else 46)
     total_h = content_h(44 if compact else 50)
     result_space = 8 if compact or short else 10
     field_h = content_h(54 if compact or short else 60, 48)
     card_spacing = 10 if compact else 12
     native_ad_h = native_ad_height_dp
-    reserved_ad_h = max(64 if compact else 70, native_ad_h + 8 if native_ad_h else 0)
+    reserved_ad_h = max(
+        56 if landscape else 64 if compact else 70,
+        native_ad_h + (4 if landscape else 8) if native_ad_h else 0,
+    )
     result_h = (
         card_pad_top
         + card_pad_bottom
@@ -76,7 +97,7 @@ def compute_metrics(
     )
 
     if product_horizontal:
-        product_body_h = 180 if compact else 202
+        product_body_h = content_h(180 if compact else 202)
         product_card_h = (
             product_body_h + title_h + product_hint_h
             + card_pad_top + card_pad_bottom + 12
@@ -84,8 +105,8 @@ def compute_metrics(
         product_controls_h = product_body_h
         product_image_h = product_body_h
     else:
-        product_controls_h = 130
-        product_image_h = 162
+        product_controls_h = content_h(130)
+        product_image_h = content_h(162)
         product_body_h = product_controls_h + product_image_h + 12
         product_card_h = (
             product_body_h + title_h + product_hint_h
@@ -100,8 +121,13 @@ def compute_metrics(
         "short": short,
         "landscape": landscape,
         "font_scale": font_scale,
+        "large_text": large_text,
         "text_scale": text_scale,
         "product_horizontal": product_horizontal,
+        "action_vertical": action_vertical,
+        "toolbar_title_visible": not large_text,
+        "footer_visible": not landscape,
+        "footer_label_visible": not large_text,
         "content_pad": dp(content_pad),
         "content_top": dp(12 if landscape else 18 if compact else 20),
         "content_bottom": dp(18 if landscape else 26 if compact else 30),
@@ -111,15 +137,29 @@ def compute_metrics(
         "card_pad_top": dp(card_pad_top),
         "card_pad_bottom": dp(card_pad_bottom),
         "card_spacing": dp(card_spacing),
-        "toolbar_h": dp(chrome_h(62 if narrow else 66 if compact else 72, 56)),
+        "toolbar_h": dp(
+            56
+            if landscape
+            else chrome_h(62 if narrow else 66 if compact else 72, 56)
+        ),
         "toolbar_icon_w": dp(38 if narrow else 42 if compact else 44),
         "toolbar_btn_w": dp(48),
-        "toolbar_icon_sp": 24 if narrow else 26 if compact else 28,
-        "toolbar_btn_sp": 23 if narrow else 24 if compact else 26,
-        "toolbar_title_sp": int(14 * text_scale) if narrow else int(15 * text_scale) if compact else 16,
-        "bottom_nav_h": dp(chrome_h(64 if compact else 70, 64)),
+        "toolbar_icon_sp": fixed_visual_sp(24 if narrow else 26 if compact else 28),
+        "toolbar_btn_sp": fixed_visual_sp(23 if narrow else 24 if compact else 26),
+        "toolbar_title_sp": chrome_sp(
+            int(14 * text_scale)
+            if narrow
+            else int(15 * text_scale)
+            if compact
+            else 16
+        ),
+        "bottom_nav_h": dp(
+            64
+            if landscape
+            else max(64, chrome_h(64 if compact else 70, 64))
+        ),
         "bottom_tab_icon": dp(52 if compact else 56),
-        "bottom_tab_sp": 11 if compact else 12,
+        "bottom_tab_sp": chrome_sp(11 if compact else 12),
         "title_h": dp(title_h),
         "title_sp": int(20 * text_scale),
         "body_sp": int(15 * text_scale),
@@ -134,11 +174,11 @@ def compute_metrics(
         "product_image_h": dp(product_image_h),
         "product_hint_h": dp(product_hint_h),
         "product_body_spacing": dp(12 if compact else 14),
-        "placeholder_top": dp(32 if compact else 44),
-        "placeholder_bottom": dp(20 if compact else 28),
-        "placeholder_icon_sp": 36 if compact else 42,
+        "placeholder_top": dp(content_h(32 if compact else 44)),
+        "placeholder_bottom": dp(content_h(20 if compact else 28)),
+        "placeholder_icon_sp": fixed_visual_sp(36 if compact else 42),
         "action_h": dp(action_h),
-        "action_button_h": dp(content_h(48, 48)),
+        "action_button_h": dp(action_button_h),
         "action_sp": int(13 * text_scale) if compact else int(14 * text_scale),
         "results_h": dp(result_h),
         "results_spacing": dp(result_space),
@@ -147,12 +187,14 @@ def compute_metrics(
         "stage_row_h": dp(stage_row_h),
         "stage_head_h": dp(content_h(38 if compact else 42, 38)),
         "stage_icon_w": dp(34 if compact else 38),
-        "stage_icon_sp": 22 if compact else 24,
-        "unit_w": dp(64 if compact else 72),
+        "stage_icon_sp": fixed_visual_sp(22 if compact else 24),
+        "unit_w": dp(content_h(64 if compact else 72, 64)),
         "unit_h": dp(content_h(48, 48)),
-        "footer_h": dp(chrome_h(56, 56)),
-        "footer_sp": int(11 * text_scale),
-        "pro_w": dp(116 if compact else 128),
+        "footer_h": dp(0 if landscape else chrome_h(56, 56)),
+        "footer_sp": chrome_sp(int(11 * text_scale)),
+        "pro_sp": chrome_sp(int(12 * text_scale)),
+        "ad_sp": chrome_sp(int(12 * text_scale)),
+        "pro_w": dp(148 if large_text else 116 if compact else 128),
         "pro_h": dp(48),
         "ad_h": dp(reserved_ad_h),
     }
@@ -295,6 +337,7 @@ class ResponsiveLayoutController:
         view.toolbar_snowflake.icon_size = f'{metrics["toolbar_icon_sp"]}sp'
         view.toolbar_title.font_size = f'{metrics["toolbar_title_sp"]}sp'
         view.toolbar_title.line_height = 0.88
+        view.toolbar_title.opacity = 1 if metrics["toolbar_title_visible"] else 0
 
         for chip in view.action_chips:
             if getattr(chip, "opacity", 1) > 0:
@@ -324,6 +367,8 @@ class ResponsiveLayoutController:
 
         self._apply_freezing_layout(metrics)
         view.footer_bar.height = metrics["footer_h"]
+        view.footer_bar.opacity = 1 if metrics["footer_visible"] else 0
+        view.footer_bar.disabled = not metrics["footer_visible"]
         view.footer_bar.padding = [
             metrics["content_pad"],
             dp(3),
@@ -333,9 +378,10 @@ class ResponsiveLayoutController:
         view.footer_bar.spacing = dp(10 if metrics["compact"] else 12)
         view.footer_label.font_size = f'{metrics["footer_sp"]}sp'
         view.footer_label.shorten = True
+        view.footer_label.opacity = 1 if metrics["footer_label_visible"] else 0
         view.pro_button.width = metrics["pro_w"]
         view.pro_button.height = metrics["pro_h"]
-        view.pro_button.font_size = f'{metrics["caption_sp"]}sp'
+        view.pro_button.font_size = f'{metrics["pro_sp"]}sp'
         if not self._pro_no_ads():
             view.ad_slot.height = metrics["ad_h"]
             view.ad_slot.padding = [
@@ -344,5 +390,5 @@ class ResponsiveLayoutController:
                 metrics["content_pad"],
                 dp(2),
             ]
-        view.ad_label.font_size = f'{metrics["caption_sp"]}sp'
+        view.ad_label.font_size = f'{metrics["ad_sp"]}sp'
         return True

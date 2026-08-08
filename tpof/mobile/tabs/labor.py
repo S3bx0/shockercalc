@@ -165,7 +165,12 @@ class LaborTabController(
             self.view.additional_button,
             "primary" if self.has_additional else "dark",
         )
-        self.view.additional_box.height = self._dp(60) if self.has_additional else 0
+        expanded_height = getattr(
+            self.view.additional_box,
+            "expanded_height",
+            self._dp(60),
+        )
+        self.view.additional_box.height = expanded_height if self.has_additional else 0
         self.view.additional_box.opacity = 1 if self.has_additional else 0
         self.view.additional_box.disabled = not self.has_additional
         if not self.has_additional:

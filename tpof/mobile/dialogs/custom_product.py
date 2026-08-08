@@ -146,10 +146,14 @@ class CustomProductDialogController:
                 buttons=[
                     MDFlatButton(
                         text=self._translate("cancel"),
+                        size_hint_y=None,
+                        height=dp(48),
                         on_release=self.close,
                     ),
                     MDRaisedButton(
                         text=self._translate("save"),
+                        size_hint_y=None,
+                        height=dp(48),
                         on_release=self.save,
                     ),
                 ],

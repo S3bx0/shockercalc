@@ -130,6 +130,9 @@ class FreezingTabPresentationMixin:
         view.results_card.height = metrics["results_h"]
         view.results_title_row.height = metrics["title_h"]
         view.results_title_label.font_size = f'{metrics["title_sp"]}sp'
+        view.action_row.orientation = (
+            "vertical" if metrics["action_vertical"] else "horizontal"
+        )
         view.action_row.height = metrics["action_h"]
         view.action_row.spacing = dp(6 if compact else 8)
         view.action_row.padding = [
@@ -138,11 +141,16 @@ class FreezingTabPresentationMixin:
             0,
             dp(7 if compact else 8),
         ]
-        for button in (
+        action_buttons = (
             view.calculate_button,
             view.pdf_button,
             view.clear_button,
-        ):
+        )
+        horizontal_widths = (0.40, 0.27, 0.33)
+        for button, horizontal_width in zip(action_buttons, horizontal_widths):
+            button.size_hint_x = (
+                1 if metrics["action_vertical"] else horizontal_width
+            )
             button.height = metrics["action_button_h"]
             button.font_size = f'{metrics["action_sp"]}sp'
         view.total_label.height = metrics["total_h"]

@@ -125,7 +125,7 @@ class FreezingTabViewCompositionMixin:
         add_product_button = MDIconButton(
             icon="plus-circle-outline",
             size_hint_x=None,
-            width=dp(44),
+            width=dp(48),
             icon_size="26sp",
             theme_text_color="Custom",
             text_color=(0.18, 0.68, 0.95, 1),
