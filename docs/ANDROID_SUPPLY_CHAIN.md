@@ -51,6 +51,15 @@ Po zbudowaniu AAB workflow wykonuje następującą sekwencję:
 
 Brak któregokolwiek elementu lub błąd weryfikacji zatrzymuje wydanie.
 
+## Zweryfikowany baseline
+
+Przebieg GitHub Actions `31258433437` z commita `main` `ad4360a` zbudował
+podpisany AAB 1.5.13 (`versionCode 114`) o SHA-256
+`0a1c6e46176b06fe8723d6ac1cfee25f7457b6eaac848eed63c61f00cf5673e2`.
+CycloneDX zawiera 165 unikalnych komponentów: 28 dystrybucji Pythona,
+122 moduły Maven i 15 bibliotek natywnych. Provenance i SBOM zostały
+zweryfikowane zarówno przez API GitHub, jak i offline z zapisanych bundle.
+
 ## Weryfikacja pobranego AAB
 
 Po pobraniu AAB z przebiegu release:
