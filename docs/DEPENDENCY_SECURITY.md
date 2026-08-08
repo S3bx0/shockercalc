@@ -36,3 +36,19 @@ GitHub Actions. Reguły mają jawne `applies-to: version-updates`, dzięki czemu
 pilne poprawki bezpieczeństwa pozostają osobnymi, łatwymi do przejrzenia PR.
 Aktualizacje główne oraz wszystkie PR-y bezpieczeństwa wymagają testów i
 ręcznej decyzji o scaleniu.
+
+## CodeQL
+
+Zaawansowany workflow CodeQL analizuje osobno Python i natywny kod Java przy
+każdym PR do `main`/`master`, po zmianie tych gałęzi, raz w tygodniu oraz na
+żądanie. Korzysta z rozszerzonego zestawu zapytań bezpieczeństwa, minimalnych
+uprawnień i akcji przypiętych do zweryfikowanego SHA commita.
+
+Java jest obecnie analizowana bez kompilacji, ponieważ repozytorium nie ma
+plików Kotlin, a pełny build Androida wykonuje osobny workflow. Test
+konfiguracji blokuje ciche dodanie `.kt`: przed wprowadzeniem Kotlina zadanie
+`java-kotlin` musi przejść na `autobuild` albo kontrolowany build ręczny.
+
+Wyniki są publikowane w `Security -> Code scanning`. Alerty wymagają oceny i
+naprawy albo udokumentowanego uzasadnienia; sam workflow nie zmienia kodu i
+nie scala PR.

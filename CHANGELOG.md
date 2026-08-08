@@ -27,6 +27,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
   używa akcji przypiętej pełnym SHA i blokuje nowe podatności od poziomu
   `moderate`. Włączono również Dependabot Alerts i Security Updates bez
   automatycznego scalania zmian.
+- Dodano CodeQL dla Pythona i natywnej warstwy Java. Analiza działa dla PR,
+  zmian głównej gałęzi, harmonogramu i uruchomienia ręcznego, korzysta z
+  `security-extended` oraz akcji przypiętych pełnym SHA.
 
 ### Zmieniono
 
@@ -58,7 +61,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 477 testów i utrzymuje 55,73% mierzonego pokrycia przy
+- Pełna suita zawiera 481 testów i utrzymuje mierzone pokrycie powyżej
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01

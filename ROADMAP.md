@@ -125,6 +125,10 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
   Alerts i Security Updates są aktywne, a osobna bramka PR blokuje nowe
   podatności od poziomu `moderate`. Zwykłe aktualizacje pozostają grupowane,
   poprawki bezpieczeństwa są osobnymi PR i nie mają automatycznego scalania;
+- **CodeQL — wdrożone:** osobne analizy Pythona i natywnej warstwy Java
+  działają dla PR, głównej gałęzi i harmonogramu z zestawem
+  `security-extended`. Dodanie Kotlina jest chronione testem wymagającym
+  przejścia z trybu bez kompilacji na `autobuild` albo build ręczny;
 - **następne P1:** ręczny audyt TalkBack/Switch Access, test fizycznego ARM oraz
   API 35/36 i bazowe pomiary startu, pamięci, ANR/jank release.
 
