@@ -24,6 +24,10 @@ jobs:
   build-release:
     name: Buildozer (signed release AAB)
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     env:
       # Savannah intermittently returns HTTP 502. python-for-android supports
       # recipe URL overrides, so use FreeType's official SourceForge mirror
@@ -166,6 +170,20 @@ jobs:
           echo "CFLAGS=$CFLAGS"
           echo "CXXFLAGS=$CXXFLAGS"
           ( yes || true ) | buildozer android release 2>&1 | tee buildozer.log
+
+      - name: Resolve release dependency graph for SBOM
+        run: |
+          set -eo pipefail
+          GRADLEW_PATH="$(find .buildozer/android/platform/build-arm64-v8a/dists -type f -name gradlew -print -quit)"
+          test -n "$GRADLEW_PATH"
+          GRADLE_DIR="$(dirname "$GRADLEW_PATH")"
+          (
+            cd "$GRADLE_DIR"
+            ./gradlew --offline --console=plain dependencies \
+              --configuration releaseRuntimeClasspath
+          ) | tee "$GITHUB_WORKSPACE/gradle-release-dependencies.txt"
+          grep -Eq '(\\---|\+---) [A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+:' \
+            gradle-release-dependencies.txt
 
       - name: Verify AAB signature
         run: |
@@ -384,6 +402,57 @@ jobs:
             "$AAB_PATH" \
             --report native-libs-16kb-report.txt
 
+      - name: Generate exact Android CycloneDX SBOM
+        run: |
+          set -eo pipefail
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          python tools/generate_android_sbom.py "$AAB_PATH" \
+            --manifest "$RUNNER_TEMP/final-AndroidManifest.xml" \
+            --python-requirements requirements-android-audit.txt \
+            --gradle-report gradle-release-dependencies.txt \
+            --output refrigerationcalc-android.cdx.json
+
+      - name: Attest signed AAB provenance
+        id: attest-provenance
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: bin/*.aab
+
+      - name: Attest signed AAB SBOM
+        id: attest-sbom
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: bin/*.aab
+          sbom-path: refrigerationcalc-android.cdx.json
+
+      - name: Verify published AAB attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eo pipefail
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          SIGNER_WORKFLOW="$GITHUB_REPOSITORY/.github/workflows/android-release.yml"
+          gh attestation verify "$AAB_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$SIGNER_WORKFLOW" \
+            --source-digest "$GITHUB_SHA" \
+            --format json > aab-provenance-verification.json
+          gh attestation verify "$AAB_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$SIGNER_WORKFLOW" \
+            --source-digest "$GITHUB_SHA" \
+            --predicate-type https://cyclonedx.org/bom \
+            --format json > aab-sbom-verification.json
+
+      - name: Collect attestation bundles
+        run: |
+          cp "${{ steps.attest-provenance.outputs.bundle-path }}" \
+            aab-provenance.attestation.json
+          cp "${{ steps.attest-sbom.outputs.bundle-path }}" \
+            aab-sbom.attestation.json
+
       - name: Sanitize buildozer log (on failure)
         if: env.UPLOAD_EXTRA_ARTIFACTS == 'true' && failure()
         env:
@@ -449,6 +518,20 @@ jobs:
           name: play-console-diagnostics
           path: play-console-diagnostics/*
           if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload AAB supply-chain evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: refrigerationcalc-aab-supply-chain
+          path: |
+            refrigerationcalc-android.cdx.json
+            gradle-release-dependencies.txt
+            aab-provenance.attestation.json
+            aab-sbom.attestation.json
+            aab-provenance-verification.json
+            aab-sbom-verification.json
+          if-no-files-found: error
           retention-days: 30
 
       - name: Upload AAB artifact

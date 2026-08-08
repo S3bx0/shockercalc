@@ -98,6 +98,7 @@ files = [
     "tools/verify_android_permissions.py",
     "tools/verify_android_network_security.py",
     "tools/verify_android_python_packages.py",
+    "tools/generate_android_sbom.py",
 ]
 ignore_missing_imports = true
 no_implicit_optional = true

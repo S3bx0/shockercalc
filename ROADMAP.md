@@ -129,6 +129,12 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
   działają dla PR, głównej gałęzi i harmonogramu z zestawem
   `security-extended`. Dodanie Kotlina jest chronione testem wymagającym
   przejścia z trybu bez kompilacji na `autobuild` albo build ręczny;
+- **łańcuch dostaw AAB — wdrożony w workflow:** podpisane wydanie otrzymuje
+  SLSA Provenance oraz CycloneDX 1.6 SBOM wyliczony z finalnego AAB,
+  `libpybundle.so`, rozwiązanego `releaseRuntimeClasspath` i bibliotek
+  natywnych. CI wymaga tożsamości właściwego workflow i źródłowego commita;
+  zamknięcie punktu wymaga jeszcze udanego przebiegu podpisanego AAB po
+  scaleniu zmiany do `main`;
 - **następne P1:** ręczny audyt TalkBack/Switch Access, test fizycznego ARM oraz
   API 35/36 i bazowe pomiary startu, pamięci, ANR/jank release.
 

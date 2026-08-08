@@ -302,6 +302,42 @@ def test_release_workflow_has_blocking_aab_integrity_gates():
     assert "if: always()" in aab_upload
 
 
+def test_release_workflow_attests_exact_aab_and_cyclonedx_sbom():
+    workflow = (ROOT / ".github/workflows/android-release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "id-token: write" in workflow
+    assert "attestations: write" in workflow
+    assert "contents: read" in workflow
+    assert workflow.count(
+        "actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26"
+    ) == 2
+    assert "Generate exact Android CycloneDX SBOM" in workflow
+    assert "tools/generate_android_sbom.py" in workflow
+    assert "--configuration releaseRuntimeClasspath" in workflow
+    assert "--offline --console=plain dependencies" in workflow
+    assert "--python-requirements requirements-android-audit.txt" in workflow
+    assert "--manifest \"$RUNNER_TEMP/final-AndroidManifest.xml\"" in workflow
+    assert "subject-path: bin/*.aab" in workflow
+    assert "sbom-path: refrigerationcalc-android.cdx.json" in workflow
+
+
+def test_release_workflow_verifies_and_preserves_supply_chain_evidence():
+    workflow = (ROOT / ".github/workflows/android-release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "gh attestation verify" in workflow
+    assert "--signer-workflow \"$SIGNER_WORKFLOW\"" in workflow
+    assert "--source-digest \"$GITHUB_SHA\"" in workflow
+    assert "--predicate-type https://cyclonedx.org/bom" in workflow
+    assert "aab-provenance.attestation.json" in workflow
+    assert "aab-sbom.attestation.json" in workflow
+    assert "refrigerationcalc-aab-supply-chain" in workflow
+    assert "if-no-files-found: error" in workflow
+
+
 def test_lint_workflow_runs_full_mypy_baseline():
     workflow = (ROOT / ".github/workflows/lint.yml").read_text(encoding="utf-8")
 
