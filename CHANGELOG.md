@@ -52,7 +52,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 472 testy i utrzymuje 55,63% mierzonego pokrycia przy
+- Pełna suita zawiera 473 testy i utrzymuje 55,63% mierzonego pokrycia przy
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01
