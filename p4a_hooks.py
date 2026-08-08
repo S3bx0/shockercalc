@@ -21,12 +21,41 @@ import shutil
 import tarfile
 
 FIREBASE_PACKAGE = "pl.smilczarek.refrigerationcalc"
-SUPPORTED_ANDROID_ABIS = ("arm64-v8a",)
+DEFAULT_ANDROID_ABIS = ("arm64-v8a",)
+ALLOWED_ANDROID_ABIS = frozenset({"arm64-v8a", "x86_64"})
 DEFAULT_FIREBASE_CONFIG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     ".firebase",
     "google-services.json",
 )
+
+
+def _resolve_android_abis(build_arch=None):
+    """Zwraca zweryfikowane ABI aktywnego buildu.
+
+    Produkcja pozostaje domyslnie arm64. Workflow diagnostyczny moze jawnie
+    ustawic ``BUILD_ARCH=x86_64``, aby filtr Gradle nie usunal runtime p4a
+    przeznaczonego dla emulatora.
+    """
+    raw_value = build_arch
+    if raw_value is None:
+        raw_value = os.environ.get("BUILD_ARCH", "")
+    requested = tuple(
+        dict.fromkeys(
+            part.strip()
+            for part in re.split(r"[,\s]+", raw_value)
+            if part.strip()
+        )
+    )
+    if not requested:
+        return DEFAULT_ANDROID_ABIS
+
+    unsupported = sorted(set(requested) - ALLOWED_ANDROID_ABIS)
+    if unsupported:
+        raise RuntimeError(
+            "Niedozwolone Android ABI w BUILD_ARCH: " + ", ".join(unsupported)
+        )
+    return requested
 
 
 def _resolve_firebase_config(config_path=None):
@@ -376,7 +405,7 @@ android {{
     print("[p4a hook] zaktualizowanych build.gradle diagnostics:", patched)
 
 
-def _patch_android_abi_filters(*roots):
+def _patch_android_abi_filters(*roots, build_arch=None):
     """Ogranicza natywne biblioteki zaleznosci do ABI budowanego przez p4a.
 
     ``android.archs`` steruje kompilacja runtime p4a, ale AAR-y zaleznosci moga
@@ -385,7 +414,8 @@ def _patch_android_abi_filters(*roots):
     architekturom z ``buildozer.spec``.
     """
     marker = "Refrigeration Calc supported ABIs"
-    quoted_abis = ", ".join(repr(abi) for abi in SUPPORTED_ANDROID_ABIS)
+    active_abis = _resolve_android_abis(build_arch)
+    quoted_abis = ", ".join(repr(abi) for abi in active_abis)
     snippet = f"""
 
 // {marker} (patched by p4a_hooks.py).
