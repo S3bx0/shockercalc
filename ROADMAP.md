@@ -112,7 +112,7 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
   wzroku pozostaje zadaniem P1.1 po ręcznym teście POC na urządzeniu;
 - **CI wdrożone:** pełna suita ma próg pokrycia 50%, zależności są sprawdzane
   przez `pip-audit`, a historia Git przez Gitleaks;
-- **zależności desktop/core zaktualizowane:** Pillow 12.3.0, pypdf 6.14.2,
+- **zależności desktop/core zaktualizowane:** Pillow 12.3.0, pypdf 6.15.0,
   ttkbootstrap 1.20.4, Ruff 0.15.22 i mypy 2.3.0; fallback szyfrowania PDF
   obsługuje obie sygnatury API;
 - **otwarte:** Pillow 11.3.0 w AAB pochodzi bezpośrednio z oficjalnej receptury

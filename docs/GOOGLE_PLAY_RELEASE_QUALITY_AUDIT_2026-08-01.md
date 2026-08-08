@@ -366,7 +366,7 @@ warunek, ale zachowanie na API 36 nadal wymaga testu.
 - `requirements.txt` ma `Pillow 12.2.0`, nadal z podatnościami naprawionymi w
   `12.3.0`;
 - `pypdf 6.13.3` ma cztery zgłoszenia CVE, a pełny zestaw poprawek wymaga
-  co najmniej `6.14.2`;
+  co najmniej `6.15.0`;
 - `requirements-mobile.txt` nie odpowiada faktycznemu stosowi Androida:
   build używa `fpdf2/fonttools/defusedxml` i starszego Pillow.
 
