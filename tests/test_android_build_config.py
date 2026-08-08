@@ -254,6 +254,14 @@ def test_workflows_pin_reproducible_build_tools():
     )
     assert "firebase-tools@15.22.0" in debug_workflow
     assert "distribute_to_firebase" in debug_workflow
+    assert "build_arch:" in debug_workflow
+    assert "- arm64-v8a" in debug_workflow
+    assert "- x86_64" in debug_workflow
+    assert "BUILD_ARCH:" in debug_workflow
+    assert "Configure debug architecture" in debug_workflow
+    assert 'android.archs = ${BUILD_ARCH}' in debug_workflow
+    assert '--supported-abi "$BUILD_ARCH"' in debug_workflow
+    assert "${{ env.BUILD_ARCH }}-${{ hashFiles('buildozer.spec') }}" in debug_workflow
 
 
 def test_release_workflow_verifies_offline_legal_bundle():

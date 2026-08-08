@@ -7,6 +7,14 @@ on:
     branches: [main, master]
   workflow_dispatch:
     inputs:
+      build_arch:
+        description: Android ABI for manual emulator/device diagnostics
+        required: false
+        type: choice
+        options:
+          - arm64-v8a
+          - x86_64
+        default: arm64-v8a
       distribute_to_firebase:
         description: Send the APK to Firebase App Distribution
         required: false
@@ -31,11 +39,17 @@ jobs:
       # recipe URL overrides, so use FreeType's official SourceForge mirror
       # and verify the archive against the publisher-provided SHA-256.
       URL_freetype: "https://downloads.sourceforge.net/project/freetype/freetype2/{version}/freetype-{version}.tar.gz#sha256=174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34"
+      BUILD_ARCH: ${{ github.event_name == 'workflow_dispatch' && inputs.build_arch || 'arm64-v8a' }}
       UPLOAD_EXTRA_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_extra_artifacts == true }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Configure debug architecture
+        run: |
+          sed -i -E "s/^android\.archs = .+$/android.archs = ${BUILD_ARCH}/" buildozer.spec
+          grep -Fx "android.archs = ${BUILD_ARCH}" buildozer.spec
 
       - name: Configure Firebase SDK (optional)
         env:
@@ -90,8 +104,9 @@ jobs:
           path: |
             ~/.buildozer
             ~/.gradle
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-${{ runner.os }}-${{ env.BUILD_ARCH }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
+            buildozer-${{ runner.os }}-${{ env.BUILD_ARCH }}-
             buildozer-${{ runner.os }}-
 
       # Do not cache the project-local .buildozer directory. Its compressed
@@ -174,7 +189,7 @@ jobs:
         run: |
           APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
           test -n "$APK_PATH"
-          python tools/verify_android_abi_bundle.py "$APK_PATH"
+          python tools/verify_android_abi_bundle.py "$APK_PATH" --supported-abi "$BUILD_ARCH"
 
       - name: Verify packaged Python dependencies
         run: |

@@ -78,8 +78,20 @@ def verify_android_abi_bundle(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("archive", type=Path, help="APK or AAB to verify")
+    parser.add_argument(
+        "--supported-abi",
+        action="append",
+        dest="supported_abis",
+        help=(
+            "Expected packaged ABI. Repeat for multi-ABI diagnostics. "
+            "Defaults to the production ABI allowlist."
+        ),
+    )
     args = parser.parse_args()
-    packaged = verify_android_abi_bundle(args.archive)
+    packaged = verify_android_abi_bundle(
+        args.archive,
+        supported_abis=args.supported_abis or SUPPORTED_ANDROID_ABIS,
+    )
     print(f"Android ABI runtime verified: {args.archive}")
     for abi, libraries in sorted(packaged.items()):
         print(f"  {abi}: {len(libraries)} native libraries")
