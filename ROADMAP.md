@@ -9,8 +9,9 @@ zbierania opinii i wydania poprawki wynikającej z opinii.
 
 Kolejność release train:
 
-1. zabezpieczyć higienę repozytorium, uzyskać zielone checki i scalić PR #13 do
-   `main`;
+1. naprawić uszkodzone maski alfa ilustracji bananów i awokado, przeskanować
+   pozostałe grafiki produktów, zabezpieczyć higienę repozytorium, uzyskać
+   zielone checki i scalić bieżącą gałąź do `main`;
 2. utworzyć checkpoint/tag na `main`, zbudować podpisany AAB z tego commita i
    wykonać krótki smoke na fizycznym ARM oraz API 35/36;
 3. opublikować ten sam AAB na aktywnej ścieżce testu zamkniętego i potwierdzić,

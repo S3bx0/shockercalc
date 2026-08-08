@@ -1,7 +1,7 @@
 """Regression guards for mobile product assets."""
 from __future__ import annotations
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from tools.audit_product_assets import IMAGES_DIR, _catalog_coverage
 
@@ -25,6 +25,33 @@ EXPECTED_HIDDEN_MOBILE_IMAGES = {
     "zerowka_CTP ALDI",
 }
 
+# Zamknięte prześwity większe niż ten limit wymagają ręcznego przeglądu.
+# W wiśniach tło jest celowo zamknięte pomiędzy owocami i ogonkami.
+MAX_UNREVIEWED_ALPHA_HOLE_PIXELS = 1_000
+EXPECTED_LARGE_ALPHA_HOLES = {
+    "Wiśnie kwaśne.webp",
+    "Wiśnie słodkie.webp",
+}
+
+
+def _enclosed_transparent_pixels(path) -> int:
+    """Count fully transparent pixels that cannot reach an image edge."""
+    with Image.open(path) as opened:
+        alpha = opened.convert("RGBA").getchannel("A")
+        transparent = alpha.point(lambda value: 255 if value <= 8 else 0)
+
+    width, height = transparent.size
+    for x in range(width):
+        for y in (0, height - 1):
+            if transparent.getpixel((x, y)):
+                ImageDraw.floodfill(transparent, (x, y), 0)
+    for y in range(height):
+        for x in (0, width - 1):
+            if transparent.getpixel((x, y)):
+                ImageDraw.floodfill(transparent, (x, y), 0)
+
+    return transparent.histogram()[255]
+
 
 def test_mobile_product_asset_coverage_is_controlled():
     images = sorted(IMAGES_DIR.glob("*.webp"))
@@ -46,3 +73,15 @@ def test_product_image_size_budget_is_enforced():
             assert image.width <= 512, path.name
             assert image.height <= 512, path.name
             assert image.format == "WEBP", path.name
+
+
+def test_product_images_do_not_gain_large_unreviewed_alpha_holes():
+    images = sorted(IMAGES_DIR.glob("*.webp"))
+    suspicious = {
+        path.name
+        for path in images
+        if _enclosed_transparent_pixels(path)
+        > MAX_UNREVIEWED_ALPHA_HOLE_PIXELS
+    }
+
+    assert suspicious == EXPECTED_LARGE_ALPHA_HOLES

@@ -5,10 +5,10 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 ## Podsumowanie
 
 - Pliki WebP: 219
-- Laczy rozmiar katalogu `assets/images`: 8.89 MiB
+- Laczy rozmiar katalogu `assets/images`: 8.71 MiB
 - Kandydaci high priority: 159
 - Kandydaci medium priority: 1
-- Kandydaci low priority: 9
+- Kandydaci low priority: 7
 - Obrazy wygladajace jak szablon/karta: 159
 - Widoczne produkty mobilne: 208
 - Widoczne produkty bez grafiki: 0
@@ -91,10 +91,8 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 | Plik | Rozmiar | Priorytet |
 |---|---:|---|
 | `Jabłka suszone.webp` | 141.0 KiB | medium |
-| `Banany.webp` | 136.4 KiB | low |
 | `Pomarańcze.webp` | 133.2 KiB | low |
 | `Winogrono amerykańskie.webp` | 126.2 KiB | low |
-| `Awokado.webp` | 124.1 KiB | low |
 | `Daktyle suszone.webp` | 123.1 KiB | low |
 | `Figi suszone.webp` | 121.6 KiB | low |
 | `Oliwki.webp` | 121.3 KiB | low |
@@ -105,6 +103,8 @@ Cel: przygotowac bezpieczna liste grafik produktow do podmiany bez mieszania teg
 | `Limonka.webp` | 116.5 KiB | ok |
 | `Brokuły.webp` | 114.6 KiB | ok |
 | `Kantalupa.webp` | 112.1 KiB | ok |
+| `Mango.webp` | 110.9 KiB | ok |
+| `Nektaryny.webp` | 109.5 KiB | ok |
 
 ## Pokrycie katalogu mobilnego
 

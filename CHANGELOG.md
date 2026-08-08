@@ -37,6 +37,9 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Naprawiono
 
+- Odtworzono kompletne wnętrza ilustracji bananów i awokado po zbyt agresywnym
+  usuwaniu tła. Test regresji przegląda cały katalog produktów i zatrzymuje
+  duże, niezatwierdzone otwory w kanale alfa.
 - Kontrola Android Auto Backup sprawdza teraz finalny manifest po scaleniu
   Gradle, a dla wydania — manifest rzeczywiście zapakowany w AAB. Usuwa to
   fałszywy błąd CI mimo poprawnego `android:allowBackup=false` w bundle.
@@ -49,7 +52,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 469 testów i utrzymuje 55,63% mierzonego pokrycia przy
+- Pełna suita zawiera 472 testy i utrzymuje 55,63% mierzonego pokrycia przy
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01
