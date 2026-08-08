@@ -23,6 +23,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano kontrolowaną recepturę `python-for-android` dla Pillow 12.3.0 oraz
   bramkę CI odczytującą wersję i natywne moduły bezpośrednio z Python bundle
   zapakowanego w APK/AAB.
+- Dodano Dependency Review dla każdego PR. Bramka ma minimalne uprawnienia,
+  używa akcji przypiętej pełnym SHA i blokuje nowe podatności od poziomu
+  `moderate`. Włączono również Dependabot Alerts i Security Updates bez
+  automatycznego scalania zmian.
 
 ### Zmieniono
 

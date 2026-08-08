@@ -115,12 +115,16 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
 - **zależności desktop/core zaktualizowane:** Pillow 12.3.0, pypdf 6.15.0,
   ttkbootstrap 1.20.4, Ruff 0.15.22 i mypy 2.3.0; fallback szyfrowania PDF
   obsługuje obie sygnatury API;
-- **Pillow 12.3.0 — migracja w toku na osobnej gałęzi:** lokalna receptura
+- **Pillow 12.3.0 — migracja zakończona w `v1.5.13`:** lokalna receptura
   przypina źródło i SHA-256, wyłącza ścieżki hosta podczas cross-build oraz
   zachowuje dotychczasowy zestaw JPEG/PNG/FreeType. CI odczytuje wersję
-  faktycznie zapakowaną w `libpybundle.so`, a audyt nie używa już wyjątków CVE.
-  Do zamknięcia pozostaje zielony APK/AAB, kontrola rozmiaru i 16 KB oraz smoke
-  PNG/JPEG/alpha/EXIF, ekranów WebP i PDF na fizycznym ARM;
+  faktycznie zapakowaną w `libpybundle.so`, a audyt nie używa wyjątków CVE.
+  APK/AAB, rozmiar, 16 KB i smoke na fizycznym ARM przeszły; tag `v1.5.13`
+  wskazuje zweryfikowany merge commit;
+- **Dependency Review i Dependabot — wdrożone:** Dependency Graph, Dependabot
+  Alerts i Security Updates są aktywne, a osobna bramka PR blokuje nowe
+  podatności od poziomu `moderate`. Zwykłe aktualizacje pozostają grupowane,
+  poprawki bezpieczeństwa są osobnymi PR i nie mają automatycznego scalania;
 - **następne P1:** ręczny audyt TalkBack/Switch Access, test fizycznego ARM oraz
   API 35/36 i bazowe pomiary startu, pamięci, ANR/jank release.
 
