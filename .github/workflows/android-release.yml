@@ -201,6 +201,12 @@ jobs:
           test -n "$AAB_PATH"
           python tools/verify_android_abi_bundle.py "$AAB_PATH"
 
+      - name: Verify packaged Python dependencies
+        run: |
+          AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"
+          test -n "$AAB_PATH"
+          python tools/verify_android_python_packages.py "$AAB_PATH"
+
       - name: Verify Android backup policy
         run: |
           AAB_PATH="$(find bin -maxdepth 1 -name '*.aab' -print -quit)"

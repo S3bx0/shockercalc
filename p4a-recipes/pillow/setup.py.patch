@@ -1,0 +1,25 @@
+diff --git a/setup.py b/setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -520,10 +520,7 @@ class pil_build_ext(build_ext):
+ 
+             if root is None and root_name in os.environ:
+                 root_prefix = os.environ[root_name]
+-                root = (
+-                    os.path.join(root_prefix, "lib"),
+-                    os.path.join(root_prefix, "include"),
+-                )
++                root = tuple(root_prefix.split(":"))
+ 
+             if root is None and pkg_config:
+                 for lib_name2 in (
+@@ -569,9 +565,6 @@ class pil_build_ext(build_ext):
+                 for d in os.environ[k].split(os.path.pathsep):
+                     _add_directory(library_dirs, d)
+ 
+-        _add_directory(library_dirs, os.path.join(sys.prefix, "lib"))
+-        _add_directory(include_dirs, os.path.join(sys.prefix, "include"))
+-
+         #
+         # add platform directories
+ 

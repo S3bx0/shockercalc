@@ -176,6 +176,12 @@ jobs:
           test -n "$APK_PATH"
           python tools/verify_android_abi_bundle.py "$APK_PATH"
 
+      - name: Verify packaged Python dependencies
+        run: |
+          APK_PATH="$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          python tools/verify_android_python_packages.py "$APK_PATH"
+
       - name: Verify Android backup policy
         run: |
           MERGED_MANIFEST="$(find .buildozer -type f \( \

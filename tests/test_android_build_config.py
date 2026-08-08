@@ -150,6 +150,7 @@ def test_launcher_uses_current_icon_as_static_presplash():
     assert "android/**" in spec
     assert "tpof/desktop/**" in spec
     assert "source.exclude_dirs = tests, tools," in spec
+    assert "p4a-recipes" in spec
 
 
 def test_product_images_are_mobile_sized_and_bounded():
@@ -189,6 +190,27 @@ def test_build_config_supports_rotation_and_current_android_libraries():
     assert "google_analytics_adid_collection_enabled=false" in spec
     assert "p4a.branch = master" in spec
     assert "p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831" in spec
+    assert "p4a.local_recipes = ./p4a-recipes" in spec
+    assert "pillow==12.3.0" in spec.lower()
+
+
+def test_local_pillow_recipe_is_pinned_and_cross_compile_safe():
+    recipe = (ROOT / "p4a-recipes/pillow/__init__.py").read_text(encoding="utf-8")
+    patch = (ROOT / "p4a-recipes/pillow/setup.py.patch").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'version = "12.3.0"' in recipe
+    assert (
+        'sha256sum = "3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce"'
+        in recipe
+    )
+    assert 'depends = ["png", "jpeg", "freetype"]' in recipe
+    assert 'hostpython_prerequisites = ["setuptools>=77"]' in recipe
+    assert 'extra_build_args = ["--config-setting", "platform-guessing=disable"]' in recipe
+    assert 'env["PKG_CONFIG"] = "p4a-pkg-config-disabled"' in recipe
+    assert 'root = tuple(root_prefix.split(":"))' in patch
+    assert 'os.path.join(sys.prefix, "lib")' in patch
 
 
 def test_workflows_pin_reproducible_build_tools():
@@ -214,6 +236,8 @@ def test_workflows_pin_reproducible_build_tools():
         assert "tools/android_size_report.py" in workflow
         assert "Cache Buildozer build dir" not in workflow
         assert "Report runner storage after cache restore" in workflow
+        assert "Verify packaged Python dependencies" in workflow
+        assert "tools/verify_android_python_packages.py" in workflow
         assert "Verify Android backup policy" in workflow
         assert "tools/verify_android_backup_policy.py" in workflow
         assert "*/dists/*/src/main/AndroidManifest.xml" not in workflow
@@ -299,8 +323,8 @@ def test_lint_workflow_audits_dependencies_and_secrets():
     assert "pip-audit==2.10.1" in workflow
     assert "python -m pip_audit" in workflow
     assert "requirements-android-audit.txt" in workflow
-    assert '"2026-08-31"' in workflow
-    assert "--ignore-vuln PYSEC-2026-3496" in workflow
+    assert '"2026-08-31"' not in workflow
+    assert "--ignore-vuln" not in workflow
     assert "gitleaks_8.30.1_linux_x64.tar.gz" in workflow
     assert "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in workflow
     assert "sha256sum --check --strict" in workflow
@@ -315,7 +339,7 @@ def test_android_audit_manifest_matches_embedded_security_sensitive_pins():
     for requirement in (
         "kivy==2.3.1",
         "kivymd==1.2.0",
-        "Pillow==11.3.0",
+        "Pillow==12.3.0",
         "fpdf2==2.8.7",
         "fonttools==4.63.0",
         "defusedxml==0.7.1",
