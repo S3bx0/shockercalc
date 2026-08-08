@@ -5,10 +5,13 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 481 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 488 testów automatycznych, statyczna kontrola Ruff i mypy,
 minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
 CodeQL dla Pythona i Javy. Podpisany AAB i biblioteki natywne przechodzą
-kontrole ABI, uprawnień i wyrównania stron 16 KB.
+kontrole ABI, uprawnień i wyrównania stron 16 KB. Workflow wydania publikuje
+również weryfikowalne poświadczenie SLSA Provenance i dokładny CycloneDX SBOM;
+opis procesu znajduje się w
+[`docs/ANDROID_SUPPLY_CHAIN.md`](docs/ANDROID_SUPPLY_CHAIN.md).
 
 > **⚠️ Oprogramowanie własnościowe / source-available.** Publiczne repozytorium
 > nie jest projektem open source. Kod jest dostępny wyłącznie na warunkach
@@ -111,7 +114,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 481 testów logiki, UI i kontraktów natywnych
+tests/                 # 488 testów logiki, UI i kontraktów natywnych
 ```
 
 ## Uruchomienie (desktop)

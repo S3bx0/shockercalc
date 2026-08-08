@@ -30,6 +30,11 @@ wersjonowanie wg [SemVer](https://semver.org/).
 - Dodano CodeQL dla Pythona i natywnej warstwy Java. Analiza działa dla PR,
   zmian głównej gałęzi, harmonogramu i uruchomienia ręcznego, korzysta z
   `security-extended` oraz akcji przypiętych pełnym SHA.
+- Podpisany AAB otrzymuje teraz kryptograficzne poświadczenie SLSA Provenance
+  oraz podpisany CycloneDX 1.6 SBOM. SBOM jest budowany z finalnego AAB,
+  rzeczywistych pakietów `libpybundle.so`, pełnego drzewa Gradle i skrótów
+  bibliotek natywnych; CI weryfikuje oba poświadczenia przed publikacją
+  artefaktu.
 
 ### Zmieniono
 
@@ -61,7 +66,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 481 testów i utrzymuje mierzone pokrycie powyżej
+- Pełna suita zawiera 488 testów i utrzymuje mierzone pokrycie powyżej
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01
