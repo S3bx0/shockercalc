@@ -174,7 +174,8 @@ jobs:
       - name: Resolve release dependency graph for SBOM
         run: |
           set -eo pipefail
-          GRADLEW_PATH="$(find .buildozer/android/platform/build-arm64-v8a/dists -type f -name gradlew -print -quit)"
+          GRADLEW_PATH="$(find .buildozer/android/platform/build-arm64-v8a/dists \
+            -mindepth 2 -maxdepth 2 -type f -name gradlew -print -quit)"
           test -n "$GRADLEW_PATH"
           GRADLE_DIR="$(dirname "$GRADLEW_PATH")"
           (

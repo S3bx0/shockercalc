@@ -317,6 +317,7 @@ def test_release_workflow_attests_exact_aab_and_cyclonedx_sbom():
     assert "tools/generate_android_sbom.py" in workflow
     assert "--configuration releaseRuntimeClasspath" in workflow
     assert "--offline --console=plain dependencies" in workflow
+    assert "-mindepth 2 -maxdepth 2 -type f -name gradlew" in workflow
     assert "--python-requirements requirements-android-audit.txt" in workflow
     assert "--manifest \"$RUNNER_TEMP/final-AndroidManifest.xml\"" in workflow
     assert "subject-path: bin/*.aab" in workflow
