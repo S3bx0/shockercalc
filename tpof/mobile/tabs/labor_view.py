@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 from typing import Any
 
 LABOR_RESULT_LABEL_KEYS = (
@@ -81,6 +82,9 @@ class LaborTabViewCompositionMixin:
         def content_h(value: float) -> float:
             return round(value * font_scale, 2)
 
+        def control_sp(value: float) -> str:
+            return f"{round(value / sqrt(font_scale), 2)}sp"
+
         scroll = MDScrollView()
         content = MDBoxLayout(
             orientation="vertical",
@@ -142,6 +146,7 @@ class LaborTabViewCompositionMixin:
         ):
             field.size_hint_y = None
             field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             input_card.add_widget(field)
 
         toggle_row = MDBoxLayout(
@@ -155,7 +160,7 @@ class LaborTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
             height=dp(content_h(48)),
-            font_size="13sp",
+            font_size=control_sp(13),
             on_release=lambda *_: self.toggle_highways(),
         )
         additional_button = MDRaisedButton(
@@ -163,7 +168,7 @@ class LaborTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
             height=dp(content_h(48)),
-            font_size="13sp",
+            font_size=control_sp(13),
             on_release=lambda *_: self.toggle_additional(),
         )
         toggle_row.add_widget(highways_button)
@@ -176,6 +181,7 @@ class LaborTabViewCompositionMixin:
         )
         additional_input.size_hint_y = None
         additional_input.height = dp(content_h(60))
+        additional_input.font_size = control_sp(16)
         additional_box = MDBoxLayout(
             orientation="vertical", size_hint_y=None, height=0
         )
@@ -189,7 +195,7 @@ class LaborTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.64,
             size_hint_y=None,
             height=dp(content_h(50)),
-            font_size="15sp",
+            font_size=control_sp(15),
             on_release=lambda *_: self.calculate(),
         )
         rates_button = MDRaisedButton(
@@ -198,7 +204,7 @@ class LaborTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.36,
             size_hint_y=None,
             height=dp(content_h(50)),
-            font_size="13sp",
+            font_size=control_sp(13),
             on_release=lambda *_: self.open_rates(),
         )
         action_row = MDBoxLayout(

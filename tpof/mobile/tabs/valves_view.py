@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 from typing import Any
 
 
@@ -77,6 +78,9 @@ class ValvesTabViewCompositionMixin:
         def content_h(value: float) -> float:
             return round(value * font_scale, 2)
 
+        def control_sp(value: float) -> str:
+            return f"{round(value / sqrt(font_scale), 2)}sp"
+
         scroll = MDScrollView()
         content = MDBoxLayout(
             orientation="vertical",
@@ -111,7 +115,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1,
             size_hint_y=None,
             height=dp(content_h(50)),
-            font_size="15sp",
+            font_size=control_sp(15),
             on_release=lambda *_: self._on_buy(),
         )
         lock_card.add_widget(buy_button)
@@ -121,7 +125,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1,
             size_hint_y=None,
             height=dp(content_h(50)),
-            font_size="15sp",
+            font_size=control_sp(15),
             on_release=lambda *_: self._on_watch(),
         )
         lock_card.add_widget(watch_button)
@@ -150,7 +154,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1,
             size_hint_y=None,
             height=dp(content_h(52)),
-            font_size="15sp",
+            font_size=control_sp(15),
             on_release=lambda caller: self.open_type_menu(caller),
         )
         input_card.add_widget(type_button)
@@ -166,7 +170,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
             height=dp(content_h(48)),
-            font_size="13sp",
+            font_size=control_sp(13),
             on_release=lambda *_: self.set_input_mode("K"),
         )
         dimensions_mode_button = MDRaisedButton(
@@ -174,7 +178,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
             height=dp(content_h(48)),
-            font_size="13sp",
+            font_size=control_sp(13),
             on_release=lambda *_: self.set_input_mode("W"),
         )
         mode_box.add_widget(volume_mode_button)
@@ -187,6 +191,7 @@ class ValvesTabViewCompositionMixin:
         )
         volume_input.size_hint_y = None
         volume_input.height = dp(content_h(60))
+        volume_input.font_size = control_sp(16)
         volume_box = MDBoxLayout(
             orientation="vertical",
             size_hint_y=None,
@@ -215,6 +220,7 @@ class ValvesTabViewCompositionMixin:
         for field in (length_input, width_input, height_input):
             field.size_hint_y = None
             field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             dimensions_box.add_widget(field)
         input_card.add_widget(dimensions_box)
 
@@ -242,6 +248,7 @@ class ValvesTabViewCompositionMixin:
         ):
             field.size_hint_y = None
             field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             input_card.add_widget(field)
 
         calculate_button = MDRaisedButton(
@@ -250,7 +257,7 @@ class ValvesTabViewCompositionMixin:
             size_hint_x=1,
             size_hint_y=None,
             height=dp(content_h(50)),
-            font_size="15sp",
+            font_size=control_sp(15),
             on_release=lambda *_: self.calculate(),
         )
         input_card.add_widget(calculate_button)

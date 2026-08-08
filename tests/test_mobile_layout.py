@@ -184,6 +184,8 @@ def test_compute_metrics_uses_scroll_friendly_layout_at_200_percent_text():
     assert large["action_button_h"] == regular["action_button_h"] * 2
     assert large["results_h"] > regular["results_h"] * 2
     assert large["toolbar_icon_sp"] < regular["toolbar_icon_sp"]
+    assert large["control_sp"] * 2 > regular["control_sp"]
+    assert large["control_sp"] * 2 < regular["control_sp"] * 2
 
 
 def test_compute_metrics_marks_landscape_and_reduces_vertical_gutters():

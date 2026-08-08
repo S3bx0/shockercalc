@@ -5,7 +5,7 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 488 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 495 testów automatycznych, statyczna kontrola Ruff i mypy,
 minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
 CodeQL dla Pythona i Javy. Podpisany AAB i biblioteki natywne przechodzą
 kontrole ABI, uprawnień i wyrównania stron 16 KB. Workflow wydania publikuje
@@ -40,7 +40,7 @@ uruchamiania, kompilowania ani modyfikowania programu.
 - skróty launchera otwierające bezpośrednio karty Chłodnicze, Zawory lub
   Robocizna po przytrzymaniu ikony aplikacji,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ
-  telefonu i tabletu,
+  telefonu i tabletu, w tym skalowanie tekstu do 200% i tryb landscape,
 - model Free/PRO, reklamy z nagrodą, Google Play Billing, UMP oraz dobrowolna
   telemetria Firebase.
 
@@ -114,7 +114,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 488 testów logiki, UI i kontraktów natywnych
+tests/                 # 495 testów logiki, UI i kontraktów natywnych
 ```
 
 ## Uruchomienie (desktop)

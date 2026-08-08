@@ -164,8 +164,9 @@ def compute_metrics(
         "title_sp": int(20 * text_scale),
         "body_sp": int(15 * text_scale),
         "caption_sp": int(12 * text_scale),
+        "control_sp": chrome_sp(int(15 * text_scale)),
         "button_h": dp(content_h(48 if compact else 52, 48)),
-        "button_sp": int(14 * text_scale),
+        "button_sp": chrome_sp(int(14 * text_scale)),
         "field_h": dp(field_h),
         "params_h": dp(params_h),
         "product_card_h": dp(product_card_h),
@@ -179,7 +180,9 @@ def compute_metrics(
         "placeholder_icon_sp": fixed_visual_sp(36 if compact else 42),
         "action_h": dp(action_h),
         "action_button_h": dp(action_button_h),
-        "action_sp": int(13 * text_scale) if compact else int(14 * text_scale),
+        "action_sp": chrome_sp(
+            int(13 * text_scale) if compact else int(14 * text_scale)
+        ),
         "results_h": dp(result_h),
         "results_spacing": dp(result_space),
         "total_h": dp(total_h),

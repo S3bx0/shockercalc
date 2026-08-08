@@ -121,10 +121,10 @@ class FreezingTabPresentationMixin:
         view.mass_row.spacing = dp(8 if compact else 10)
         view.unit_button.width = metrics["unit_w"]
         view.unit_button.height = metrics["unit_h"]
-        view.unit_button.font_size = f'{metrics["body_sp"]}sp'
+        view.unit_button.font_size = f'{metrics["control_sp"]}sp'
         for field in view.input_fields:
             field.height = metrics["field_h"]
-            field.font_size = f'{metrics["body_sp"]}sp'
+            field.font_size = f'{metrics["control_sp"]}sp'
         view.results_card.padding = card_padding
         view.results_card.spacing = metrics["results_spacing"]
         view.results_card.height = metrics["results_h"]
