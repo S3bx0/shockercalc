@@ -16,6 +16,22 @@ Checklist przed wysłaniem kolejnego AAB do Google Play.
 - Po pojawieniu się klawiatury aktywne pole ma pozostać widoczne.
 - Dolna nawigacja i stopka nie mogą przykrywać aktywnego inputu.
 
+## Dostępność i duży tekst
+
+- Sprawdzić każdą kartę przy systemowym font scale 100%, 130%, 150% i 200%.
+- Długie etykiety pól, w szczególności „Temperatura początkowa”, „Objętość
+  komory” i „Odległość w jedną stronę”, nie mogą być obcięte ani nachodzić na
+  sąsiednie kontrolki.
+- Przy 200% karta produktu i grupy akcji mogą przejść do układu pionowego;
+  cała treść musi pozostać osiągalna przez przewijanie.
+- Pierwszy dialog prywatności/telemetrii musi pokazywać obie akcje i umożliwiać
+  przewinięcie całej treści w portrait oraz landscape.
+- W landscape stopka może zostać ukryta, ale dolna nawigacja i reklama nie mogą
+  zasłaniać formularza.
+- Włączyć TalkBack i Switch Access na fizycznym ARM/API 35 lub 36. Potwierdzić
+  komunikaty live region oraz zanotować ograniczenie: do czasu wirtualnego
+  drzewa Kivy nie każdy widżet ma osobny natywny węzeł dostępności.
+
 ## PDF i storage
 
 - Aplikacja nie wymaga szerokich uprawnień do plików użytkownika.

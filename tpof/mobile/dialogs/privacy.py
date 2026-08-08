@@ -17,7 +17,7 @@ class PrivacyDialogWidgets:
     dialog: Callable[..., Any]
     flat_button: Callable[..., Any]
     raised_button: Callable[..., Any]
-    scroll_text: Callable[[str], Any] | None = None
+    scroll_text: Callable[[str, str], Any] | None = None
 
 
 class PrivacyToolbarController:
@@ -128,15 +128,18 @@ class PrivacyDialogController:
                 **kwargs,
             )
 
-        def scroll_text(text: str) -> Any:
+        def scroll_text(title: str, text: str) -> Any:
+            landscape = Window.width > Window.height
+            height_ratio = 0.42 if landscape else 0.55
             outer = MDBoxLayout(
                 orientation="vertical",
                 size_hint_y=None,
-                height=max(dp(220), min(dp(380), Window.height * 0.48)),
+                height=max(dp(120), min(dp(420), Window.height * height_ratio)),
             )
             scroll = MDScrollView(do_scroll_x=False)
             label = MDLabel(
-                text=text,
+                text=f"[size=20sp][b]{title}[/b][/size]\n\n{text}",
+                markup=True,
                 theme_text_color="Primary",
                 size_hint_y=None,
                 padding=[0, dp(8)],
@@ -183,8 +186,9 @@ class PrivacyDialogController:
             options["text"] = text
         else:
             options.update(
+                title="",
                 type="custom",
-                content_cls=widgets.scroll_text(text),
+                content_cls=widgets.scroll_text(title, text),
             )
         return options
 
