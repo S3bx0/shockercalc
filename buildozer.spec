@@ -12,7 +12,7 @@ source.dir = .
 source.include_exts = py,png,jpg,jpeg,gif,webp,ttf,json,kv,atlas,0-only
 source.include_patterns = LICENSE,EULA,AI_USAGE_POLICY,THIRD_PARTY_NOTICES,legal/*
 source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets/watermark.png,assets/icon.png,assets/icon-192.png,assets/icon-48.png,assets/presplash.png,android/**,tpof/desktop/**
-source.exclude_dirs = tests, tools, archive, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
+source.exclude_dirs = tests, tools, archive, p4a-recipes, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
 version = 1.5.13
@@ -32,7 +32,7 @@ android.meta_data = author=Sebastian Milczarek,copyright=2026 Sebastian Milczare
 # UWAGA: reportlab/pypdf usunięte z buildu Android — ich C-rozszerzenia nie kompilują się
 # pod Pythonem Androidowym wybieranym przez python-for-android.
 # PDF na Androidzie generujemy czysto-pythonowym fpdf2 (+ fonttools, defusedxml).
-requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow==11.3.0,fpdf2==2.8.7,fonttools==4.63.0,defusedxml==0.7.1,certifi==2026.6.17
+requirements = python3==3.13.14,hostpython3==3.13.14,kivy==2.3.1,kivymd==1.2.0,pillow==12.3.0,fpdf2==2.8.7,fonttools==4.63.0,defusedxml==0.7.1,certifi==2026.6.17
 
 # Punkt wejścia: p4a uruchamia main.py z source.dir.
 # Plik main.py w korzeniu jest cienkim launcherem -> tpof.mobile.main:main
@@ -72,6 +72,7 @@ android.add_gradle_repositories = "google()", "mavenCentral()"
 p4a.fork = kivy
 p4a.branch = master
 p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831
+p4a.local_recipes = ./p4a-recipes
 
 # Hook p4a: usuwa błędne (host-arch) rozszerzenia .so fonttools z bundla,
 # by na arm64 nie padało dlopen (bezierTools.so EM_X86_64 vs EM_AARCH64).

@@ -16,11 +16,13 @@ wersjonowanie wg [SemVer](https://semver.org/).
   mają automatyczne testy kontrastu WCAG 4,5:1.
 - CI wykonuje pełne testy z minimalnym pokryciem 50%, audyt zależności przez
   `pip-audit` i skan pełnej historii pod kątem sekretów przez Gitleaks.
-  Rzeczywiste piny AAB mają osobny manifest; znane problemy upstreamowego
-  Pillow 11.3.0 są jawnie ograniczone wyjątkiem wygasającym 31 sierpnia 2026,
-  a każda nowa podatność nadal zatrzymuje CI.
+  Rzeczywiste piny AAB mają osobny manifest, a po migracji Pillow 12.3.0
+  mobilny audyt nie korzysta już z wyjątków dla znanych podatności.
 - Dodano checklistę ręcznej weryfikacji TalkBack, Switch Access, skalowania
   tekstu, orientacji i kontrastu na urządzeniu Android.
+- Dodano kontrolowaną recepturę `python-for-android` dla Pillow 12.3.0 oraz
+  bramkę CI odczytującą wersję i natywne moduły bezpośrednio z Python bundle
+  zapakowanego w APK/AAB.
 
 ### Zmieniono
 
@@ -30,10 +32,10 @@ wersjonowanie wg [SemVer](https://semver.org/).
   alias ASCII dla Androida.
 - Do tej samej serii dodano grejpfrut i agrest, zachowując przezroczyste tło,
   pikselowy cień kontaktowy i budżet rozmiaru zasobów mobilnych.
-- Zaktualizowano Pillow do 12.3.0, pypdf do 6.15.0, ttkbootstrap do 1.20.4,
-  Ruff do 0.15.22 i mypy do 2.3.0. Android zachowuje Pillow 11.3.0 wymagane
-  przez oficjalną recepturę python-for-android 2026.05.09 do czasu osobnego
-  testu bezpiecznej receptury 12.3.0.
+- Zaktualizowano Pillow do 12.3.0 także w Androidzie, pypdf do 6.15.0,
+  ttkbootstrap do 1.20.4, Ruff do 0.15.22 i mypy do 2.3.0. Źródło mobilnego
+  Pillow jest przypięte wersją i SHA-256, a receptura wyłącza wykrywanie
+  bibliotek hosta podczas kompilacji krzyżowej.
 
 ### Naprawiono
 
@@ -52,7 +54,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 473 testy i utrzymuje 55,63% mierzonego pokrycia przy
+- Pełna suita zawiera 477 testów i utrzymuje 55,73% mierzonego pokrycia przy
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01

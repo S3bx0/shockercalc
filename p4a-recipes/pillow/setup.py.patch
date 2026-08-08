@@ -1,0 +1,13 @@
+diff --git a/setup.py b/setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -524,4 +524 @@
+-                root = (
+-                    os.path.join(root_prefix, "lib"),
+-                    os.path.join(root_prefix, "include"),
+-                )
++                root = tuple(root_prefix.split(":"))
+@@ -572,3 +569,0 @@
+-        _add_directory(library_dirs, os.path.join(sys.prefix, "lib"))
+-        _add_directory(include_dirs, os.path.join(sys.prefix, "include"))
+-
