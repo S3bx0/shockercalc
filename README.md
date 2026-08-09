@@ -3,7 +3,7 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-**Aktualna wersja Android:** `1.5.13`
+**Aktualna wersja Android:** `1.5.14`
 
 **Stan jakości:** 498 testów automatycznych, statyczna kontrola Ruff i mypy,
 minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
