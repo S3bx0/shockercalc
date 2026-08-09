@@ -125,7 +125,7 @@ class SettingsDialogController:
             )
             content.add_widget(
                 MDLabel(
-                    text=self._translate("units_title"),
+                    text=self._translate("settings_feedback_title"),
                     theme_text_color="Custom",
                     text_color=BRAND_ICE,
                     font_style="Subtitle1",
@@ -134,49 +134,20 @@ class SettingsDialogController:
             )
             content.add_widget(
                 MDLabel(
-                    text=self._translate("units_metric_active"),
-                    theme_text_color="Custom",
-                    text_color=(0.85, 0.98, 1.0, 1),
-                    font_style="Body2",
-                    adaptive_height=True,
-                )
-            )
-            content.add_widget(
-                MDLabel(
-                    text=self._translate("units_imperial_disabled"),
+                    text=self._translate("settings_feedback_hint"),
                     theme_text_color="Hint",
                     font_style="Caption",
                     adaptive_height=True,
                 )
             )
-
-            metric_row = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
+            feedback_button = MDRaisedButton(
+                text=self._translate("settings_feedback_button"),
+                size_hint=(1, None),
                 height=dp(48),
+                on_release=lambda *_: self._on_open_feedback(),
             )
-            metric_button = MDRaisedButton(
-                text=self._translate("units_metric"),
-                size_hint_x=1,
-                on_release=lambda *_: self._on_set_unit_system("metric"),
-            )
-            self._style_button(metric_button, "ice")
-            metric_row.add_widget(metric_button)
-            content.add_widget(metric_row)
-
-            imperial_row = MDBoxLayout(
-                orientation="horizontal",
-                size_hint_y=None,
-                height=dp(48),
-            )
-            imperial_row.add_widget(
-                MDFlatButton(
-                    text=self._translate("units_imperial"),
-                    size_hint_x=1,
-                    disabled=True,
-                )
-            )
-            content.add_widget(imperial_row)
+            self._style_button(feedback_button, "ice")
+            content.add_widget(feedback_button)
             content.add_widget(
                 MDLabel(
                     text=self._translate("settings_currency_title"),
@@ -277,7 +248,7 @@ class SettingsDialogController:
             content.add_widget(rates_card)
             content.add_widget(
                 MDLabel(
-                    text=self._translate("settings_feedback_title"),
+                    text=self._translate("units_title"),
                     theme_text_color="Custom",
                     text_color=BRAND_ICE,
                     font_style="Subtitle1",
@@ -286,20 +257,49 @@ class SettingsDialogController:
             )
             content.add_widget(
                 MDLabel(
-                    text=self._translate("settings_feedback_hint"),
+                    text=self._translate("units_metric_active"),
+                    theme_text_color="Custom",
+                    text_color=(0.85, 0.98, 1.0, 1),
+                    font_style="Body2",
+                    adaptive_height=True,
+                )
+            )
+            content.add_widget(
+                MDLabel(
+                    text=self._translate("units_imperial_disabled"),
                     theme_text_color="Hint",
                     font_style="Caption",
                     adaptive_height=True,
                 )
             )
-            feedback_button = MDRaisedButton(
-                text=self._translate("settings_feedback_button"),
-                size_hint=(1, None),
+
+            metric_row = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
                 height=dp(48),
-                on_release=lambda *_: self._on_open_feedback(),
             )
-            self._style_button(feedback_button, "ice")
-            content.add_widget(feedback_button)
+            metric_button = MDRaisedButton(
+                text=self._translate("units_metric"),
+                size_hint_x=1,
+                on_release=lambda *_: self._on_set_unit_system("metric"),
+            )
+            self._style_button(metric_button, "ice")
+            metric_row.add_widget(metric_button)
+            content.add_widget(metric_row)
+
+            imperial_row = MDBoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(48),
+            )
+            imperial_row.add_widget(
+                MDFlatButton(
+                    text=self._translate("units_imperial"),
+                    size_hint_x=1,
+                    disabled=True,
+                )
+            )
+            content.add_widget(imperial_row)
             content.add_widget(
                 MDLabel(
                     text=self._translate("settings_legal_title"),

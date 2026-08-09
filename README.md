@@ -5,7 +5,7 @@ doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
 **Aktualna wersja Android:** `1.5.13`
 
-**Stan jakości:** 497 testów automatycznych, statyczna kontrola Ruff i mypy,
+**Stan jakości:** 498 testów automatycznych, statyczna kontrola Ruff i mypy,
 minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
 CodeQL dla Pythona i Javy. Podpisany AAB i biblioteki natywne przechodzą
 kontrole ABI, uprawnień i wyrównania stron 16 KB. Workflow wydania publikuje
@@ -114,7 +114,7 @@ assets/                # zasoby aplikacji
 ├── images/            # zdjęcia produktów (.webp)
 └── watermark.png      # znak wodny do PDF
 
-tests/                 # 497 testów logiki, UI i kontraktów natywnych
+tests/                 # 498 testów logiki, UI i kontraktów natywnych
 ```
 
 ## Uruchomienie (desktop)

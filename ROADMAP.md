@@ -109,7 +109,7 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
 - **dostępność — audyt responsywności 2026-08-08:** PR #25 usuwa potwierdzone
   na emulatorze nakładanie treści przy font scale 200%, układa długie formularze
   i akcje pionowo, przewija dialog zgody oraz zwalnia miejsce w landscape;
-  497 testów, próg pokrycia, Ruff i mypy są zielone. Wynik i ograniczenia są
+  498 testów, próg pokrycia, Ruff i mypy są zielone. Wynik i ograniczenia są
   zapisane w `docs/ACCESSIBILITY_TEST_PLAN_2026-08-02.md`;
 - **ważne ograniczenie Kivy:** obecna warstwa udostępnia semantykę całej
   powierzchni i komunikaty live region, ale jeszcze nie tworzy osobnych
@@ -176,6 +176,9 @@ Kolejność migracji:
 Wdrożone cięcia:
 
 - kontroler dialogu ustawień w `tpof/mobile/dialogs/settings.py`,
+- sekcje ustawień uporządkowane według zadania użytkownika: opinia i zgłoszenie
+  błędu, waluta i kursy, jednostki oraz licencje i informacje prawne; jednostki
+  imperialne pozostają osobnym, niewdrożonym etapem,
 - kontroler dialogu stawek w `tpof/mobile/dialogs/labor_rates.py`,
 - `LaborTabController` w `tpof/mobile/tabs/labor.py`, który posiada stan
   przełączników, walutę kosztu dodatkowego, wyniki oraz wykres; budowa drzewa
