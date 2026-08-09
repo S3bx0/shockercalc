@@ -15,9 +15,11 @@ class _Button:
 
 class _Dialog:
     def __init__(self, **kwargs) -> None:
-        self.title = kwargs["title"]
-        self.text = kwargs["text"]
+        self.title = kwargs.get("title")
+        self.text = kwargs.get("text")
         self.buttons = kwargs["buttons"]
+        self.type = kwargs.get("type")
+        self.content_cls = kwargs.get("content_cls")
         self.opened = False
         self.dismissed = False
 
@@ -144,6 +146,30 @@ def test_prompt_opens_and_accepting_consent_releases_dialog():
     assert state["events"] == [("telemetry_enabled",)]
     assert dialog.dismissed is True
     assert controller.is_telemetry_prompt_open is False
+
+
+def test_prompt_uses_scrollable_text_when_runtime_factory_supports_it():
+    state = _state(
+        widgets=PrivacyDialogWidgets(
+            dialog=lambda **kwargs: _Dialog(**kwargs),
+            flat_button=_Button,
+            raised_button=_Button,
+            scroll_text=lambda title, text: ("scroll", title, text),
+        )
+    )
+    controller = state["controller"]
+
+    assert controller.prompt_telemetry_consent() is True
+
+    dialog = controller._telemetry_dialog
+    assert dialog.type == "custom"
+    assert dialog.title == ""
+    assert dialog.text is None
+    assert dialog.content_cls == (
+        "scroll",
+        "telemetry_title",
+        "telemetry_text",
+    )
 
 
 def test_privacy_dialog_combines_telemetry_and_ump_actions():

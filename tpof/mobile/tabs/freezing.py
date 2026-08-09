@@ -150,8 +150,13 @@ class FreezingTabController(
         view.product_hint_label.text = self._translate("product_hint")
         view.params_title_label.text = self._translate("params")
         view.mass_input.hint_text = self._translate("mass")
-        view.temp_start_input.hint_text = self._translate("temperature_start")
-        view.temp_end_input.hint_text = self._translate("temperature_end")
+        large_text = bool(getattr(self, "_large_text_layout", False))
+        view.temp_start_input.hint_text = self._translate(
+            "temperature_start_short" if large_text else "temperature_start"
+        )
+        view.temp_end_input.hint_text = self._translate(
+            "temperature_end_short" if large_text else "temperature_end"
+        )
         view.time_input.hint_text = self._translate("work_time")
         view.calculate_button.text = self._translate("calculate")
         view.clear_button.text = self._translate("clear")

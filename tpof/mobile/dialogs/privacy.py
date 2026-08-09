@@ -17,6 +17,7 @@ class PrivacyDialogWidgets:
     dialog: Callable[..., Any]
     flat_button: Callable[..., Any]
     raised_button: Callable[..., Any]
+    scroll_text: Callable[[str, str], Any] | None = None
 
 
 class PrivacyToolbarController:
@@ -105,14 +106,91 @@ class PrivacyDialogController:
         if self._injected_widgets is not None:
             return self._injected_widgets
 
+        from kivy.core.window import Window
+        from kivy.metrics import dp
+        from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDFlatButton, MDRaisedButton
         from kivymd.uix.dialog import MDDialog
+        from kivymd.uix.label import MDLabel
+        from kivymd.uix.scrollview import MDScrollView
+
+        def flat_button(**kwargs: Any) -> Any:
+            return MDFlatButton(
+                size_hint_y=None,
+                height=dp(48),
+                **kwargs,
+            )
+
+        def raised_button(**kwargs: Any) -> Any:
+            return MDRaisedButton(
+                size_hint_y=None,
+                height=dp(48),
+                **kwargs,
+            )
+
+        def scroll_text(title: str, text: str) -> Any:
+            landscape = Window.width > Window.height
+            height_ratio = 0.42 if landscape else 0.55
+            outer = MDBoxLayout(
+                orientation="vertical",
+                size_hint_y=None,
+                height=max(dp(120), min(dp(420), Window.height * height_ratio)),
+            )
+            scroll = MDScrollView(do_scroll_x=False)
+            label = MDLabel(
+                text=f"[size=20sp][b]{title}[/b][/size]\n\n{text}",
+                markup=True,
+                theme_text_color="Primary",
+                size_hint_y=None,
+                padding=[0, dp(8)],
+                valign="top",
+            )
+            label.bind(
+                width=lambda widget, width: setattr(
+                    widget,
+                    "text_size",
+                    (width, None),
+                )
+            )
+            label.bind(
+                texture_size=lambda widget, size: setattr(
+                    widget,
+                    "height",
+                    size[1] + dp(16),
+                )
+            )
+            scroll.add_widget(label)
+            outer.add_widget(scroll)
+            return outer
 
         return PrivacyDialogWidgets(
             dialog=MDDialog,
-            flat_button=MDFlatButton,
-            raised_button=MDRaisedButton,
+            flat_button=flat_button,
+            raised_button=raised_button,
+            scroll_text=scroll_text,
         )
+
+    @staticmethod
+    def _dialog_options(
+        widgets: PrivacyDialogWidgets,
+        *,
+        title: str,
+        text: str,
+        buttons: list[Any],
+    ) -> dict[str, Any]:
+        options: dict[str, Any] = {
+            "title": title,
+            "buttons": buttons,
+        }
+        if widgets.scroll_text is None:
+            options["text"] = text
+        else:
+            options.update(
+                title="",
+                type="custom",
+                content_cls=widgets.scroll_text(title, text),
+            )
+        return options
 
     def _ad_privacy_required(self) -> bool:
         if not self._is_android:
@@ -147,10 +225,7 @@ class PrivacyDialogController:
         self.close_telemetry_prompt()
         try:
             widgets = self._widgets()
-            self._telemetry_dialog = widgets.dialog(
-                title=self._translate("telemetry_title"),
-                text=self._translate("telemetry_text"),
-                buttons=[
+            buttons = [
                     widgets.flat_button(
                         text=self._translate("telemetry_not_now"),
                         on_release=lambda *_: self.set_telemetry_consent(False),
@@ -159,7 +234,14 @@ class PrivacyDialogController:
                         text=self._translate("telemetry_enable"),
                         on_release=lambda *_: self.set_telemetry_consent(True),
                     ),
-                ],
+                ]
+            self._telemetry_dialog = widgets.dialog(
+                **self._dialog_options(
+                    widgets,
+                    title=self._translate("telemetry_title"),
+                    text=self._translate("telemetry_text"),
+                    buttons=buttons,
+                )
             )
             self._telemetry_dialog.open()
             return True
@@ -227,9 +309,14 @@ class PrivacyDialogController:
                 )
             )
             self._dialog = widgets.dialog(
-                title=self._translate("privacy_title"),
-                text=self._translate("telemetry_on" if enabled else "telemetry_off"),
-                buttons=buttons,
+                **self._dialog_options(
+                    widgets,
+                    title=self._translate("privacy_title"),
+                    text=self._translate(
+                        "telemetry_on" if enabled else "telemetry_off"
+                    ),
+                    buttons=buttons,
+                )
             )
             self._dialog.open()
             self._log_event("settings_opened", {"section": "privacy"})

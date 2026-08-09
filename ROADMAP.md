@@ -106,6 +106,11 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
   komunikaty o zmianie ekranu, wyniku i błędzie; wszystkie krytyczne akcje mają
   co najmniej 48 dp, kontrast palet jest testowany względem 4,5:1, a układ
   reaguje na font scale do 200% i landscape;
+- **dostępność — audyt responsywności 2026-08-08:** PR #25 usuwa potwierdzone
+  na emulatorze nakładanie treści przy font scale 200%, układa długie formularze
+  i akcje pionowo, przewija dialog zgody oraz zwalnia miejsce w landscape;
+  497 testów, próg pokrycia, Ruff i mypy są zielone. Wynik i ograniczenia są
+  zapisane w `docs/ACCESSIBILITY_TEST_PLAN_2026-08-02.md`;
 - **ważne ograniczenie Kivy:** obecna warstwa udostępnia semantykę całej
   powierzchni i komunikaty live region, ale jeszcze nie tworzy osobnych
   `AccessibilityNodeInfo` dla każdego pola i przycisku. Pełna nawigacja bez
@@ -137,8 +142,10 @@ Stan warstwy P1 po pakiecie jakości 2026-08-02:
   (`versionCode 114`), opublikował oba poświadczenia i przeszedł ich
   weryfikację online oraz offline dla AAB o SHA-256
   `0a1c6e46176b06fe8723d6ac1cfee25f7457b6eaac848eed63c61f00cf5673e2`;
-- **następne P1:** ręczny audyt TalkBack/Switch Access, test fizycznego ARM oraz
-  API 35/36 i bazowe pomiary startu, pamięci, ANR/jank release.
+- **następne P1:** ręczny audyt TalkBack/Switch Access i kolejności fokusu,
+  test kandydata AAB na fizycznym ARM oraz API 35/36 i bazowe pomiary startu,
+  pamięci, ANR/jank release. Audyt x86/API 30 jest kontrolą pomocniczą, nie
+  zastępuje tych bramek.
 
 Te prace są wydzielane do osobnych modułów i narzędzi; nie wolno ponownie
 rozbudować `app.py` ani `RefrigerationCalcActivity.java`.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 from typing import Any
 
 
@@ -63,13 +64,23 @@ class ValvesTabViewCompositionMixin:
     def build(self: Any) -> ValvesTabView:
         """Create the complete valves tab and retain its typed widget boundary."""
 
-        from kivy.metrics import dp
+        from kivy.metrics import Metrics, dp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDRaisedButton
         from kivymd.uix.card import MDCard
         from kivymd.uix.label import MDLabel
         from kivymd.uix.scrollview import MDScrollView
         from kivymd.uix.textfield import MDTextField
+
+        font_scale = max(1.0, min(2.0, float(Metrics.fontscale)))
+        large_text = font_scale >= 1.5
+        self._large_text_layout = large_text
+
+        def content_h(value: float) -> float:
+            return round(value * font_scale, 2)
+
+        def control_sp(value: float) -> str:
+            return f"{round(value / sqrt(font_scale), 2)}sp"
 
         scroll = MDScrollView()
         content = MDBoxLayout(
@@ -85,7 +96,7 @@ class ValvesTabViewCompositionMixin:
             padding=dp(14),
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(196),
+            height=dp(content_h(196)),
             radius=[16, 16, 16, 16],
             elevation=3,
             md_bg_color=self._card_bg(),
@@ -95,7 +106,7 @@ class ValvesTabViewCompositionMixin:
             text=self._translate("valve_locked"),
             font_style="Subtitle1",
             size_hint_y=None,
-            height=dp(64),
+            height=dp(content_h(64)),
             theme_text_color="Secondary",
         )
         lock_card.add_widget(locked_label)
@@ -104,8 +115,8 @@ class ValvesTabViewCompositionMixin:
             icon="cart",
             size_hint_x=1,
             size_hint_y=None,
-            height=dp(50),
-            font_size="15sp",
+            height=dp(content_h(50)),
+            font_size=control_sp(15),
             on_release=lambda *_: self._on_buy(),
         )
         lock_card.add_widget(buy_button)
@@ -114,8 +125,8 @@ class ValvesTabViewCompositionMixin:
             icon="play-circle-outline",
             size_hint_x=1,
             size_hint_y=None,
-            height=dp(50),
-            font_size="15sp",
+            height=dp(content_h(50)),
+            font_size=control_sp(15),
             on_release=lambda *_: self._on_watch(),
         )
         lock_card.add_widget(watch_button)
@@ -136,39 +147,39 @@ class ValvesTabViewCompositionMixin:
             text=self._translate("valve_title"),
             font_style="H6",
             size_hint_y=None,
-            height=dp(36),
+            height=dp(content_h(36)),
         )
         input_card.add_widget(title_label)
         type_button = MDRaisedButton(
             text=self.valve_type,
             size_hint_x=1,
             size_hint_y=None,
-            height=dp(52),
-            font_size="15sp",
+            height=dp(content_h(52)),
+            font_size=control_sp(15),
             on_release=lambda caller: self.open_type_menu(caller),
         )
         input_card.add_widget(type_button)
 
         mode_box = MDBoxLayout(
-            orientation="horizontal",
+            orientation="vertical" if large_text else "horizontal",
             spacing=dp(8),
             size_hint_y=None,
-            height=dp(48),
+            height=dp(content_h(104) if large_text else 48),
         )
         volume_mode_button = MDRaisedButton(
             text=self._translate("valve_mode_volume"),
-            size_hint_x=0.5,
+            size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
-            height=dp(48),
-            font_size="13sp",
+            height=dp(content_h(48)),
+            font_size=control_sp(13),
             on_release=lambda *_: self.set_input_mode("K"),
         )
         dimensions_mode_button = MDRaisedButton(
             text=self._translate("valve_mode_dims"),
-            size_hint_x=0.5,
+            size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
-            height=dp(48),
-            font_size="13sp",
+            height=dp(content_h(48)),
+            font_size=control_sp(13),
             on_release=lambda *_: self.set_input_mode("W"),
         )
         mode_box.add_widget(volume_mode_button)
@@ -176,15 +187,18 @@ class ValvesTabViewCompositionMixin:
         input_card.add_widget(mode_box)
 
         volume_input = MDTextField(
-            hint_text=self._translate("valve_volume"),
+            hint_text=self._translate(
+                "valve_volume_short" if large_text else "valve_volume"
+            ),
             input_filter=self._numeric_input_filter,
         )
         volume_input.size_hint_y = None
-        volume_input.height = dp(60)
+        volume_input.height = dp(content_h(60))
+        volume_input.font_size = control_sp(16)
         volume_box = MDBoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            height=dp(60),
+            height=dp(content_h(60)),
         )
         volume_box.add_widget(volume_input)
         input_card.add_widget(volume_box)
@@ -204,11 +218,12 @@ class ValvesTabViewCompositionMixin:
         dimensions_box = MDBoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            height=dp(180),
+            height=dp(content_h(180)),
         )
         for field in (length_input, width_input, height_input):
             field.size_hint_y = None
-            field.height = dp(60)
+            field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             dimensions_box.add_widget(field)
         input_card.add_widget(dimensions_box)
 
@@ -235,7 +250,8 @@ class ValvesTabViewCompositionMixin:
             flow_input,
         ):
             field.size_hint_y = None
-            field.height = dp(60)
+            field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             input_card.add_widget(field)
 
         calculate_button = MDRaisedButton(
@@ -243,8 +259,8 @@ class ValvesTabViewCompositionMixin:
             icon="calculator-variant",
             size_hint_x=1,
             size_hint_y=None,
-            height=dp(50),
-            font_size="15sp",
+            height=dp(content_h(50)),
+            font_size=control_sp(15),
             on_release=lambda *_: self.calculate(),
         )
         input_card.add_widget(calculate_button)
@@ -265,7 +281,7 @@ class ValvesTabViewCompositionMixin:
             text=self._translate("valve_result"),
             font_style="H6",
             size_hint_y=None,
-            height=dp(36),
+            height=dp(content_h(36)),
         )
         result_card.add_widget(result_title_label)
         count_label = MDLabel(
@@ -273,7 +289,7 @@ class ValvesTabViewCompositionMixin:
             font_style="H6",
             halign="center",
             size_hint_y=None,
-            height=dp(42),
+            height=dp(content_h(42)),
             theme_text_color="Custom",
             text_color=self.result_color(),
         )
@@ -281,25 +297,25 @@ class ValvesTabViewCompositionMixin:
         delta_label = MDLabel(
             text=self._translate("valve_delta_t", value="—"),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(content_h(30)),
             theme_text_color="Secondary",
         )
         total_flow_label = MDLabel(
             text=self._translate("valve_total_flow", value="—"),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(content_h(30)),
             theme_text_color="Secondary",
         )
         flow_label = MDLabel(
             text=self._translate("valve_flow", value="—"),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(content_h(30)),
             theme_text_color="Secondary",
         )
         unit_flow_label = MDLabel(
             text=self._translate("valve_unit_flow", value="—"),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(content_h(30)),
             theme_text_color="Secondary",
         )
         for label in (

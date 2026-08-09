@@ -94,7 +94,8 @@ def test_mobilne_tlo_ma_stabilna_warstwe_i_nawigacja_nie_zapada_zakladek():
     assert 'view.bottom_nav.height = metrics["bottom_nav_h"]' in layout_source
     assert "ResponsiveLayoutView.from_shell(self)" in source
     assert "def _apply_responsive_layout" not in source
-    assert "reserved_ad_h = max(64 if compact else 70" in layout_source
+    assert "reserved_ad_h = max(" in layout_source
+    assert "56 if landscape else 64 if compact else 70" in layout_source
 
 
 def test_mobilne_zakladki_maja_wlasne_animowane_ikony():

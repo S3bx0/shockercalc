@@ -512,3 +512,39 @@ def test_freezing_controller_applies_responsive_layout(monkeypatch):
     assert view.results_card.height == metrics["results_h"]
     assert view.product_hint_label.opacity == 1
     assert view.stages["schladzanie"].icon_chip.width == metrics["stage_icon_w"]
+
+
+def test_freezing_controller_stacks_actions_for_large_text(monkeypatch):
+    fake_kivy = ModuleType("kivy")
+    fake_metrics = ModuleType("kivy.metrics")
+    fake_metrics.dp = lambda value: value
+    fake_kivy.metrics = fake_metrics
+    monkeypatch.setitem(sys.modules, "kivy", fake_kivy)
+    monkeypatch.setitem(sys.modules, "kivy.metrics", fake_metrics)
+
+    controller, _state = _controller()
+    view = controller.view
+    assert view is not None
+    metrics = compute_metrics(
+        lambda value: value,
+        412,
+        800,
+        hints_enabled=True,
+        font_scale=2.0,
+    )
+
+    controller.apply_layout(metrics)
+
+    assert view.product_body.orientation == "vertical"
+    assert view.action_row.orientation == "vertical"
+    assert view.action_row.height == metrics["action_h"]
+    assert view.temp_start_input.hint_text == "temperature_start_short"
+    assert view.temp_end_input.hint_text == "temperature_end_short"
+    assert all(
+        button.size_hint_x == 1
+        for button in (
+            view.calculate_button,
+            view.pdf_button,
+            view.clear_button,
+        )
+    )

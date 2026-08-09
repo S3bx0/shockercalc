@@ -46,3 +46,30 @@ Użytkownik korzystający wyłącznie z TalkBack lub Switch Access potrafi wybra
 produkt, wypełnić pola, uruchomić obliczenie, odczytać wynik, zmienić kartę i
 otworzyć ustawienia bez pomocy wzroku. Obecny etap poprawia komunikaty, ale sam
 nie spełnia jeszcze tego pełnego kryterium.
+
+## Audyt kontrolny emulatora — 2026-08-08
+
+Audyt wykonano na czystym debug APK dla `x86_64`, Android API 30,
+1080 × 2280 px i gęstości 440 dpi. Przed poprawką zachowany zrzut bazowy
+potwierdził rzeczywiste regresje przy font scale 200%: wielowierszowy tytuł,
+nakładanie obrazu produktu i akcji oraz kolizję stopki z treścią.
+
+PR #25 wprowadza następujące korekty:
+
+- pełne skalowanie wysokości przewijalnej treści do 200%;
+- pionowy układ karty produktu i grup akcji przy dużym tekście;
+- przewijalną treść pierwszego dialogu prywatności/telemetrii;
+- minimalną wysokość 48 dp dla akcji w dialogach;
+- łagodniejsze skalowanie jednowierszowych kontrolek, aby długie etykiety nie
+  były obcinane przy systemowym powiększeniu tekstu;
+- ukrycie niekrytycznej stopki w landscape i jej podpisu przy dużym tekście.
+
+Bramka automatyczna po zmianach: 497 testów, co najmniej 56% pokrycia przy wymaganym
+minimum 50%, Ruff i mypy bez błędów. Test emulatorowy obejmuje font scale 100%
+i 200%, orientację portrait/landscape, trzy karty oraz pierwszy dialog zgody.
+
+Audyt emulatora **nie zamyka** P1.1: obraz systemowy nie zawiera TalkBack,
+Switch Access ani Accessibility Scanner, a lokalnie nie ma AVD API 35/36.
+Pełna kolejność fokusu, osobne węzły semantyczne i zachowanie kandydata AAB
+muszą zostać sprawdzone ręcznie na fizycznym ARM oraz API 35/36 zgodnie z
+checklistą powyżej.

@@ -341,3 +341,14 @@ def test_labor_controller_reports_invalid_required_field():
     assert state["marked"][0][0] is view.people_input
     assert state["messages"][0].startswith("labor_validation_error(")
     assert state["events"][-1][0] == "calculation_error"
+
+
+def test_labor_controller_uses_compact_distance_label_for_large_text():
+    controller, _state = _controller()
+    view = controller.view
+    assert view is not None
+    controller._large_text_layout = True
+
+    controller.refresh_texts()
+
+    assert view.distance_input.hint_text == "labor_distance_short"

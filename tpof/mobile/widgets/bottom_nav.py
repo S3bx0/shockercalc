@@ -250,6 +250,7 @@ class BottomNavTab(MDBoxLayout):
     def set_text(self, text: str):
         self.label.text = text
 
-    def set_metrics(self, *, icon_size, label_sp: int):
+    def set_metrics(self, *, icon_size, label_sp: float):
         self.icon_widget.size = (icon_size, max(dp(30), icon_size * 0.62))
         self.label.font_size = f"{label_sp}sp"
+        self.label.height = max(dp(20), self.label.texture_size[1] + dp(4))

@@ -19,6 +19,7 @@ class FreezingTabPresentationMixin:
 
     _style_button: Callable[[Any, str], None]
     _hints_enabled: Callable[[], bool]
+    _translate: Callable[..., str]
 
     mass_unit: str
     view: FreezingTabView | None
@@ -47,6 +48,8 @@ class FreezingTabPresentationMixin:
 
         view = self.view
         compact = bool(metrics["compact"])
+        large_text = bool(metrics["large_text"])
+        self._large_text_layout = large_text
         card_padding = [
             metrics["card_pad_x"],
             metrics["card_pad_top"],
@@ -121,15 +124,24 @@ class FreezingTabPresentationMixin:
         view.mass_row.spacing = dp(8 if compact else 10)
         view.unit_button.width = metrics["unit_w"]
         view.unit_button.height = metrics["unit_h"]
-        view.unit_button.font_size = f'{metrics["body_sp"]}sp'
+        view.unit_button.font_size = f'{metrics["control_sp"]}sp'
         for field in view.input_fields:
             field.height = metrics["field_h"]
-            field.font_size = f'{metrics["body_sp"]}sp'
+            field.font_size = f'{metrics["control_sp"]}sp'
+        view.temp_start_input.hint_text = self._translate(
+            "temperature_start_short" if large_text else "temperature_start"
+        )
+        view.temp_end_input.hint_text = self._translate(
+            "temperature_end_short" if large_text else "temperature_end"
+        )
         view.results_card.padding = card_padding
         view.results_card.spacing = metrics["results_spacing"]
         view.results_card.height = metrics["results_h"]
         view.results_title_row.height = metrics["title_h"]
         view.results_title_label.font_size = f'{metrics["title_sp"]}sp'
+        view.action_row.orientation = (
+            "vertical" if metrics["action_vertical"] else "horizontal"
+        )
         view.action_row.height = metrics["action_h"]
         view.action_row.spacing = dp(6 if compact else 8)
         view.action_row.padding = [
@@ -138,11 +150,16 @@ class FreezingTabPresentationMixin:
             0,
             dp(7 if compact else 8),
         ]
-        for button in (
+        action_buttons = (
             view.calculate_button,
             view.pdf_button,
             view.clear_button,
-        ):
+        )
+        horizontal_widths = (0.40, 0.27, 0.33)
+        for button, horizontal_width in zip(action_buttons, horizontal_widths):
+            button.size_hint_x = (
+                1 if metrics["action_vertical"] else horizontal_width
+            )
             button.height = metrics["action_button_h"]
             button.font_size = f'{metrics["action_sp"]}sp'
         view.total_label.height = metrics["total_h"]

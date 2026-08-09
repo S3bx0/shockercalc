@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 from typing import Any
 
 LABOR_RESULT_LABEL_KEYS = (
@@ -67,13 +68,23 @@ class LaborTabViewCompositionMixin:
     def build(self: Any) -> LaborTabView:
         """Create the complete labor tab and retain its typed widget boundary."""
 
-        from kivy.metrics import dp
+        from kivy.metrics import Metrics, dp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.button import MDRaisedButton
         from kivymd.uix.card import MDCard
         from kivymd.uix.label import MDLabel
         from kivymd.uix.scrollview import MDScrollView
         from kivymd.uix.textfield import MDTextField
+
+        font_scale = max(1.0, min(2.0, float(Metrics.fontscale)))
+        large_text = font_scale >= 1.5
+        self._large_text_layout = large_text
+
+        def content_h(value: float) -> float:
+            return round(value * font_scale, 2)
+
+        def control_sp(value: float) -> str:
+            return f"{round(value / sqrt(font_scale), 2)}sp"
 
         scroll = MDScrollView()
         content = MDBoxLayout(
@@ -100,7 +111,7 @@ class LaborTabViewCompositionMixin:
             text=self._translate("labor_title"),
             font_style="H6",
             size_hint_y=None,
-            height=dp(36),
+            height=dp(content_h(36)),
         )
         input_card.add_widget(title_label)
         hint_label = MDLabel(
@@ -108,7 +119,7 @@ class LaborTabViewCompositionMixin:
             font_style="Caption",
             theme_text_color="Hint",
             size_hint_y=None,
-            height=dp(38),
+            height=dp(content_h(38)),
         )
         input_card.add_widget(hint_label)
 
@@ -119,7 +130,10 @@ class LaborTabViewCompositionMixin:
             hint_text=self._translate("labor_days"), input_filter="int"
         )
         distance_input = MDTextField(
-            hint_text=self._translate("labor_distance"), input_filter="int"
+            hint_text=self._translate(
+                "labor_distance_short" if large_text else "labor_distance"
+            ),
+            input_filter="int",
         )
         lifts_input = MDTextField(
             hint_text=self._translate("labor_lifts"), input_filter="int"
@@ -135,29 +149,30 @@ class LaborTabViewCompositionMixin:
             containers_input,
         ):
             field.size_hint_y = None
-            field.height = dp(60)
+            field.height = dp(content_h(60))
+            field.font_size = control_sp(16)
             input_card.add_widget(field)
 
         toggle_row = MDBoxLayout(
-            orientation="horizontal",
+            orientation="vertical" if large_text else "horizontal",
             spacing=dp(8),
             size_hint_y=None,
-            height=dp(50),
+            height=dp(content_h(104) if large_text else 50),
         )
         highways_button = MDRaisedButton(
             text=self._translate("labor_highways_off"),
-            size_hint_x=0.5,
+            size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
-            height=dp(48),
-            font_size="13sp",
+            height=dp(content_h(48)),
+            font_size=control_sp(13),
             on_release=lambda *_: self.toggle_highways(),
         )
         additional_button = MDRaisedButton(
             text=self._translate("labor_additional_off"),
-            size_hint_x=0.5,
+            size_hint_x=1 if large_text else 0.5,
             size_hint_y=None,
-            height=dp(48),
-            font_size="13sp",
+            height=dp(content_h(48)),
+            font_size=control_sp(13),
             on_release=lambda *_: self.toggle_additional(),
         )
         toggle_row.add_widget(highways_button)
@@ -169,36 +184,38 @@ class LaborTabViewCompositionMixin:
             input_filter=self._numeric_input_filter,
         )
         additional_input.size_hint_y = None
-        additional_input.height = dp(60)
+        additional_input.height = dp(content_h(60))
+        additional_input.font_size = control_sp(16)
         additional_box = MDBoxLayout(
             orientation="vertical", size_hint_y=None, height=0
         )
+        additional_box.expanded_height = dp(content_h(60))
         additional_box.add_widget(additional_input)
         input_card.add_widget(additional_box)
 
         calculate_button = MDRaisedButton(
             text=self._translate("labor_calculate"),
             icon="calculator-variant",
-            size_hint_x=0.64,
+            size_hint_x=1 if large_text else 0.64,
             size_hint_y=None,
-            height=dp(50),
-            font_size="15sp",
+            height=dp(content_h(50)),
+            font_size=control_sp(15),
             on_release=lambda *_: self.calculate(),
         )
         rates_button = MDRaisedButton(
             text=self._translate("labor_rates_button"),
             icon="tune-variant",
-            size_hint_x=0.36,
+            size_hint_x=1 if large_text else 0.36,
             size_hint_y=None,
-            height=dp(50),
-            font_size="13sp",
+            height=dp(content_h(50)),
+            font_size=control_sp(13),
             on_release=lambda *_: self.open_rates(),
         )
         action_row = MDBoxLayout(
-            orientation="horizontal",
+            orientation="vertical" if large_text else "horizontal",
             spacing=dp(8),
             size_hint_y=None,
-            height=dp(52),
+            height=dp(content_h(108) if large_text else 52),
         )
         action_row.add_widget(rates_button)
         action_row.add_widget(calculate_button)
@@ -221,7 +238,7 @@ class LaborTabViewCompositionMixin:
             text=self._translate("labor_result"),
             font_style="H6",
             size_hint_y=None,
-            height=dp(36),
+            height=dp(content_h(36)),
         )
         result_card.add_widget(result_title_label)
         total_label = MDLabel(
@@ -229,7 +246,7 @@ class LaborTabViewCompositionMixin:
             font_style="H6",
             halign="center",
             size_hint_y=None,
-            height=dp(44),
+            height=dp(content_h(44)),
             theme_text_color="Custom",
             text_color=self.result_color(),
         )
@@ -238,7 +255,7 @@ class LaborTabViewCompositionMixin:
             text=self._translate("labor_currency_note_pln"),
             halign="center",
             size_hint_y=None,
-            height=dp(30),
+            height=dp(content_h(30)),
             theme_text_color="Hint",
             font_style="Caption",
         )
@@ -253,7 +270,7 @@ class LaborTabViewCompositionMixin:
             text=self._translate("labor_chart_empty"),
             halign="center",
             size_hint_y=None,
-            height=dp(24),
+            height=dp(content_h(24)),
             theme_text_color="Hint",
             font_style="Caption",
         )
@@ -271,14 +288,14 @@ class LaborTabViewCompositionMixin:
             label = MDLabel(
                 text=self._translate(key, value="—"),
                 size_hint_y=None,
-                height=dp(28),
+                height=dp(content_h(28)),
                 theme_text_color="Secondary",
             )
             result_labels[attr] = (label, key)
         travel_mode_label = MDLabel(
             text=self._translate("labor_travel_mode", value="—"),
             size_hint_y=None,
-            height=dp(28),
+            height=dp(content_h(28)),
             theme_text_color="Secondary",
         )
         travel_details_label = MDLabel(
@@ -286,7 +303,7 @@ class LaborTabViewCompositionMixin:
                 "labor_travel_details", trips="—", toll_days="—", nights="—"
             ),
             size_hint_y=None,
-            height=dp(32),
+            height=dp(content_h(32)),
             theme_text_color="Hint",
             font_style="Caption",
         )

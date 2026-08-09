@@ -206,6 +206,8 @@ class FreezingProductSelectionMixin:
             buttons=[
                 MDFlatButton(
                     text=self._translate("close"),
+                    size_hint_y=None,
+                    height=dp(48),
                     on_release=lambda *_: self.close_product_dialog(),
                 )
             ],
