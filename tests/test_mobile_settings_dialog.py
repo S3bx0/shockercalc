@@ -96,3 +96,20 @@ def test_settings_controller_keeps_feedback_action_outside_dialog_logic():
     assert 'self._translate("settings_feedback_button")' in source
     assert "openFeedbackEmail" not in source
     assert "mailto:" not in source
+
+
+def test_settings_dialog_orders_sections_by_user_priority():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tpof"
+        / "mobile"
+        / "dialogs"
+        / "settings.py"
+    ).read_text(encoding="utf-8")
+
+    feedback = source.index('text=self._translate("settings_feedback_title")')
+    currency = source.index('text=self._translate("settings_currency_title")')
+    units = source.index('text=self._translate("units_title")')
+    legal = source.index('text=self._translate("settings_legal_title")')
+
+    assert feedback < currency < units < legal

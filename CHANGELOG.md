@@ -38,6 +38,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Zmieniono
 
+- Uporządkowano ustawienia według priorytetu użytkownika: opinia i zgłoszenie
+  błędu, waluta i kursy, jednostki, a na końcu licencje i informacje prawne.
 - Rozszerzono spójną serię ilustracji pixel-art z przezroczystym tłem i
   zachowanym cieniem kontaktowym o banany, cebulę, ananasa, awokado, świeże
   brzoskwinie, granaty i truskawki. Świeże brzoskwinie mają również bezpieczny
@@ -66,7 +68,7 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ### Testy
 
-- Pełna suita zawiera 488 testów i utrzymuje mierzone pokrycie powyżej
+- Pełna suita zawiera 498 testów i utrzymuje mierzone pokrycie powyżej
   twardym progu 50%.
 
 ## [1.5.13] - 2026-08-01
