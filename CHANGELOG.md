@@ -6,6 +6,8 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.14] - 2026-08-09
+
 ### Dodano
 
 - Dodano pierwszą warstwę dostępności Android: lokalizowane opisy aktywnej
