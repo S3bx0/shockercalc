@@ -179,6 +179,7 @@ class AppControllerCompositionMixin:
             translate=self._t,
             get_language=lambda: self._localization.language,
             open_email=self._android.open_feedback_email,
+            open_google_play=self._android.open_google_play_listing,
             show_message=self._show_error,
             log_event=telemetry.log_event,
             record_exception=telemetry.record_exception,
@@ -234,6 +235,9 @@ class AppControllerCompositionMixin:
             on_set_display_currency=self._settings_state.set_display_currency,
             on_toggle_auto_update=self._settings_state.toggle_currency_auto_update,
             on_open_feedback=self._feedback_controller.open,
+            on_open_google_play_feedback=(
+                self._feedback_controller.open_google_play_feedback
+            ),
             on_open_legal=self._open_legal_dialog,
         )
         self._labor_rates_dialog_controller = LaborRatesDialogController(

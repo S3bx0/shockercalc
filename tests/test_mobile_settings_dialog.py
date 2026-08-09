@@ -32,6 +32,7 @@ def _controller(styles):
         on_set_display_currency=lambda _value: None,
         on_toggle_auto_update=lambda: None,
         on_open_feedback=lambda: None,
+        on_open_google_play_feedback=lambda: None,
         on_open_legal=lambda: None,
     )
 
@@ -93,7 +94,9 @@ def test_settings_controller_keeps_feedback_action_outside_dialog_logic():
     ).read_text(encoding="utf-8")
 
     assert "on_open_feedback" in source
+    assert "on_open_google_play_feedback" in source
     assert 'self._translate("settings_feedback_button")' in source
+    assert 'self._translate("settings_feedback_google_play_button")' in source
     assert "openFeedbackEmail" not in source
     assert "mailto:" not in source
 

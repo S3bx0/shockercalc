@@ -308,6 +308,7 @@ public class RefrigerationCalcActivity extends PythonActivity {
         feedback().openEmail(recipient, subject, body);
     }
 
+    public void openGooglePlayListing(final String packageName) { feedback().openGooglePlayListing(packageName); }
     public String consumePendingShortcutTab() {
         return appShortcuts().consumePendingTargetTab();
     }

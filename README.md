@@ -3,7 +3,7 @@
 Kalkulator zapotrzebowania chłodu dla procesu zamrażania produktów spożywczych,
 doboru zaworów dekompresyjnych oraz szybkiej wyceny robocizny.
 
-**Aktualna wersja Android:** `1.5.14`
+**Aktualna wersja Android:** `1.5.15`
 
 **Stan jakości:** 498 testów automatycznych, statyczna kontrola Ruff i mypy,
 minimalne pokrycie 50%, audyt `pip-audit`, Gitleaks, Dependency Review oraz
@@ -37,6 +37,8 @@ uruchamiania, kompilowania ani modyfikowania programu.
 - eksport i udostępnianie raportów PDF,
 - dobrowolny, ustrukturyzowany raport testowy przez edytowalny szkic e-mail:
   obszar, rezultat, częstotliwość i wpływ problemu bez wysyłania w tle,
+- bezpośredni, dobrowolny skrót do karty aplikacji w Google Play, aby tester
+  mógł skorzystać z prywatnej opinii dla dewelopera,
 - skróty launchera otwierające bezpośrednio karty Chłodnicze, Zawory lub
   Robocizna po przytrzymaniu ikony aplikacji,
 - polski i angielski interfejs, jasny/ciemny motyw oraz responsywny układ

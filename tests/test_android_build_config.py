@@ -25,9 +25,9 @@ def test_release_version_is_consistent():
     package_init = (ROOT / "tpof/__init__.py").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "version = 1.5.14" in spec
-    assert '__version__ = "1.5.14"' in package_init
-    assert 'version = "1.5.14"' in pyproject
+    assert "version = 1.5.15" in spec
+    assert '__version__ = "1.5.15"' in package_init
+    assert 'version = "1.5.15"' in pyproject
 
 
 def test_activity_uses_modern_edge_to_edge_api():

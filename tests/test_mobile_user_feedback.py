@@ -3,6 +3,7 @@ from __future__ import annotations
 from tpof.mobile.i18n import translate
 from tpof.mobile.services.user_feedback import (
     CONTACT_EMAIL,
+    GOOGLE_PLAY_PACKAGE_NAME,
     UserFeedbackController,
     build_feedback_draft,
 )
@@ -55,6 +56,7 @@ def test_feedback_controller_opens_native_draft_and_logs_action():
         open_email=lambda recipient, subject, body: (
             opened.append((recipient, subject, body)) or True
         ),
+        open_google_play=lambda _package_name: True,
         show_message=messages.append,
         log_event=lambda name, params=None: events.append((name, params)),
         record_exception=lambda exc, context: errors.append((exc, context)),
@@ -76,6 +78,7 @@ def test_feedback_controller_reports_missing_email_app():
         translate=lambda key, **kwargs: translate("en", key, **kwargs),
         get_language=lambda: "en",
         open_email=lambda _recipient, _subject, _body: False,
+        open_google_play=lambda _package_name: False,
         show_message=messages.append,
         log_event=lambda _name, _params=None: None,
         record_exception=lambda _exc, _context: None,
@@ -99,6 +102,7 @@ def test_feedback_controller_contains_platform_exception():
         translate=lambda key, **kwargs: translate("pl", key, **kwargs),
         get_language=lambda: "pl",
         open_email=fail,
+        open_google_play=lambda _package_name: False,
         show_message=messages.append,
         log_event=lambda _name, _params=None: None,
         record_exception=lambda exc, context: errors.append((exc, context)),
@@ -107,3 +111,21 @@ def test_feedback_controller_contains_platform_exception():
     assert controller.open() is False
     assert errors[0][1] == "open_feedback"
     assert "Nie udało się otworzyć aplikacji pocztowej" in messages[0]
+
+
+def test_feedback_controller_opens_google_play_without_sending_feedback():
+    opened: list[str] = []
+    events: list[tuple[str, object]] = []
+    controller = UserFeedbackController(
+        translate=lambda key, **kwargs: translate("pl", key, **kwargs),
+        get_language=lambda: "pl",
+        open_email=lambda _recipient, _subject, _body: False,
+        open_google_play=lambda package_name: opened.append(package_name) or True,
+        show_message=lambda _message: None,
+        log_event=lambda name, params=None: events.append((name, params)),
+        record_exception=lambda _exc, _context: None,
+    )
+
+    assert controller.open_google_play_feedback() is True
+    assert opened == [GOOGLE_PLAY_PACKAGE_NAME]
+    assert events == [("feedback_opened", {"channel": "google_play"})]

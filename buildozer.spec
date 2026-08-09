@@ -15,7 +15,7 @@ source.exclude_patterns = assets/brand/**,assets/store/**,assets/fonts/**,assets
 source.exclude_dirs = tests, tools, archive, p4a-recipes, .venv, .pytest_cache, .mypy_cache, .firebase, project, dejavu-fonts-ttf-2.37, Zdjęcia
 
 # Wersja aplikacji
-version = 1.5.14
+version = 1.5.15
 
 # Numeryczny kod wersji (versionCode) dla Google Play — musi rosnąć z każdą publikacją.
 # CI (workflow release) nadpisuje tę wartość numerem builda, więc lokalnie wystarczy 1.

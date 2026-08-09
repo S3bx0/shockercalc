@@ -18,6 +18,7 @@ class FakeActivity:
         self.pending_shortcut = "labor"
         self.shared_files: list[tuple[str, str, str, str]] = []
         self.feedback_emails: list[tuple[str, str, str]] = []
+        self.google_play_packages: list[str] = []
         self.accessibility_descriptions: list[str] = []
         self.accessibility_announcements: list[str] = []
 
@@ -54,6 +55,9 @@ class FakeActivity:
         body: str,
     ) -> None:
         self.feedback_emails.append((recipient, subject, body))
+
+    def openGooglePlayListing(self, package_name: str) -> None:
+        self.google_play_packages.append(package_name)
 
     def configureAccessibility(self, description: str) -> None:
         self.accessibility_descriptions.append(description)
@@ -97,6 +101,7 @@ def test_bridge_delegates_native_activity_contract():
         )
         is True
     )
+    assert bridge.open_google_play_listing("pl.smilczarek.refrigerationcalc") is True
 
     assert activity.active_tabs == ["valves"]
     assert activity.accessibility_descriptions == ["Ekran zaworów"]
@@ -113,6 +118,7 @@ def test_bridge_delegates_native_activity_contract():
     assert activity.feedback_emails == [
         ("tester@example.com", "Opinia", "Treść")
     ]
+    assert activity.google_play_packages == ["pl.smilczarek.refrigerationcalc"]
 
 
 def test_bridge_is_safe_noop_off_android():
@@ -133,6 +139,7 @@ def test_bridge_is_safe_noop_off_android():
     assert bridge.show_privacy_options_form() is None
     assert bridge.share_file("x", "y", "z", "t") is False
     assert bridge.open_feedback_email("x", "y", "z") is False
+    assert bridge.open_google_play_listing("x") is False
     assert loads == []
 
     with pytest.raises(RuntimeError, match="outside Android"):
@@ -164,6 +171,9 @@ def test_bridge_contains_failures_for_optional_ad_and_share_calls():
         ) -> None:
             raise RuntimeError(recipient)
 
+        def openGooglePlayListing(self, package_name: str) -> None:
+            raise RuntimeError(package_name)
+
         def configureAccessibility(self, description: str) -> None:
             raise RuntimeError(description)
 
@@ -182,6 +192,7 @@ def test_bridge_contains_failures_for_optional_ad_and_share_calls():
     assert bridge.resolved_banner_height(False, 64) == 64
     assert bridge.share_file("bad.pdf", "application/pdf", "x", "y") is False
     assert bridge.open_feedback_email("bad@example.com", "x", "y") is False
+    assert bridge.open_google_play_listing("bad.package") is False
 
 
 def test_bridge_leaves_privacy_failures_for_dialog_controller_to_report():
@@ -228,6 +239,7 @@ def test_app_uses_bridge_without_direct_native_activity_calls():
     assert "self._android.resolved_banner_height(" in app_source
     assert "share_file=self._android.share_file" in composition_source
     assert "open_email=self._android.open_feedback_email" in composition_source
+    assert "open_google_play=self._android.open_google_play_listing" in composition_source
     assert (
         "privacy_options_required=self._android.privacy_options_required"
         in composition_source
@@ -240,3 +252,4 @@ def test_app_uses_bridge_without_direct_native_activity_calls():
         assert ".getBannerHeightDp(" not in source
         assert ".shareFile(" not in source
         assert ".openFeedbackEmail(" not in source
+        assert ".openGooglePlayListing(" not in source

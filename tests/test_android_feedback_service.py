@@ -16,6 +16,7 @@ def test_activity_keeps_thin_feedback_delegate():
     assert "private FeedbackService feedbackService;" in activity
     assert "feedbackService = new FeedbackService(this);" in activity
     assert "feedback().openEmail(recipient, subject, body);" in activity
+    assert "feedback().openGooglePlayListing(packageName);" in activity
 
 
 def test_feedback_service_opens_user_controlled_email_draft():
@@ -42,3 +43,14 @@ def test_feedback_service_has_sharesheet_fallback_without_auto_send():
     assert "Intent.createChooser(fallback, subject)" in service
     assert "sendBroadcast" not in service
     assert "SmsManager" not in service
+
+
+def test_feedback_service_opens_google_play_with_safe_web_fallback():
+    service = _compact(SERVICE)
+
+    assert "void openGooglePlayListing(final String packageName)" in service
+    assert '"market://details?id=" + Uri.encode(safePackage)' in service
+    assert 'intent.setPackage("com.android.vending")' in service
+    assert "catch (ActivityNotFoundException noPlayStore)" in service
+    assert "openGooglePlayWebFallback(safePackage);" in service
+    assert '"https://play.google.com/store/apps/details?id="' in service

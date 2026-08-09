@@ -6,6 +6,15 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.15] - 2026-08-09
+
+### Dodano
+
+- W ustawieniach, obok szczegółowego raportu e-mail, dodano neutralny skrót
+  do karty aplikacji w Google Play. Tester samodzielnie decyduje, czy
+  skorzystać tam z prywatnej opinii dla dewelopera; aplikacja nie wysyła
+  opinii, nie prosi o pozytywną ocenę i nie ingeruje w jej treść.
+
 ## [1.5.14] - 2026-08-09
 
 ### Dodano

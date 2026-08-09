@@ -104,6 +104,8 @@ I18N = {
         "settings_feedback_title": "Opinia i zgłoszenie błędu",
         "settings_feedback_hint": "Otwórz ustrukturyzowany, edytowalny raport testowy. Możesz wskazać obszar, wynik, częstotliwość i wpływ problemu. Aplikacja nie wysyła danych w tle.",
         "settings_feedback_button": "Otwórz raport testowy / opinię",
+        "settings_feedback_google_play_hint": "Otwiera kartę aplikacji w Google Play. W czasie testu możesz tam dobrowolnie wybrać „Prywatna opinia o deweloperze”.",
+        "settings_feedback_google_play_button": "Otwórz opinię testową w Google Play",
         "feedback_email_subject": "Refrigeration Calc {version} — raport testowy / opinia",
         "feedback_email_body": (
             "Dziękujemy za rzeczywiste przetestowanie aplikacji. Usuń niepasujące "
@@ -142,6 +144,7 @@ I18N = {
             "w aplikacji pocztowej."
         ),
         "feedback_unavailable": "Nie udało się otworzyć aplikacji pocztowej. Napisz na: milczarek.sebastian1988@gmail.com",
+        "feedback_google_play_unavailable": "Nie udało się otworzyć Google Play. Otwórz Sklep Play i wyszukaj Refrigeration Calc.",
         "settings_legal_title": "Licencje i informacje prawne",
         "settings_legal_hint": "Warunki korzystania z aplikacji, licencja kodu, zastrzeżenie AI/TDM i licencje komponentów zewnętrznych są dostępne offline.",
         "settings_legal_button": "Otwórz informacje prawne",
@@ -391,6 +394,8 @@ I18N = {
         "settings_feedback_title": "Feedback and bug reports",
         "settings_feedback_hint": "Open a structured, editable test report. You can identify the area, outcome, frequency and impact. The app sends nothing in the background.",
         "settings_feedback_button": "Open test report / feedback",
+        "settings_feedback_google_play_hint": "Opens the app page in Google Play. During testing, you can voluntarily choose Private feedback to developer there.",
+        "settings_feedback_google_play_button": "Open Google Play test feedback",
         "feedback_email_subject": "Refrigeration Calc {version} — test report / feedback",
         "feedback_email_body": (
             "Thank you for genuinely testing the app. Remove options that do not "
@@ -428,6 +433,7 @@ I18N = {
             "sent only after you use the send button in your email app."
         ),
         "feedback_unavailable": "The email app could not be opened. Contact: milczarek.sebastian1988@gmail.com",
+        "feedback_google_play_unavailable": "Google Play could not be opened. Open the Play Store and search for Refrigeration Calc.",
         "settings_legal_title": "Licenses and legal information",
         "settings_legal_hint": "The app terms, source license, AI/TDM reservation and third-party component licenses are available offline.",
         "settings_legal_button": "Open legal information",

@@ -34,6 +34,7 @@ class SettingsDialogController:
         on_set_display_currency: Callable[[str], None],
         on_toggle_auto_update: Callable[[], None],
         on_open_feedback: Callable[[], object],
+        on_open_google_play_feedback: Callable[[], object],
         on_open_legal: Callable[[], None],
     ) -> None:
         self._translate = translate
@@ -48,6 +49,7 @@ class SettingsDialogController:
         self._on_set_display_currency = on_set_display_currency
         self._on_toggle_auto_update = on_toggle_auto_update
         self._on_open_feedback = on_open_feedback
+        self._on_open_google_play_feedback = on_open_google_play_feedback
         self._on_open_legal = on_open_legal
 
         self._dialog: Any | None = None
@@ -148,6 +150,22 @@ class SettingsDialogController:
             )
             self._style_button(feedback_button, "ice")
             content.add_widget(feedback_button)
+            content.add_widget(
+                MDLabel(
+                    text=self._translate("settings_feedback_google_play_hint"),
+                    theme_text_color="Hint",
+                    font_style="Caption",
+                    adaptive_height=True,
+                )
+            )
+            google_play_feedback_button = MDRaisedButton(
+                text=self._translate("settings_feedback_google_play_button"),
+                size_hint=(1, None),
+                height=dp(48),
+                on_release=lambda *_: self._on_open_google_play_feedback(),
+            )
+            self._style_button(google_play_feedback_button, "muted")
+            content.add_widget(google_play_feedback_button)
             content.add_widget(
                 MDLabel(
                     text=self._translate("settings_currency_title"),

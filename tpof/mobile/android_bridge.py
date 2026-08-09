@@ -151,6 +151,17 @@ class AndroidActivityBridge:
             log.exception("Otwarcie wiadomości z opinią Android")
             return False
 
+    def open_google_play_listing(self, package_name: str) -> bool:
+        """Open the app's Google Play page for voluntary tester feedback."""
+        if not self._is_android:
+            return False
+        try:
+            self.activity().openGooglePlayListing(package_name)
+            return True
+        except Exception:  # pragma: no cover - Android only
+            log.exception("Otwarcie Google Play dla opinii testowej")
+            return False
+
 
 def _runtime_font_path() -> Path | None:
     """Używa fontu aplikacji albo kopii DejaVu dostarczanej przez Kivy."""

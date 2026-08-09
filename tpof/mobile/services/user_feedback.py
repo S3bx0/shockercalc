@@ -16,6 +16,7 @@ from tpof.mobile.constants import APP_NAME
 log = logging.getLogger(__name__)
 
 CONTACT_EMAIL = "milczarek.sebastian1988@gmail.com"
+GOOGLE_PLAY_PACKAGE_NAME = "pl.smilczarek.refrigerationcalc"
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,7 @@ class UserFeedbackController:
         translate: Callable[..., str],
         get_language: Callable[[], str],
         open_email: Callable[[str, str, str], bool],
+        open_google_play: Callable[[str], bool],
         show_message: Callable[[str], None],
         log_event: Callable[[str, Mapping[str, object] | None], None],
         record_exception: Callable[[BaseException, str], None],
@@ -64,6 +66,7 @@ class UserFeedbackController:
         self._translate = translate
         self._get_language = get_language
         self._open_email = open_email
+        self._open_google_play = open_google_play
         self._show_message = show_message
         self._log_event = log_event
         self._record_exception = record_exception
@@ -89,4 +92,18 @@ class UserFeedbackController:
             log.exception("Otwarcie formularza opinii")
 
         self._show_message(self._translate("feedback_unavailable"))
+        return False
+
+    def open_google_play_feedback(self) -> bool:
+        """Open Google Play; the tester chooses whether to post feedback there."""
+
+        try:
+            if self._open_google_play(GOOGLE_PLAY_PACKAGE_NAME):
+                self._log_event("feedback_opened", {"channel": "google_play"})
+                return True
+        except Exception as exc:  # pragma: no cover - platform boundary
+            self._record_exception(exc, "open_google_play_feedback")
+            log.exception("Otwarcie Google Play dla opinii testowej")
+
+        self._show_message(self._translate("feedback_google_play_unavailable"))
         return False
