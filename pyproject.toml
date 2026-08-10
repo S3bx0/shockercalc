@@ -28,7 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 desktop = ["ttkbootstrap==1.20.4"]
 mobile = ["kivy==2.3.1", "kivymd==1.2.0"]
-dev = ["pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.15.22", "mypy==2.3.0"]
+dev = ["pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.16.1", "mypy==2.3.0"]
 
 [project.scripts]
 shocker-calc = "tpof.desktop.app:main"

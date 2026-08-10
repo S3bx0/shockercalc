@@ -6,4 +6,4 @@ Pillow==12.3.0
 fpdf2==2.8.7
 fonttools==4.63.0
 defusedxml==0.7.1
-certifi==2026.6.17
+certifi==2026.7.22
