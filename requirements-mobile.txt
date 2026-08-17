@@ -3,7 +3,7 @@
 # do testów lokalnych UI. Sam build APK robi Buildozer w WSL/Linux.
 Pillow==12.3.0
 reportlab==5.0.0
-pypdf==6.15.0
+pypdf==6.16.0
 kivy==2.3.1
 kivymd==1.2.0
-certifi==2026.6.17
+certifi==2026.7.22
