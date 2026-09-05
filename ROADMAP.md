@@ -1,5 +1,15 @@
 # Refrigeration Calc roadmap
 
+## Audyt architektury i produktu 2026-09-05
+
+Pełny raport, decyzje produktowe (projektant w biurze, tokeny za reklamy jako
+realna ścieżka użycia, parametry F2) oraz mapa poprawek z bramkami znajdują się
+w
+[`docs/ARCHITECTURE_PRODUCT_AUDIT_2026-09-05.md`](docs/ARCHITECTURE_PRODUCT_AUDIT_2026-09-05.md).
+Kolejność wykonania: blok A (quick wins Python) → B (lifecycle AdMob) →
+C (EventBus + kolejka zdarzeń natywnych) → E1 (sesje odblokowania) →
+E2 (`tpof/reports`); żadnej nowej funkcji przed C3 i E1.
+
 ## Ścieżka krytyczna: ponowny test zamknięty Google Play
 
 Odrzucenie dostępu produkcyjnego jest obecnie problemem procesu testowego, nie
