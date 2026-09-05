@@ -1,12 +1,14 @@
 # Audyt architektury, kodu i produktu — 2026-09-05
 
 Rola audytora: Senior Software Architect + Staff Engineer + Product Engineer +
-Code Reviewer. Audyt obejmuje rzeczywisty kod, nie README.
+Code Reviewer. Audyt obejmuje rzeczywisty kod, nie README. Zapis przebiegu
+sesji, decyzji i ustaleń z etapu publikacji (w tym blokada pipeline'u APK):
+[`AUDIT_SESSION_2026-09-05.md`](AUDIT_SESSION_2026-09-05.md).
 
 ## Zakres i metoda
 
 - Repozytorium: `S3bx0/shockercalc`, gałąź `main`, commit `27bb34a`
-  (tag `v1.5.15`, drzewo czyste, `origin/main` = `HEAD`).
+  (tag `v1.5.15`; punkt odniesienia pierwotnego raportu, nie bieżący HEAD PR).
 - Przeczytano w całości: `tpof/core`, `tpof/labor`, `tpof/mobile/app.py`,
   `app_controllers.py`, `entitlements.py`, `user_data.py`, `currency.py`,
   `settings_state.py`, `telemetry.py`, `android_bridge.py`, `pdf_export.py`,
@@ -30,12 +32,25 @@ Code Reviewer. Audyt obejmuje rzeczywisty kod, nie README.
 - Zasada: jeśli czegoś nie da się potwierdzić z kodu, jest to zaznaczone jako
   „nie mogę potwierdzić na podstawie obecnego kodu”.
 
-Dokument ma trzy części:
+**Weryfikacja uzupełniająca 2026-09-05:** sprawdzono cały dokument z PR #33
+(`b84c2c0`), wskazane ścieżki kodu i testy, logi CI oraz dokumentację upstream.
+Korekty naniesiono w miejscu błędnych tez; Część IV zawiera dowody, ograniczenia
+i dodatkowe bramki. To przegląd architektoniczno-produktowy, nie pełny audyt
+bezpieczeństwa ani ponowny test APK na urządzeniu. Pomiar czasu testów jest
+lokalny; oceny 1–10 i rozmiary prac są oceną audytora, nie benchmarkiem.
+
+Dokument ma cztery części:
 
 1. **Część I — Raport** (sekcje 1–25 w formacie zamówionym przez Autora).
 2. **Część II — Decyzje produktowe z 2026-09-05** i ich konsekwencje dla
    priorytetów.
 3. **Część III — Mapa poprawek** (co, gdzie, jaką techniką, jaką bramką).
+4. **Część IV — Weryfikacja i bramki wykonania** (stan CI, dowody, migracja,
+   niezawodność, dostępność i kryteria odbioru).
+
+Kolejność obowiązująca: Część II + III, z bramkami Części IV. Listy pomysłów
+i fazy w Części I są analizą wariantów, nie dodatkową zgodą na wdrożenie.
+Parametry F2 z Części II pozostają bez zmian.
 
 ---
 
@@ -59,7 +74,8 @@ jednorazowy moduł zaworów. Do tego uśpiona wersja desktop (Tkinter).
   Java.
 - 500 testów w ~5 s, ruff + mypy, pip-audit, Gitleaks, CodeQL, Dependency
   Review, SLSA provenance + SBOM, allowlista uprawnień, kontrola ABI/16 KB.
-  Dla jednoosobowego projektu to poziom ponadprzeciętny.
+  To szeroki zestaw kontroli, ale ich konfiguracja nie oznacza zielonego wyniku:
+  dla `b84c2c0` audyt zależności i debug APK zakończyły się błędem (IV.1).
 
 **Najważniejsze problemy (skrót).**
 
@@ -71,23 +87,26 @@ jednorazowy moduł zaworów. Do tego uśpiona wersja desktop (Tkinter).
    1 przeliczenie; zmiana typu zaworu w dropdownie zużywa token; po reklamie
    trzeba ponownie kliknąć „Oblicz”.
 3. 🟠 **`AdvertisingService` niszczy i tworzy baner oraz porzuca załadowaną
-   reklamę rewarded przy każdej zmianie karty** — koszt sieciowy, gorszy
-   fill-rate, ryzyko polityki AdMob.
+   reklamę rewarded przy zmianie aktywnej karty** — dodatkowe żądania i ryzyko
+   niespójności asynchronicznych callbacków. Wpływu na fill-rate/eCPM ani
+   naruszenia polityki AdMob nie zmierzono i nie potwierdzono.
 4. 🟠 **Raport PDF jest wyłącznie po polsku** (`format_results_text`);
    PDF istnieje tylko dla kalkulatora chłodniczego; dwa różne generatory PDF
    (reportlab vs fpdf2).
-5. 🟡 **Composition root przez ~150 lambd i 30-argumentowe konstruktory** —
+5. 🟡 **Composition root przez 67 lambd i do 30 argumentów konstruktora** —
    testowalne, ale każde nowe zdarzenie przekrojowe wymaga przewleczenia
    kolejnej lambdy przez 3–5 klas; kolejność inicjalizacji jest load-bearing.
 6. 🟡 **~200 asercji testowych na tekście źródła** — zamrażają implementację,
    nie zachowanie.
-7. 🟡 **Produkt stoi, proces rośnie**: w ostatnich 60 commitach najczęściej
+7. 🟡 **Ryzyko przewagi prac utrzymaniowych**: w ostatnich 60 commitach najczęściej
    zmieniane pliki to `ROADMAP.md`, `test_android_build_config.py`,
-   `CHANGELOG.md`, `pyproject.toml`. Funkcjonalności użytkownika prawie nie
-   przybyło od 1.5.11.
+   `CHANGELOG.md`, `pyproject.toml`. Sama częstość zmian plików nie dowodzi
+   stagnacji produktu: doszły m.in. rozbudowany feedback, skróty i poprawki UI.
+   Brak danych o wpływie tych zmian na użytkowników i konwersję.
 
 **Werdykt.** Nie przepisywać. Architektura jest zdrowa i gotowa na ewolucję.
-Priorytet: (a) kanał zdarzeń natywnych + magistrala zdarzeń w Pythonie,
+Priorytet: najpierw przywrócenie działających bramek CI (IV.1), potem
+(a) kanał zdarzeń natywnych dla monetyzacji,
 (b) naprawa modelu monetyzacji i ad-lifecycle, (c) jeden wielojęzyczny silnik
 raportów dla 3 kalkulatorów, (d) dopiero potem nowe funkcje (historia obliczeń,
 obliczenia wieloproduktowe, moduł obciążenia komory).
@@ -130,7 +149,7 @@ flowchart TB
 
   subgraph Mobile["tpof.mobile (Python, Kivy/KivyMD)"]
     APP[app.py<br/>ShockerCalcApp.build]
-    COMP[app_controllers.py<br/>compose_controllers – ~150 lambd]
+    COMP[app_controllers.py<br/>compose_controllers – 67 lambd]
     SHELL[shell.py / navigation / layout / theme / localization / form_interactions]
     TABS[tabs/: freezing*, valves*, labor*]
     DLG[dialogs/: settings, privacy, legal,<br/>custom_product, labor_rates]
@@ -171,7 +190,11 @@ stałych AdMob zduplikowanych w Pythonie i Javie.
 
 ## 4. Repository Map
 
-| Ścieżka | LOC (≈) | Rola | Ocena |
+LOC poniżej oznacza **niepuste linie**, wraz z komentarzami/docstringami,
+nie liczbę instrukcji. Np. Activity ma 389 linii fizycznych / 337 niepustych,
+`p4a_hooks.py` 582 / 515. Liczba testów źródłowych dotyczy plików `.py`.
+
+| Ścieżka | LOC (≈, niepuste) | Rola | Ocena |
 |---|---|---|---|
 | `tpof/core` | 685 | modele, obliczenia, zawory, formatowanie, 2 generatory PDF | czysta domena, dobra |
 | `tpof/labor` | 333 | kalkulator robocizny (Decimal) | czysta domena, dobra; polskie stałe |
@@ -179,13 +202,13 @@ stałych AdMob zduplikowanych w Pythonie i Javie.
 | `tpof/mobile/tabs` | 3 239 | 3 karty × (koordynator, view, workflow, results/presentation) | wzorzec mixinów, spójny |
 | `tpof/mobile/dialogs` | 1 224 | 5 dialogów jako kontrolery | dobre |
 | `tpof/mobile/services` | 408 | monetyzacja, tokeny, opinia, skróty | dobre, ale polling |
-| `tpof/mobile/widgets` | 1 009 | toolbar, bottom_nav, wykres, tło, ikony | Kivy-only, nietestowane |
+| `tpof/mobile/widgets` | 1 009 | toolbar, bottom_nav, wykres, tło, ikony | Kivy-only; pełnej regresji renderowania nie potwierdzono |
 | `tpof/desktop` | 837 | Tkinter God-class | uśpione, PL-only |
 | `android/src/…` | ~2 000 | Activity + 8 serwisów + splash | dobre |
-| `tests` | ~8 600 (65 plików) | 500 testów | duży udział testów „na tekście” |
-| `tools` | ~2 100 | bramki CI (ABI, 16 KB, uprawnienia, SBOM…) | dobre, częściowo testowane |
-| `p4a_hooks.py` | 515 | regexowe łaty manifestu/gradle/Java p4a | kruche, bez testów jednostkowych |
-| `.github/workflows` | ~890 | debug APK, release AAB, lint, CodeQL, dep-review | wzorcowe |
+| `tests` | 7 144 (60 plików Python) | 500 testów | istotny udział testów „na tekście” |
+| `tools` | 1 607 | bramki CI (ABI, 16 KB, uprawnienia, SBOM…) | częściowo testowane |
+| `p4a_hooks.py` | 515 | regexowe łaty manifestu/gradle/Java p4a | 11 testów wywołujących hooki/helpery; rozszerzyć pokrycie, nie budować od zera |
+| `.github/workflows` | ~890 | debug APK, release AAB, lint, CodeQL, dep-review | szeroki zakres; bieżące awarie opisano w IV.1 |
 | `docs` | ~2 900 | audyty, plany, procedury Play | dużo, część historyczna |
 | `assets` | — | Table3.json, 120+ webp, font, watermark | ok |
 
@@ -213,21 +236,26 @@ kategorii „różne”.
 `offer_reward_ad()` → `activity.showRewardedAd()` → Java `onUserEarnedReward` →
 `SharedPreferences.pending_reward_tokens++` → Python **timery 1 s i 3 s**
 (`REWARD_REFRESH_DELAYS`) → `consumePendingRewardTokens()` →
-`Entitlements.grant_reward_for_ad()` → `entitlement.json`. Reklama trwa
-15–30 s, więc timery zwykle „strzelają w pustkę”; token jest faktycznie
-doliczany dopiero leniwie przy następnym kliknięciu „Oblicz”. Użytkownik po
-reklamie nie dostaje wyniku automatycznie.
+`Entitlements.grant_reward_for_ad()` → `entitlement.json`. Jeśli callback
+nagrody przyjdzie po wykonaniu obu timerów, pobranie nastąpi przy kolejnym
+sprawdzeniu dostępu. Czas reklamy i obsługi Clock podczas pauzy nie został
+zmierzony, więc nie przesądzamy, jak często zachodzi ten scenariusz.
+Nie ma automatycznej kontynuacji obliczenia. Ponadto odczyt kasuje licznik
+w Javie **przed** trwałym zapisem w Pythonie — ryzyko utraty nagrody (IV.3).
 
 **C. Zakup PRO.**
 `ProMonetizationController.buy()` → `launchProPurchase()` → BillingClient →
 `onPurchasesUpdated` → `handlePurchase` → flaga w SharedPreferences →
 `noAdsStatusChanged` (Java usuwa baner). Python nic o tym nie wie — odpytuje
-`isProNoAdsActive()` po 1/4/10 s. Jeżeli Play pokaże dialog dłużej niż 10 s
-(częste), UI Pythona zaktualizuje się dopiero przy następnym starcie.
+`isProNoAdsActive()` po 1/4/10 s. Natywne `onResume()` odświeża Billing,
+ale Pythonowe `app.on_resume()` obsługuje tylko skróty. Zatem późna odpowiedź
+może pozostawić nieaktualny stan UI do kolejnego odczytu, np. restartu;
+nie jest to potwierdzony pomiarem scenariusz każdej transakcji >10 s.
 
 **D. Kursy NBP.**
 `build()` → po 1 s `refresh_exchange_rates_async()` → wątek →
-`get_exchange_rates(auto_update=True)` → **zawsze 2 żądania HTTPS** (EUR, USD)
+`get_exchange_rates(auto_update=True)` → **do 2 żądań HTTPS** (EUR, USD;
+błąd pierwszego przerywa pobieranie)
 niezależnie od wieku cache → `Clock.schedule_once(apply_exchange_rates)` →
 przeliczenie pola kosztów dodatkowych + odświeżenie wyników.
 
@@ -240,9 +268,10 @@ przeliczenie pola kosztów dodatkowych + odświeżenie wyników.
 **F. Start aplikacji.**
 `_create_app_class()` (import Kivy, rejestracja fontu, `load_products`,
 `merge_into` własnych) → `build()`: `compose_controllers` →
-`MobileShellBuilder` → 3 karty → nawigacja → **12 timerów**
-(`_refresh_ad_slot_height` ×3, privacy ×2, valve lock ×2, hints, a11y 5.6 s,
-consent 2 s, kursy 1 s, monetization ×3).
+`MobileShellBuilder` → 3 karty → nawigacja → **12 miejsc wywołania
+`Clock.schedule_once` w `build()`** (w tym skrót przy starcie na l. 222).
+`monetization.start()` planuje dodatkowo 3 odczyty; nie należy utożsamiać
+liczby miejsc w kodzie z liczbą wszystkich zaplanowanych callbacków.
 
 ## 6. Ocena obecnej architektury
 
@@ -259,9 +288,11 @@ consent 2 s, kursy 1 s, monetization ×3).
 **Słabe punkty.**
 
 - **DI przez callable zamiast portów.** `FreezingTabController.__init__` ma
-  30 parametrów-funkcji; `LaborTabController` 24; `compose_controllers` to
-  340 linii lambd. Brakuje 4–5 małych interfejsów (`NativePlatform`,
-  `EventBus`, `Messenger`, `Theme`), które zastąpiłyby ~60% argumentów.
+  30 parametrów bez `self`; `LaborTabController` 22; `app_controllers.py` ma
+  388 linii fizycznych i 67 wyrażeń lambda (pomiar AST). Warto grupować
+  spójne role w małe protokoły; same callbacki są prawidłowym DI, a redukcja
+  liczby argumentów nie jest samodzielną miarą jakości. Protokoły
+  `AndroidBillingActivity` i `AndroidRewardedAccessActivity` już istnieją.
 - **Kolejność inicjalizacji jest ukrytym kontraktem.** `_settings_state`
   odwołuje się przez lambdę do `_settings_dialog_controller` tworzonego później;
   `getattr(self, "_active_tab_name", "freezing")` ×5 to obrona przed tym samym
