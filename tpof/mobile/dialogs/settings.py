@@ -29,10 +29,12 @@ class SettingsDialogController:
         get_exchange_rates: Callable[[], ExchangeRates],
         get_language: Callable[[], str],
         get_auto_update: Callable[[], bool],
+        get_refresh_running: Callable[[], bool],
         get_status_text: Callable[[], str],
         on_set_unit_system: Callable[[str], None],
         on_set_display_currency: Callable[[str], None],
         on_toggle_auto_update: Callable[[], None],
+        on_refresh_rates: Callable[[], object],
         on_open_feedback: Callable[[], object],
         on_open_google_play_feedback: Callable[[], object],
         on_open_legal: Callable[[], None],
@@ -44,10 +46,12 @@ class SettingsDialogController:
         self._get_exchange_rates = get_exchange_rates
         self._get_language = get_language
         self._get_auto_update = get_auto_update
+        self._get_refresh_running = get_refresh_running
         self._get_status_text = get_status_text
         self._on_set_unit_system = on_set_unit_system
         self._on_set_display_currency = on_set_display_currency
         self._on_toggle_auto_update = on_toggle_auto_update
+        self._on_refresh_rates = on_refresh_rates
         self._on_open_feedback = on_open_feedback
         self._on_open_google_play_feedback = on_open_google_play_feedback
         self._on_open_legal = on_open_legal
@@ -56,6 +60,7 @@ class SettingsDialogController:
         self._currency_buttons: dict[str, Any] = {}
         self._currency_rate_labels: dict[str, Any] = {}
         self._currency_auto_button: Any | None = None
+        self._currency_refresh_button: Any | None = None
         self._currency_status: Any | None = None
 
     @property
@@ -69,6 +74,7 @@ class SettingsDialogController:
         self._currency_buttons = {}
         self._currency_rate_labels = {}
         self._currency_auto_button = None
+        self._currency_refresh_button = None
         self._currency_status = None
 
     def refresh(self) -> None:
@@ -94,6 +100,10 @@ class SettingsDialogController:
                 self._currency_auto_button,
                 "ice" if auto_update else "muted",
             )
+        if self._currency_refresh_button is not None:
+            self._currency_refresh_button.text = self._translate("settings_currency_refresh_now")
+            self._currency_refresh_button.disabled = not auto_update or self._get_refresh_running()
+            self._style_button(self._currency_refresh_button, "muted")
         if self._currency_status is not None:
             self._currency_status.text = self._get_status_text()
 
@@ -207,11 +217,11 @@ class SettingsDialogController:
                 padding=[dp(12), dp(10), dp(12), dp(10)],
                 spacing=dp(6),
                 size_hint_y=None,
-                height=dp(270),
                 radius=[dp(14), dp(14), dp(14), dp(14)],
                 elevation=2,
                 md_bg_color=self._card_bg(),
             )
+            rates_card.bind(minimum_height=rates_card.setter("height"))
             rates_card.add_widget(
                 MDLabel(
                     text=self._translate("settings_currency_rates_title"),
@@ -250,6 +260,21 @@ class SettingsDialogController:
             )
             auto_row.add_widget(self._currency_auto_button)
             rates_card.add_widget(auto_row)
+            self._currency_refresh_button = MDRaisedButton(
+                text=self._translate("settings_currency_refresh_now"),
+                size_hint=(1, None),
+                height=dp(48),
+                on_release=lambda *_: self._on_refresh_rates(),
+            )
+            rates_card.add_widget(self._currency_refresh_button)
+            rates_card.add_widget(
+                MDLabel(
+                    text=self._translate("settings_currency_cache_hint"),
+                    theme_text_color="Hint",
+                    font_style="Caption",
+                    adaptive_height=True,
+                )
+            )
             self._currency_status = MDLabel(
                 text="",
                 theme_text_color="Hint",

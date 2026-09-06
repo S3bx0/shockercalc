@@ -125,7 +125,7 @@ class SettingsStateController:
             source=rates.source or "NBP",
         )
 
-    def refresh_exchange_rates_async(self, notify: bool = False) -> bool:
+    def refresh_exchange_rates_async(self, notify: bool = False, *, force: bool = False) -> bool:
         if not self._currency_auto_update:
             # Invalidate queued results when the user switches updates off.
             self._refresh_generation += 1
@@ -174,7 +174,7 @@ class SettingsStateController:
                 with self._refresh_lock:
                     if generation != self._refresh_generation:
                         return
-                    rates = self._load_exchange_rates(cache_path, auto_update=True)
+                    rates = self._load_exchange_rates(cache_path, auto_update=True, force=force)
             except Exception:  # noqa: BLE001 - no loader failure may strand the gate
                 log.warning("Currency refresh failed; retaining previous rates")
             try:
@@ -191,6 +191,10 @@ class SettingsStateController:
             complete(previous_rates)
             return False
         return True
+
+    def refresh_exchange_rates_now(self) -> bool:
+        """Explicit settings action; the auto-update preference still takes precedence."""
+        return self.refresh_exchange_rates_async(notify=True, force=True)
 
     def apply_exchange_rates(
         self,

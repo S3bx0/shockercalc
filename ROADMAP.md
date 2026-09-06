@@ -1,5 +1,18 @@
 # Refrigeration Calc roadmap
 
+## A2 — cache kursów i ręczne odświeżanie (2026-09-06)
+
+Na gałęzi `codex/currency-cache-ttl`, opartej na PR #34, wdrożono:
+
+- TTL 6 h liczony od `fetched_at`, z zachowaniem starszych danych offline;
+- jawną akcję „Odśwież teraz” z blokadą duplikatów i respektowaniem wyłączenia
+  aktualizacji, tłumaczeniami PL/EN oraz celem dotykowym 48 dp;
+- testy granicy TTL, legacy cache, przyszłego/błędnego znacznika i braku sieci.
+
+Lokalnie: 592 testy PASS, coverage 58,90%, Ruff i oba zakresy mypy PASS.
+Nie oznacza to merge, nowego APK/AAB ani weryfikacji UI na telefonie.
+Szczegóły: [`docs/CURRENCY_CACHE_A2_2026-09-06.md`](docs/CURRENCY_CACHE_A2_2026-09-06.md).
+
 ## Wdrożenie audytu architektury — 2026-09-06
 
 Pierwszy pakiet na osobnej gałęzi realizuje preflight CI oraz A1 i A3 z
@@ -15,7 +28,7 @@ osobnego potwierdzenia. To nie oznacza scalenia, wydania AAB ani testu telefonu.
 Szczegóły i ograniczenia:
 [`docs/AUDIT_FIXES_2026-09-06.md`](docs/AUDIT_FIXES_2026-09-06.md).
 
-Następnie: A2 (TTL kursów i jawne ręczne odświeżanie), dalsze poprawki bloku A,
+Realizacja A2 jest opisana wyżej. Następnie: dalsze poprawki bloku A,
 a dopiero w osobnych zmianach uprawnienia/tokeny, reklamy i nowe funkcje.
 Ten pakiet nie zmienia cennika, triala, tokenów ani formuł obliczeniowych.
 

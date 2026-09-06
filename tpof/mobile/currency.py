@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import math
 import ssl
+import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date as calendar_date
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from http.client import HTTPException
@@ -15,6 +17,7 @@ from urllib.request import Request, urlopen
 SUPPORTED_DISPLAY_CURRENCIES = ("PLN", "EUR", "USD")
 NBP_SOURCE = "NBP"
 NBP_RATE_URL = "https://api.nbp.pl/api/exchangerates/rates/a/{code}/?format=json"
+CACHE_MAX_AGE_S = 6 * 3600
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,7 @@ class ExchangeRates:
     date: str = ""
     source: str = NBP_SOURCE
     from_cache: bool = False
+    fetched_at: float | None = None
 
     def rate_for(self, currency: str) -> Decimal | None:
         code = str(currency or "").strip().upper()
@@ -36,6 +40,17 @@ class ExchangeRates:
 
 def default_exchange_rates() -> ExchangeRates:
     return ExchangeRates({"PLN": Decimal("1")})
+
+
+def _cache_timestamp(value: object) -> float | None:
+    # Old/invalid metadata makes otherwise valid rates stale, not unusable offline.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        timestamp = float(value)
+    except OverflowError:
+        return None
+    return timestamp if math.isfinite(timestamp) and timestamp >= 0 else None
 
 
 def _positive_rate(value: object) -> Decimal:
@@ -125,6 +140,7 @@ def save_cached_rates(cache_path: Path, exchange_rates: ExchangeRates) -> None:
     payload = {
         "source": NBP_SOURCE,
         "date": date,
+        "fetched_at": _cache_timestamp(exchange_rates.fetched_at),
         "rates": {code: str(rate) for code, rate in rates.items()},
     }
     temporary.write_text(
@@ -150,6 +166,7 @@ def load_cached_rates(cache_path: Path) -> ExchangeRates | None:
             date=date,
             source=NBP_SOURCE,
             from_cache=True,
+            fetched_at=_cache_timestamp(payload.get("fetched_at")),
         )
     except (FileNotFoundError, OSError, ValueError, TypeError, InvalidOperation):
         return None
@@ -161,13 +178,21 @@ def get_exchange_rates(
     auto_update: bool = True,
     timeout: float = 5.0,
     fetcher: Callable[[str], Mapping[str, object]] | None = None,
+    force: bool = False,
+    max_age_s: float = CACHE_MAX_AGE_S,
+    now: Callable[[], float] = time.time,
 ) -> ExchangeRates:
-    """Zwraca swieze kursy, a offline ostatni poprawny cache."""
+    """Reuse rates by download age; manual force never overrides auto_update=False."""
 
     cached = load_cached_rates(cache_path)
     if auto_update:
+        if cached is not None and cached.fetched_at is not None and not force:
+            timestamp = _cache_timestamp(now())
+            if timestamp is not None and 0 <= timestamp - cached.fetched_at < max_age_s:
+                return cached
         try:
             current = fetch_nbp_exchange_rates(timeout=timeout, fetcher=fetcher)
+            current = replace(current, fetched_at=_cache_timestamp(now()))
             save_cached_rates(cache_path, current)
             return current
         except (OSError, ValueError, TypeError, HTTPException):
