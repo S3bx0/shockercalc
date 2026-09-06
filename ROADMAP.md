@@ -1,5 +1,24 @@
 # Refrigeration Calc roadmap
 
+## Wdrożenie audytu architektury — 2026-09-06
+
+Pierwszy pakiet na osobnej gałęzi realizuje preflight CI oraz A1 i A3 z
+[audytu w PR #33](https://github.com/S3bx0/shockercalc/pull/33):
+
+- poprawka bootstrapu Android SDK w debug i release;
+- pypdf 6.16.1 oraz testy zgodności eksportu PDF;
+- niezawodne zakończenie odświeżania kursów i walidacja danych NBP/cache.
+
+Lokalnie: 565 testów PASS, coverage 57,81%, Ruff i oba zakresy mypy PASS;
+cztery audyty zależności bez znanych podatności. Kontrolny APK/CI wymagają
+osobnego potwierdzenia. To nie oznacza scalenia, wydania AAB ani testu telefonu.
+Szczegóły i ograniczenia:
+[`docs/AUDIT_FIXES_2026-09-06.md`](docs/AUDIT_FIXES_2026-09-06.md).
+
+Następnie: A2 (TTL kursów i jawne ręczne odświeżanie), dalsze poprawki bloku A,
+a dopiero w osobnych zmianach uprawnienia/tokeny, reklamy i nowe funkcje.
+Ten pakiet nie zmienia cennika, triala, tokenów ani formuł obliczeniowych.
+
 ## Ścieżka krytyczna: ponowny test zamknięty Google Play
 
 Odrzucenie dostępu produkcyjnego jest obecnie problemem procesu testowego, nie

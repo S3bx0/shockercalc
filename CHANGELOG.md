@@ -6,6 +6,25 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Naprawiono
+
+- Odświeżanie kursów kończy się także po przerwaniu odpowiedzi HTTP,
+  błędzie workera, harmonogramu UI lub uruchomienia wątku. Ostatni poprawny
+  snapshot pozostaje dostępny, a spóźniony callback po wyłączeniu aktualizacji
+  nie nadpisuje stanu interfejsu. Zapisy kolejnych pobrań są serializowane.
+- Kursy z NBP i lokalnego cache wymagają poprawnego schematu, daty ISO oraz
+  skończonych, dodatnich wartości; odrzucane są m.in. NaN, Infinity i błędny
+  kod waluty. Nie wprowadzono arbitralnych limitów kursu rynkowego.
+- Usunięto tworzenie pustej instalacji Android SDK przed uruchomieniem
+  Buildozera. Niekompletny przywrócony SDK jest zachowywany pod osobną nazwą,
+  a Buildozer instaluje narzędzia i obsługuje licencje we właściwej kolejności.
+
+### Zmieniono
+
+- Zaktualizowano trzy piny pypdf do 6.16.1 (ten sam zakres zależności co
+  Dependabot PR #32). Dodano rzeczywiste testy generowania PDF z grafiką,
+  znakiem wodnym i hasłem właściciela; nie zmieniono backendu PDF Androida.
+
 ## [1.5.15] - 2026-08-09
 
 ### Dodano

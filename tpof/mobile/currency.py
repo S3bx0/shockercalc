@@ -6,7 +6,9 @@ import json
 import ssl
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import date as calendar_date
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from http.client import HTTPException
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -29,11 +31,40 @@ class ExchangeRates:
         if code == "PLN":
             return Decimal("1")
         rate = self.rates.get(code)
-        return rate if rate is not None and rate > 0 else None
+        return rate if rate is not None and rate.is_finite() and rate > 0 else None
 
 
 def default_exchange_rates() -> ExchangeRates:
     return ExchangeRates({"PLN": Decimal("1")})
+
+
+def _positive_rate(value: object) -> Decimal:
+    if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
+        raise ValueError("Invalid exchange rate type")
+    try:
+        rate = Decimal(str(value))
+    except InvalidOperation as exc:
+        raise ValueError("Invalid exchange rate") from exc
+    if not rate.is_finite() or rate <= 0:
+        raise ValueError("Exchange rate must be finite and positive")
+    return rate
+
+
+def _rate_date(value: object) -> str:
+    if not isinstance(value, str) or len(value) != 10:
+        raise ValueError("Expected an ISO exchange-rate date")
+    if calendar_date.fromisoformat(value).isoformat() != value:
+        raise ValueError("Expected an ISO exchange-rate date")
+    return value
+
+
+def _complete_rates(values: object) -> dict[str, Decimal]:
+    if not isinstance(values, Mapping):
+        raise ValueError("Expected an exchange-rate mapping")
+    rates = {code: _positive_rate(values.get(code)) for code in SUPPORTED_DISPLAY_CURRENCIES}
+    if rates["PLN"] != 1:
+        raise ValueError("The base PLN exchange rate must equal one")
+    return rates
 
 
 def _http_fetch(code: str, timeout: float) -> dict:
@@ -68,21 +99,16 @@ def fetch_nbp_exchange_rates(
     effective_dates: list[str] = []
     for code in SUPPORTED_DISPLAY_CURRENCIES[1:]:
         payload = fetcher(code) if fetcher is not None else _http_fetch(code, timeout)
-        entries = payload.get("rates") if isinstance(payload, Mapping) else None
+        if not isinstance(payload, Mapping) or payload.get("code") != code:
+            raise ValueError(f"Unexpected NBP currency code for {code}")
+        entries = payload.get("rates")
         if not isinstance(entries, list) or not entries:
             raise ValueError(f"NBP response does not contain a rate for {code}")
         entry = entries[0]
         if not isinstance(entry, Mapping):
             raise ValueError(f"Invalid NBP rate entry for {code}")
-        try:
-            rate = Decimal(str(entry.get("mid")))
-        except (InvalidOperation, TypeError, ValueError) as exc:
-            raise ValueError(f"Invalid NBP rate for {code}") from exc
-        if rate <= 0:
-            raise ValueError(f"Invalid NBP rate for {code}")
-        date = str(entry.get("effectiveDate", "")).strip()
-        if not date:
-            raise ValueError(f"NBP response does not contain a date for {code}")
+        rate = _positive_rate(entry.get("mid"))
+        date = _rate_date(entry.get("effectiveDate"))
         rates[code] = rate
         effective_dates.append(date)
     return ExchangeRates(rates, date=min(effective_dates), source=NBP_SOURCE)
@@ -91,13 +117,15 @@ def fetch_nbp_exchange_rates(
 def save_cached_rates(cache_path: Path, exchange_rates: ExchangeRates) -> None:
     """Zapisuje ostatni poprawny komplet kursow w sposob atomowy."""
 
+    rates = _complete_rates(exchange_rates.rates)
+    date = _rate_date(exchange_rates.date)
     path = Path(cache_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     payload = {
-        "source": exchange_rates.source or NBP_SOURCE,
-        "date": exchange_rates.date,
-        "rates": {code: str(rate) for code, rate in exchange_rates.rates.items()},
+        "source": NBP_SOURCE,
+        "date": date,
+        "rates": {code: str(rate) for code, rate in rates.items()},
     }
     temporary.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
@@ -111,20 +139,16 @@ def load_cached_rates(cache_path: Path) -> ExchangeRates | None:
 
     try:
         payload = json.loads(Path(cache_path).read_text(encoding="utf-8"))
-        raw_rates = payload.get("rates", {})
-        rates = {
-            str(code).upper(): Decimal(str(value))
-            for code, value in raw_rates.items()
-        }
-        if any(rates.get(code, Decimal("0")) <= 0 for code in SUPPORTED_DISPLAY_CURRENCIES):
+        if not isinstance(payload, Mapping):
             return None
-        date = str(payload.get("date", "")).strip()
-        if not date:
+        rates = _complete_rates(payload.get("rates"))
+        date = _rate_date(payload.get("date"))
+        if payload.get("source", NBP_SOURCE) != NBP_SOURCE:
             return None
         return ExchangeRates(
             rates,
             date=date,
-            source=str(payload.get("source", NBP_SOURCE)) or NBP_SOURCE,
+            source=NBP_SOURCE,
             from_cache=True,
         )
     except (FileNotFoundError, OSError, ValueError, TypeError, InvalidOperation):
@@ -146,7 +170,7 @@ def get_exchange_rates(
             current = fetch_nbp_exchange_rates(timeout=timeout, fetcher=fetcher)
             save_cached_rates(cache_path, current)
             return current
-        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        except (OSError, ValueError, TypeError, HTTPException):
             pass
     return cached or default_exchange_rates()
 
