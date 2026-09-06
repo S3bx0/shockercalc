@@ -6,6 +6,17 @@ wersjonowanie wg [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Dodano
+
+- Kursy NBP są ponownie używane przez 6 godzin od pobrania; data publikacji
+  kursu nie steruje cache, więc weekend nie wymusza kolejnych zapytań.
+- W ustawieniach walut dodano przycisk „Odśwież teraz” / „Refresh now”, który
+  pomija cache czasowy. Jest nieaktywny podczas pobierania i po wyłączeniu
+  aktualizacji. Karta kursów dopasowuje wysokość do zawartości.
+- Starszy cache bez czasu pobrania pozostaje dostępny offline i jest
+  aktualizowany przy udanym pobraniu. Błędny/przyszły znacznik nie przedłuża
+  ważności cache, a nieudane pobranie nie odmładza zapisanych kursów.
+
 ### Naprawiono
 
 - Odświeżanie kursów kończy się także po przerwaniu odpowiedzi HTTP,

@@ -230,10 +230,12 @@ class AppControllerCompositionMixin:
             get_exchange_rates=lambda: self._settings_state.exchange_rates,
             get_language=lambda: self._localization.language,
             get_auto_update=lambda: self._settings_state.currency_auto_update,
+            get_refresh_running=lambda: self._settings_state.refresh_running,
             get_status_text=self._settings_state.status_text,
             on_set_unit_system=self._settings_state.set_unit_system,
             on_set_display_currency=self._settings_state.set_display_currency,
             on_toggle_auto_update=self._settings_state.toggle_currency_auto_update,
+            on_refresh_rates=self._settings_state.refresh_exchange_rates_now,
             on_open_feedback=self._feedback_controller.open,
             on_open_google_play_feedback=(
                 self._feedback_controller.open_google_play_feedback

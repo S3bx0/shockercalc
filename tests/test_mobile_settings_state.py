@@ -121,7 +121,7 @@ def test_currency_change_preserves_conversion_order_and_applies_async_rates(tmp_
     )
     load_calls = []
 
-    def load_rates(path, *, auto_update):
+    def load_rates(path, *, auto_update, force=False):
         load_calls.append((path, auto_update))
         return rates
 
@@ -182,7 +182,7 @@ def test_disabling_auto_update_loads_cache_synchronously(tmp_path):
     )
     load_calls = []
 
-    def load_rates(path, *, auto_update):
+    def load_rates(path, *, auto_update, force=False):
         load_calls.append((path, auto_update))
         return cached
 
@@ -225,7 +225,7 @@ def test_status_and_rate_notes_reflect_missing_cached_and_live_data(tmp_path):
 def test_worker_failure_preserves_snapshot_and_unlocks_refresh_on_ui_thread(tmp_path, error):
     calls = []
 
-    def load_rates(path, *, auto_update):
+    def load_rates(path, *, auto_update, force=False):
         calls.append((path, auto_update))
         raise error
 
@@ -298,7 +298,7 @@ def test_scheduler_failure_never_calls_ui_from_worker(tmp_path):
 def test_disabling_auto_update_ignores_queued_result_and_preserves_new_refresh(tmp_path):
     old = ExchangeRates({"EUR": Decimal("4.2")}, date="2026-09-03")
     cached = ExchangeRates({"EUR": Decimal("4.1")}, date="2026-09-02", from_cache=True)
-    state = _controller(tmp_path, load_exchange_rates=lambda _path, *, auto_update: old if auto_update else cached)
+    state = _controller(tmp_path, load_exchange_rates=lambda _path, *, auto_update, force=False: old if auto_update else cached)
     controller = state["controller"]
     controller.refresh_exchange_rates_async()
     state["background"][0]()
@@ -323,7 +323,7 @@ def test_disabling_auto_update_ignores_queued_result_and_preserves_new_refresh(t
 def test_cancelled_queued_worker_does_not_start_network_request(tmp_path):
     calls = []
 
-    def load_rates(_path, *, auto_update):
+    def load_rates(_path, *, auto_update, force=False):
         calls.append(auto_update)
         return ExchangeRates({})
 
@@ -349,3 +349,41 @@ def test_invalid_cache_during_disable_keeps_current_rates(tmp_path):
     controller.toggle_currency_auto_update()
     assert controller.exchange_rates is cached
     assert controller.refresh_running is False
+
+
+def test_only_explicit_manual_refresh_forces_download(tmp_path):
+    calls = []
+
+    def load_rates(_path, *, auto_update, force=False):
+        calls.append((auto_update, force))
+        return ExchangeRates({})
+
+    state = _controller(tmp_path, load_exchange_rates=load_rates)
+    controller = state["controller"]
+    controller.set_display_currency("EUR")
+    state["background"][0]()
+    state["scheduled"][0][0]()
+    assert calls == [(True, False)]
+    assert controller.refresh_exchange_rates_now() is True
+    assert controller.refresh_exchange_rates_now() is False  # No parallel manual requests.
+    state["background"][1]()
+    state["scheduled"][1][0]()
+    assert calls == [(True, False), (True, True)]
+    assert controller.refresh_running is False
+    assert state["messages"][-1] == "labor_currency_note_missing:currency=EUR"
+
+
+def test_manual_refresh_cannot_override_disabled_updates(tmp_path):
+    calls = []
+
+    def load_rates(_path, *, auto_update, force=False):
+        calls.append((auto_update, force))
+        return ExchangeRates({})
+
+    state = _controller(
+        tmp_path, load_exchange_rates=load_rates,
+        prepare_preferences=lambda prefs: prefs.set_currency_auto_update(False),
+    )
+    assert state["controller"].refresh_exchange_rates_now() is True
+    assert calls == [(False, False)]
+    assert state["background"] == []
