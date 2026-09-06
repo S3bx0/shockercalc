@@ -49,6 +49,8 @@ android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
 # Min / target API (AdMob SDK 25.x wymaga compileSdk 35+)
 android.api = 36
+# Let Buildozer install the SDK before accepting licenses (also on a cold cache).
+android.accept_sdk_license = True
 android.minapi = 24
 android.ndk = 29
 android.ndk_api = 24

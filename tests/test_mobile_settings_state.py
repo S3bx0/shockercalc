@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from http.client import IncompleteRead
+
+import pytest
 
 from tpof.mobile.currency import ExchangeRates
 from tpof.mobile.settings_state import SettingsStateController
@@ -216,3 +219,133 @@ def test_status_and_rate_notes_reflect_missing_cached_and_live_data(tmp_path):
 
     assert controller.status_text().startswith("settings_currency_status_cached:")
     assert controller.rate_note().startswith("labor_currency_note_cached:")
+
+
+@pytest.mark.parametrize("error", [IncompleteRead(b"partial"), RuntimeError("loader failed"), ValueError("bad cache")])
+def test_worker_failure_preserves_snapshot_and_unlocks_refresh_on_ui_thread(tmp_path, error):
+    calls = []
+
+    def load_rates(path, *, auto_update):
+        calls.append((path, auto_update))
+        raise error
+
+    state = _controller(tmp_path, load_exchange_rates=load_rates)
+    controller = state["controller"]
+    cached = ExchangeRates({"EUR": Decimal("4.1")}, date="2026-09-03", from_cache=True)
+    controller.apply_exchange_rates(cached)
+    controller.refresh_exchange_rates_async()
+    before_worker = (len(state["ui_refreshes"]), len(state["labor_refreshes"]))
+    state["background"][0]()
+    assert controller.refresh_running is True
+    assert (len(state["ui_refreshes"]), len(state["labor_refreshes"])) == before_worker
+    state["scheduled"][0][0]()
+    assert controller.exchange_rates is cached
+    assert controller.refresh_running is False
+    assert len(calls) == 1  # No second unguarded cache load in the exception path.
+    assert controller.refresh_exchange_rates_async() is True
+
+
+def test_thread_start_failure_does_not_lock_refresh(tmp_path):
+    state = _controller(tmp_path)
+    controller = state["controller"]
+    start = controller._start_background
+
+    def broken_start(_worker):
+        raise RuntimeError("thread unavailable")
+
+    controller._start_background = broken_start
+    assert controller.refresh_exchange_rates_async() is False
+    assert controller.refresh_running is False
+    controller._start_background = start
+    assert controller.refresh_exchange_rates_async() is True
+
+
+@pytest.mark.parametrize("callback_name", ["_convert_labor_currency", "_refresh_settings_ui", "_refresh_labor_results", "_show_message"])
+def test_ui_callback_failure_does_not_lock_refresh(tmp_path, callback_name):
+    state = _controller(tmp_path, load_exchange_rates=lambda *_args, **_kwargs: ExchangeRates({}))
+    controller = state["controller"]
+    controller._display_currency = "EUR"
+    controller.refresh_exchange_rates_async(notify=True)
+    state["background"][0]()
+    original = getattr(controller, callback_name)
+
+    def broken_callback(*_args):
+        raise RuntimeError("UI callback failed")
+
+    setattr(controller, callback_name, broken_callback)
+    state["scheduled"][0][0]()
+    assert controller.refresh_running is False
+    setattr(controller, callback_name, original)
+    assert controller.refresh_exchange_rates_async() is True
+
+
+def test_scheduler_failure_never_calls_ui_from_worker(tmp_path):
+    state = _controller(tmp_path, load_exchange_rates=lambda *_args, **_kwargs: ExchangeRates({}))
+    controller = state["controller"]
+
+    def broken_schedule(*_args):
+        raise RuntimeError("scheduler stopped")
+
+    controller._schedule_once = broken_schedule
+    controller.refresh_exchange_rates_async()
+    before_worker = len(state["ui_refreshes"])
+    state["background"][0]()
+    assert len(state["ui_refreshes"]) == before_worker
+    assert state["labor_refreshes"] == []
+    assert controller.refresh_running is False
+
+
+def test_disabling_auto_update_ignores_queued_result_and_preserves_new_refresh(tmp_path):
+    old = ExchangeRates({"EUR": Decimal("4.2")}, date="2026-09-03")
+    cached = ExchangeRates({"EUR": Decimal("4.1")}, date="2026-09-02", from_cache=True)
+    state = _controller(tmp_path, load_exchange_rates=lambda _path, *, auto_update: old if auto_update else cached)
+    controller = state["controller"]
+    controller.refresh_exchange_rates_async()
+    state["background"][0]()
+    old_callback = state["scheduled"][0][0]
+    assert controller.toggle_currency_auto_update() is False
+    assert controller.refresh_running is False
+    assert controller.exchange_rates is cached
+    before = len(state["ui_refreshes"])
+    old_callback()
+    assert controller.exchange_rates is cached
+    assert len(state["ui_refreshes"]) == before
+
+    assert controller.toggle_currency_auto_update() is True
+    old_callback()
+    assert controller.refresh_running is True  # Old completion cannot unlock a newer request.
+    state["background"][1]()
+    state["scheduled"][1][0]()
+    assert controller.exchange_rates is old
+    assert controller.refresh_running is False
+
+
+def test_cancelled_queued_worker_does_not_start_network_request(tmp_path):
+    calls = []
+
+    def load_rates(_path, *, auto_update):
+        calls.append(auto_update)
+        return ExchangeRates({})
+
+    state = _controller(tmp_path, load_exchange_rates=load_rates)
+    controller = state["controller"]
+    controller.refresh_exchange_rates_async()
+    controller.toggle_currency_auto_update()
+    state["background"][0]()
+    assert calls == [False]
+    assert state["scheduled"] == []
+    assert controller.refresh_running is False
+
+
+def test_invalid_cache_during_disable_keeps_current_rates(tmp_path):
+    def load_rates(*_args, **_kwargs):
+        raise ValueError("bad cache")
+
+    state = _controller(tmp_path, load_exchange_rates=load_rates)
+    controller = state["controller"]
+    cached = ExchangeRates({"EUR": Decimal("4.1")}, date="2026-09-03", from_cache=True)
+    controller.apply_exchange_rates(cached)
+    controller.refresh_exchange_rates_async()
+    controller.toggle_currency_auto_update()
+    assert controller.exchange_rates is cached
+    assert controller.refresh_running is False

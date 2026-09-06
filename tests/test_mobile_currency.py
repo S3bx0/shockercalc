@@ -1,4 +1,8 @@
+import json
 from decimal import Decimal
+from http.client import BadStatusLine, IncompleteRead
+
+import pytest
 
 from tpof.mobile.currency import (
     NBP_RATE_URL,
@@ -22,7 +26,7 @@ def test_nbp_endpoint_requires_https():
 def test_fetch_nbp_exchange_rates_uses_injected_fetcher():
     def fetcher(code):
         mid = "4.25" if code == "EUR" else "3.90"
-        return {"rates": [{"effectiveDate": "2026-07-06", "mid": mid}]}
+        return {"code": code, "rates": [{"effectiveDate": "2026-07-06", "mid": mid}]}
 
     rates = fetch_nbp_exchange_rates(fetcher=fetcher)
 
@@ -114,3 +118,105 @@ def test_display_amount_conversion_requires_requested_rate():
         assert "EUR" in str(exc)
     else:
         raise AssertionError("missing exchange rate should fail")
+
+
+@pytest.mark.parametrize("value", ["NaN", "sNaN", "Infinity", "-Infinity", "0", "-1", True, None, [], {}])
+def test_invalid_rates_are_rejected_from_network_and_cache(tmp_path, value):
+    def fetcher(code):
+        return {"code": code, "rates": [{"mid": value, "effectiveDate": "2026-09-04"}]}
+
+    with pytest.raises(ValueError):
+        fetch_nbp_exchange_rates(fetcher=fetcher)
+    path = tmp_path / "rates.json"
+    path.write_text(json.dumps({
+        "date": "2026-09-04", "rates": {"PLN": "1", "EUR": value, "USD": "3.90"},
+    }))
+    assert load_cached_rates(path) is None
+
+
+@pytest.mark.parametrize("value", ["NaN", "sNaN", "Infinity", "-Infinity", "0", "-1"])
+def test_rate_lookup_does_not_leak_nonfinite_values_to_formatters(value):
+    rates = ExchangeRates({"EUR": Decimal(value)})
+    assert rates.rate_for("EUR") is None
+    assert format_money(40, "EUR", rates, "en") == "40.00 PLN"
+
+
+@pytest.mark.parametrize("payload", [[], None, "rates", {}, {"rates": []}, {"rates": None}])
+def test_invalid_cache_shapes_are_ignored(tmp_path, payload):
+    path = tmp_path / "rates.json"
+    path.write_text(json.dumps(payload))
+    assert load_cached_rates(path) is None
+    assert get_exchange_rates(path, auto_update=False).rate_for("EUR") is None
+
+
+@pytest.mark.parametrize("date", [None, [], 20260904, "", "yesterday", "2026-02-30", "20260904", "2026-09-04T00:00:00"])
+def test_invalid_rate_dates_are_rejected_from_network_and_cache(tmp_path, date):
+    with pytest.raises(ValueError):
+        fetch_nbp_exchange_rates(fetcher=lambda code: {
+            "code": code, "rates": [{"mid": "4.25", "effectiveDate": date}],
+        })
+    path = tmp_path / "rates.json"
+    path.write_text(json.dumps({
+        "date": date, "rates": {"PLN": "1", "EUR": "4.25", "USD": "3.90"},
+    }))
+    assert load_cached_rates(path) is None
+
+
+@pytest.mark.parametrize("payload", [
+    [], None, {}, {"code": "USD", "rates": [{"mid": "4.25", "effectiveDate": "2026-09-04"}]},
+    {"code": "EUR", "rates": []}, {"code": "EUR", "rates": [None]},
+    {"code": "EUR", "rates": {}},
+])
+def test_nbp_requires_matching_currency_code_and_rate_shape(payload):
+    with pytest.raises(ValueError):
+        fetch_nbp_exchange_rates(fetcher=lambda _code: payload)
+
+
+def test_positive_rates_are_not_limited_to_arbitrary_market_range(tmp_path):
+    rates = fetch_nbp_exchange_rates(fetcher=lambda code: {
+        "code": code,
+        "rates": [{"mid": "0.25" if code == "EUR" else "12.5", "effectiveDate": "2026-09-04"}],
+    })
+    path = tmp_path / "rates.json"
+    save_cached_rates(path, rates)
+    cached = load_cached_rates(path)
+    assert cached is not None
+    assert cached.rate_for("EUR") == Decimal("0.25")
+    assert cached.rate_for("USD") == Decimal("12.5")
+
+
+@pytest.mark.parametrize("error", [IncompleteRead(b"partial"), BadStatusLine("invalid"), ValueError("bad response")])
+def test_failed_or_partial_network_fetch_keeps_valid_cache(tmp_path, error):
+    path = tmp_path / "rates.json"
+    save_cached_rates(path, ExchangeRates(
+        {"PLN": Decimal(1), "EUR": Decimal("4.1"), "USD": Decimal("3.8")}, date="2026-09-03",
+    ))
+    previous = path.read_bytes()
+
+    def fetcher(code):
+        if code == "USD":
+            raise error
+        return {"code": code, "rates": [{"mid": "4.25", "effectiveDate": "2026-09-04"}]}
+
+    rates = get_exchange_rates(path, fetcher=fetcher)
+    assert rates.from_cache and rates.rate_for("EUR") == Decimal("4.1")
+    assert path.read_bytes() == previous
+
+
+def test_invalid_snapshot_cannot_overwrite_valid_cache(tmp_path):
+    path = tmp_path / "rates.json"
+    save_cached_rates(path, ExchangeRates(
+        {"PLN": Decimal(1), "EUR": Decimal("4.1"), "USD": Decimal("3.8")}, date="2026-09-03",
+    ))
+    previous = path.read_bytes()
+    with pytest.raises(ValueError):
+        save_cached_rates(path, ExchangeRates({"PLN": Decimal(1)}))
+    assert path.read_bytes() == previous
+
+
+def test_cache_cannot_change_base_currency(tmp_path):
+    path = tmp_path / "rates.json"
+    path.write_text(json.dumps({
+        "date": "2026-09-04", "rates": {"PLN": "2", "EUR": "4.25", "USD": "3.90"},
+    }))
+    assert load_cached_rates(path) is None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from collections.abc import Callable
 from pathlib import Path
@@ -13,6 +14,8 @@ from tpof.mobile.currency import (
     get_exchange_rates,
 )
 from tpof.mobile.user_data import UiPreferences
+
+log = logging.getLogger(__name__)
 
 
 class SettingsStateController:
@@ -46,6 +49,8 @@ class SettingsStateController:
         self._currency_auto_update = preferences.currency_auto_update
         self._exchange_rates = default_exchange_rates()
         self._refresh_running = False
+        self._refresh_generation = 0
+        self._refresh_lock = threading.Lock()
 
     @property
     def unit_system(self) -> str:
@@ -122,10 +127,16 @@ class SettingsStateController:
 
     def refresh_exchange_rates_async(self, notify: bool = False) -> bool:
         if not self._currency_auto_update:
-            self._exchange_rates = self._load_exchange_rates(
-                self.cache_path,
-                auto_update=False,
-            )
+            # Invalidate queued results when the user switches updates off.
+            self._refresh_generation += 1
+            self._refresh_running = False
+            try:
+                self._exchange_rates = self._load_exchange_rates(
+                    self.cache_path,
+                    auto_update=False,
+                )
+            except Exception:  # noqa: BLE001 - preserve the last known snapshot
+                log.warning("Currency cache refresh failed")
             self.refresh_ui()
             self._refresh_labor_results()
             return True
@@ -133,20 +144,52 @@ class SettingsStateController:
             return False
 
         self._refresh_running = True
-        self.refresh_ui()
+        self._refresh_generation += 1
+        generation = self._refresh_generation
+        try:
+            self.refresh_ui()
+        except Exception:  # noqa: BLE001 - do not leave the refresh gate locked
+            self._refresh_running = False
+            log.warning("Currency refresh UI could not start")
+            return False
         cache_path = self.cache_path
+        previous_rates = self._exchange_rates
+
+        def complete(rates: ExchangeRates) -> None:
+            if generation != self._refresh_generation:
+                return
+            try:
+                self.apply_exchange_rates(rates, notify=notify)
+            except Exception:  # noqa: BLE001 - framework callback boundary
+                log.warning("Currency refresh UI callback failed")
+            finally:
+                if generation == self._refresh_generation:
+                    self._refresh_running = False
 
         def worker() -> None:
-            rates = self._load_exchange_rates(cache_path, auto_update=True)
-            self._schedule_once(
-                lambda *_args: self.apply_exchange_rates(
-                    rates,
-                    notify=notify,
-                ),
-                0,
-            )
+            rates = previous_rates
+            try:
+                # Serialize cache writers after off/on toggles; an older request
+                # must finish before a newer one can persist its snapshot.
+                with self._refresh_lock:
+                    if generation != self._refresh_generation:
+                        return
+                    rates = self._load_exchange_rates(cache_path, auto_update=True)
+            except Exception:  # noqa: BLE001 - no loader failure may strand the gate
+                log.warning("Currency refresh failed; retaining previous rates")
+            try:
+                self._schedule_once(lambda *_args: complete(rates), 0)
+            except Exception:  # noqa: BLE001 - scheduler may stop during app shutdown
+                # Never call UI functions from the worker, including on failure.
+                if generation == self._refresh_generation:
+                    self._refresh_running = False
+                log.warning("Currency refresh completion could not be scheduled")
 
-        self._start_background(worker)
+        try:
+            self._start_background(worker)
+        except Exception:  # noqa: BLE001 - thread creation can fail too
+            complete(previous_rates)
+            return False
         return True
 
     def apply_exchange_rates(
